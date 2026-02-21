@@ -21,7 +21,11 @@ from context_tracker import ContextTracker
 from fallback_response import get_fallback_intervention 
 
 # instances global component
-capture = ScreenCapture()
+capture = ScreenC3 server.py
+Traceback (most recent call last):
+  File "/Users/david/devlife/server.py", line 16, in <module>
+    from vision_analyzer import VisionAnalyzer
+ModuleNotFoundError: No module named 'vision_analyzer'apture()
 vision = VisionAnalyzer(CLAUDE_API_KEY)
 bio = BiometricEngine(WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET)
 mock = MockBiometrics()
