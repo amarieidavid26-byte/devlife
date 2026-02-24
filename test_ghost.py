@@ -167,10 +167,56 @@ def main():
     print(f"    Start stress: {d1.get('estimated_stress', 0):.2f} → After 1s: {d2.get('estimated_stress', 0):.2f}")
     print(f"    (should be transitioning smoothly)")
     print()
+    
+    # test 8 - content analyzer, the game mode
+    from config import GAME_MODE
+    if GAME_MODE and CLAUDE_API_KEY:
+        print("[8] Testing ContentAnalyzer (game mode)...")
+        from content_analyzer import ContentAnalyzer
+        content = ContentAnalyzer(CLAUDE_API_KEY)
+        sample_code = """ def calculate_total (items):
+        total = 0 
+        for item in items: 
+            total += item.price
+        return total
+    result = calculate_total (None)
+    print(result)""" 
+        try: 
+            result = content.analyze("code", sample_code, language = "python", cursor_line = 8)
+            print(f" Code analysis:")
+            print(f"      Activity: {result.get('activity')}")
+            print(f"      Mistake: {result.get('mistake_detected')} — {result.get('mistake_description', 'none')}")
+            print(f"      Stuck: {result.get('stuck_probability')}")
+            print(f"      Risky: {result.get('risky_action')}")
+            print(f"      Context: {result.get('context_summary')}")
+        except Exception as e:
+            # catch any exception 
+            print(f"    Code analysis ERROR: {e}")
 
+        sample_terminal = """$ npm run build
+error TS2307: Cannot find module './components/Ghost'
+$ npm run build
+error TS2307: Cannot find module './components/Ghost'
+$ npm run build
+error TS2307: Cannot find module './components/Ghost'"""
+        try: 
+            result = content.analyze("terminal", sample_terminal, shell = "bash")
+            print(f" Terminal analysis:")
+            print(f" Activity: {result.get('activity')}")
+            print(f" Stuck: {result.get('stuck_probability')}")
+            print(f"      Suggestion: {result.get('suggested_intervention', {}).get('message', 'none')[:80]}")
+        except Exception as e:
+            print(f" Terminal analysis ERROR: {e}")
+        print()
+    else: 
+        if GAME_MODE: 
+            print("[8] Skipping ContentAnalyzer test (no API key)")
+        else: 
+            print("[8] Skipping ContentAnalyzer test (desktop, not game mode)")
+        print()
     print("=" * 50)
-    print("  All tests complete!")
+    print("All tests complete")
     print("=" * 50)
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     main()

@@ -52,6 +52,8 @@ class GhostBrain:
 
     # here is the decision being made
     def should_intervene(self, vision_analysis, biometric_state, modifiers):
+        if vision_analysis.get("risky_action"):
+            return True, "risky_action_detected"
         now = time.time()
         time_since_last = now - self.last_intervention_time
         effective_cooldown = self.cooldown
@@ -71,6 +73,9 @@ class GhostBrain:
             return True, "stress_firewall"
 
         if vision_analysis.get("mistake_detected") and biometric_state == "FATIGUED":
+            return True, "fatigue_firewall"
+
+        if vision_analysis.get("mistake_detected"):
             return True, "mistake_detected"
 
         stuck = vision_analysis.get("stuck_probability", 0)
@@ -104,13 +109,15 @@ class GhostBrain:
         # build the user message as a f string
 
         user_msg = f""" Screen analysis:
--App: {vision_analysis.get('app', 'unknown')}
--Actiity: {vision_analysis.get('activity', 'unknown')}
+- App: {vision_analysis.get('app', 'unknown')}
+- Actiity: {vision_analysis.get('activity', 'unknown')}
 - Stuck probability: {vision_analysis.get('stuck_probability', 0)}
 - Stuck reason: {vision_analysis.get('stuck_reason', 'none')}
 - Mistake detected: {vision_analysis.get('mistake_detected', False)}
 - Mistake: {vision_analysis.get('mistake_description', 'none')}
 - Help opportunity: {vision_analysis.get('help_opportunity', 'none')}
+- Risky action: {vision_analysis.get('risky_action', False)}
+- Risky description: {vision_analysis.get('risky_description', 'none')}
 
 {recent_context}
 
@@ -151,6 +158,7 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
 
         self.last_intervention_time = time.time()
         self.intervention_count += 1
+
         priority = "medium"
         if reason == "stress_firewall":
             priority = "critical"
@@ -164,11 +172,11 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
         #pick appropiate buttons for the UI
         buttons = ["Thanks", "Not Now"]
         if vision_analysis.get("suggested_intervention", {}).get("code_suggestion"):
-            buttons = ["Apply fix", "Show more", "Not Now"]
+            buttons = ["Apply Fix", "Show More", "Not Now"]
         if reason == "fatigue_firewall" or reason == "stress_firewall":
-            buttons = ["Save Draft", "Do it Anyway", "Remind Later"]
+            buttons = ["Save Draft", "Do It Anyway", "Remind Later"]
 
-        return{
+        intervention = {
             "type": "intervention",
             "message": ghost_message,
             "priority": priority,
@@ -180,12 +188,19 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
             "timestamp": time.time()
         }
 
+        if reason == "risky_action_detected":
+            intervention["priority"] = "critical"
+            intervention["buttons"] = ["Cancel", "Do It Anyway", "Save Draft"]
+            intervention["risky"] = True
+
+        return intervention
+
     # user feedback trackinggg
     def user_feedback(self, action):
         # track user's response to a intervention made by ghost
 
-        if action in ["Thanks", "Apply fix", "Save Draft", "Show more"]:
+        if action in ["Thanks", "Apply Fix", "Save Draft", "Show More"]:
             self.accepted_count += 1
             self.ignored_count = max(0, self.ignored_count -1)
-        elif action in ["Not Now", "Do it Anyway"]:
+        elif action in ["Not Now", "Do It Anyway"]:
             self.ignored_count += 1

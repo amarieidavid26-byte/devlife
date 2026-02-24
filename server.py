@@ -9,11 +9,15 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse 
 
 from config import (
-    CLAUDE_API_KEY, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET, 
-    USE_MOCK_BIOMETRICS, HOST, PORT
+    CLAUDE_API_KEY, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET,
+    USE_MOCK_BIOMETRICS, HOST, PORT,
+    GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH
 )
-from screen_capture import ScreenCapture 
-from vision_analyzer import VisionAnalyzer 
+if GAME_MODE: 
+    from content_analyzer import ContentAnalyzer
+else: 
+    from screen_capture import ScreenCapture
+    from vision_analyzer import VisionAnalyzer
 from biometric_engine import BiometricEngine 
 from mock_biometrics import MockBiometrics 
 from ghost_brain import GhostBrain 
@@ -21,8 +25,11 @@ from context_history import ContextTracker
 from fallback_responses import get_fallback_intervention
 
 # instances global component
-capture = ScreenCapture()
-vision = VisionAnalyzer(CLAUDE_API_KEY)
+if GAME_MODE:
+    content_analyzer = ContentAnalyzer(CLAUDE_API_KEY)
+else: 
+    capture = ScreenCapture()
+    vision = VisionAnalyzer(CLAUDE_API_KEY)
 bio = BiometricEngine(WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET)
 mock = MockBiometrics()
 brain = GhostBrain(CLAUDE_API_KEY)
@@ -36,6 +43,9 @@ intervention_history: list[dict] = []
 
 # stop the ghost loop on shutdown 
 ghost_running = False 
+pending_content = {}
+content_lock = threading.Lock()
+main_event_loop: asyncio.AbstractEventLoop = None
 
 # electron broadcast 
 async def broadcast(message: dict):
@@ -53,16 +63,23 @@ async def broadcast(message: dict):
 def broadcast_sync (message: dict):
     """sync wrapper for broadcast, using from background threads.
     create a new event loop if needed cause some threads dont have one """
-    try: 
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.run_coroutine_threadsafe(broadcast(message), loop)
-        else: 
-            loop.run_until_complete(broadcast(message))
-    except RuntimeError: 
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(broadcast(message))
-        loop.close()
+    if main_event_loop is None: 
+        return
+    asyncio.run_coroutine_threadsafe(broadcast(message), main_event_loop)
+
+def build_biometric_msg(data, state):
+    return {
+        "type": "biometric_update", 
+        "heartRate": round(data.get("heartRate", 0)),
+        "recovery": round(data.get("recovery", 0)),
+        "strain": round(data.get("strain", 0), 1),
+        "state": state, 
+        "sleepPerformance": round(data.get("sleepPerformance", 0), 2), 
+        "hrv": round(data.get("hrv", 0), 1),
+        "estimated_stress": round(data.get("estimated_stress", 0), 2),
+        "spo2": round(data.get("spo2", 0), 1),
+        "skinTemp": round(data.get("skinTemp", 0), 1)
+    }
 
 # stalking the biometric state change 
 def on_state_change(old_state, new_state): 
@@ -81,12 +98,13 @@ def on_state_change(old_state, new_state):
         "type": "state_change", 
         "from": old_state, 
         "to": new_state,
-        "reason": reason
+        "reason": reason,
+        "estimated_stress": bio.estimated_stress
     }
     broadcast_sync(message)
-
-    modifiers = bio.get_personality_modifiers(new_state)
-    capture.set_interval(modifiers.get("capture_interval", 3))
+    if not GAME_MODE: 
+        modifiers = bio.get_personality_modifiers(new_state)
+        capture.set_interval(modifiers.get("capture_interval", 3))
 
 bio.on_state_change(on_state_change)
 
@@ -108,13 +126,7 @@ def biometric_loop():
             state = bio.classify(data)
 
             # sending biometric update to electron front end 
-            biometric_msg = {
-                "type": "biometric_update",
-                "heartRate": round(data.get("heartRate", 0)),
-                "recovery": round(data.get("recovery", 0)), 
-                "strain": round(data.get("strain", 0), 1),
-                "sleepPerformance": round(data.get("sleepPerformance", 0), 2)
-            }
+            biometric_msg = build_biometric_msg(data, state)
             broadcast_sync(biometric_msg)
         time.sleep(5)
 
@@ -122,100 +134,132 @@ def biometric_loop():
 
 def ghost_loop():
     """
-    everytime iteration is gets the latest screenshots 
-    ships them to claude vision for analysis 
-    passes analysis and biometrics to ghost_brain
-    if the ghost intervenes it sends to frond end via WebSocket 
-    adapts the loop timing to biometric state
+    The main ghost loop. Runs in a background thread.
+
+    GAME_MODE (True): Waits for content from in-game apps via WebSocket.
+    DESKTOP_MODE (False): Captures screenshots and uses Claude Vision.
     """
-    # give the capture service a moment to get its 1st ss
     time.sleep(2)
+
     while ghost_running:
-        try: 
-            # get current state
+        try:
             state = bio.current_state
             modifiers = bio.get_personality_modifiers(state)
 
-            # get screenshots
-            screenshots = capture.get_buffer()
+            if GAME_MODE:
+                # game mode - analyze from in-game apps 
+                analysis = None
+                app_type = None
+                content_data = None
 
-            if not screenshots: 
-                # retry
-                time.sleep(1)
-                continue
-            
-            # get summary from the tracker 
-            context_summary = tracker.get_summary()
+                with content_lock:
+                    latest_time = 0
+                    for atype, data in pending_content.items():
+                        if data["timestamp"] > latest_time:
+                            latest_time = data["timestamp"]
+                            app_type = atype
+                            content_data = data
 
-            # send to claude vision
-            try: 
-                analysis = vision.analyze(screenshots, context_summary)
-            except Exception as e: 
-                print(f"[ghost_loop] Vision analysis failed: {e}")
-                time.sleep(modifiers.get("capture_interval", 3))
-                continue
+                if content_data and len(content_data.get("content", "")) >= CONTENT_MIN_LENGTH:
+                    last_time = getattr(content_analyzer, 'last_analysis_time', 0)
+                    if time.time() - last_time >= CONTENT_REANALYZE_INTERVAL or content_data.get("changed", True):
+                        context_summary = tracker.get_summary()
+                        try:
+                            analysis = content_analyzer.analyze(
+                                app_type=app_type,
+                                content=content_data["content"],
+                                extra_context=context_summary or "",
+                                **content_data.get("kwargs", {})
+                            )
+                            with content_lock:
+                                if app_type in pending_content:
+                                    pending_content[app_type]["changed"] = False
+                        except Exception as e:
+                            print(f"[ghost_loop] Content analysis failed: {e}")
 
-            tracker.update(analysis, state)
+                # process the analysis through ghost_brain if we got results
+                if analysis:
+                    tracker.update(analysis, state, bio.estimated_stress)
+                    intervention = brain.process(analysis, state, modifiers)
 
-            # ask ghost if he should intervene or not
-            intervention = brain.process(analysis, state, modifiers)
-            if intervention: 
-                if USE_MOCK_BIOMETRICS: 
-                    bio_data = mock.get_data()
-                else: 
-                    bio_data = bio.current_data or {}
-                
-                intervention["biometric"] = {
-                    "heartRate": round(bio_data.get("heartRate", 0)), 
-                    "recovery": round(bio_data.get("recovery", 0)), 
-                    "strain": round(bio_data.get("strain", 0), 1), 
-                    "sleepPerformance": round(bio_data.get("sleepPerformance", 0), 2)
-                }
+                    if intervention:
+                        bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
+                        intervention["biometric"] = build_biometric_msg(bio_data, state)
+                        intervention["app_type"] = app_type
+                        broadcast_sync(intervention)
+                        intervention_history.append(intervention)
+                        if len(intervention_history) > 50:
+                            intervention_history.pop(0)
+                        print(f"[ghost] ({state}/{app_type}) {intervention['message'][:80]}...")
 
-                # send to electron frontend
-                broadcast_sync(intervention)
+            else:
+                screenshots = capture.get_buffer()
 
-                # save to history 
-                intervention_history.append(intervention)
-                if len(intervention_history) > 50:
-                    intervention_history.pop(0)
-                print(f"[ghost] ({state}) {intervention['message'][:80]}...")
-        except Exception as e: 
-                print(f"[ghost_loop] Error: {e}")
+                if not screenshots:
+                    time.sleep(1)
+                    continue
 
-    # sleep for interval determined by the biometric state of the user
-    sleep_time = modifiers.get("capture_interval", 3)
-    time.sleep(sleep_time)
+                context_summary = tracker.get_summary()
+
+                # send to claude vision for analysis
+                try:
+                    analysis = vision.analyze(screenshots, context_summary)
+                except Exception as e:
+                    print(f"[ghost_loop] Vision analysis failed: {e}")
+                    time.sleep(modifiers.get("capture_interval", 3))
+                    continue
+
+                # update the context tracker with this analysis
+                tracker.update(analysis, state, bio.estimated_stress)
+
+                # ask if the ghost should intervene 
+                intervention = brain.process(analysis, state, modifiers)
+
+                # truthiness 
+                if intervention:
+                    bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
+                    intervention["biometric"] = build_biometric_msg(bio_data, state)
+                    broadcast_sync(intervention)
+                    intervention_history.append(intervention)
+                    if len(intervention_history) > 50:
+                        intervention_history.pop(0)
+                    print(f"[ghost] ({state}) {intervention['message'][:80]}...")
+
+        except Exception as e:
+            print(f"[ghost_loop] Error: {e}")
+        sleep_time = modifiers.get("capture_interval", 3)
+        time.sleep(sleep_time)
 
 # lifecycle of the app
 
 @asynccontextmanager
 async def lifespan(app: FastAPI): 
     """start background threads on startup and stop them on close"""
-    global ghost_running
+    global ghost_running, main_event_loop
     ghost_running = True
 
-    # start screen capture 
-    capture.start()
-    print("[ghost] Screen capture started")
-
-    # start biometric polling
-    bio_thread = threading.Thread(target=biometric_loop, daemon=True)
+    main_event_loop = asyncio.get_event_loop()
+    if not GAME_MODE:
+        capture.start()
+        print("[ghost] Screen capture started")
+    else:
+        print("[ghost] Game mode. waiting for content from PixiJS frontend")
+    
+    bio_thread = threading.Thread(target = biometric_loop, daemon = True)
     bio_thread.start()
-    print(f"[ghost] Biometric polling started (mock={USE_MOCK_BIOMETRICS})")
-
-    # start main ghost loop
-    ghost_thread = threading.Thread(target=ghost_loop, daemon=True)
+    ghost_thread = threading.Thread(target = ghost_loop, daemon = True)
     ghost_thread.start()
-    print("[ghost] Ghost loop started")
+    print(f"[ghost] Ghost loop started")
     print(f"[ghost] Server running on http://{HOST}:{PORT}")
-
-    yield 
-
-    # close 
+    yield
+    
+    #shutdown
     ghost_running = False
-    capture.stop()
+    if not GAME_MODE: 
+        capture.stop()
+    main_event_loop = None
     print("[ghost] Shutting down")
+    
 
 # FastAPI
 app = FastAPI(title = "Ghost Desktop Agent", lifespan = lifespan)
@@ -243,12 +287,17 @@ async def status():
     return {
         "biometric_state": bio.current_state, 
         "biometric_data": bio_data, 
-        "last_analysis": vision.last_analysis,
+        "last_analysis": content_analyzer.last_analysis if GAME_MODE else vision.last_analysis,
         "interventions_total": brain.intervention_count, 
         "interventions_accepted": brain.accepted_count,
         "interventions_ignored": brain.ignored_count,
         "session_stats": tracker.get_session_stats(),
-        "mock_mode": USE_MOCK_BIOMETRICS
+        "mock_mode": USE_MOCK_BIOMETRICS,
+        "estimated_stress": bio.estimated_stress,
+        "hrv_baseline": bio.hrv_baseline,
+        "hrv_current": bio_data.get("hrv", 0),
+        "game_mode": GAME_MODE,
+        "current_app": content_analyzer.last_analysis.get("app") if GAME_MODE and content_analyzer.last_analysis else None,
     }
 
 @app.post("/api/biometric/mock")
@@ -289,6 +338,22 @@ async def user_feedback(body: dict):
 async def get_history(): 
     return {"interventions": intervention_history[-20:]}
 
+
+# game mode endpoints 
+@app.get("/api/game/apps")
+async def get_game_apps():
+    #returns the available in game apps typer and room object mappings
+    return {
+        "game_mode": GAME_MODE,
+        "apps": {
+            "code": {"room_object": "desk_computer", "label": "Code Editor"},
+            "terminal": {"room_object": "desk_terminal", "label": "Terminal"},
+            "browser": {"room_object": "second_monitor", "label": "Browser"},
+            "notes": {"room_object": "whiteboard", "label": "Notes"},
+            "chat": {"room_object": "phone", "label": "Chat"}
+        }
+    }
+
 # websocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
@@ -304,14 +369,7 @@ async def websocket_endpoint(ws: WebSocket):
 
     # current state on conenction 
     bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
-    await ws.send_json ({
-        "type": "biometric_update", 
-        "heartRate": round(bio_data.get("heartRate", 0)),
-        "recovery": round(bio_data.get("recovery", 0)), 
-        "strain": round(bio_data.get("strain", 0), 1), 
-        "state": bio.current_state, 
-        "sleepPerformance": round(bio_data.get("sleepPerformance", 0), 2)
-    })
+    await ws.send_json(build_biometric_msg(bio_data, bio.current_state))
 
     try:
         # listen for the messages coming from the frontend 
@@ -321,6 +379,44 @@ async def websocket_endpoint(ws: WebSocket):
             # handle the user feedback from the Ghost interventions
             if data.get("type") == "feedback": 
                 brain.user_feedback(data.get("action", ""))
+
+            elif data.get("type") == "content_update":
+                app_type = data.get("app_type", "code")
+                content = data.get("content", "")
+                kwargs = {}
+                if data.get("language"):
+                    kwargs["language"] = data["language"]
+                if data.get("cursor_line"): 
+                    kwargs["cursor_line"] = data["cursor_line"]
+                if data.get("url"): 
+                    kwargs["url"] = data["url"]
+                if data.get("shell"):
+                    kwargs["shell"] = data["shell"]
+                if data.get("platform"):
+                    kwargs["platform"] = data["platform"]
+                with content_lock:
+                    pending_content[app_type] = {
+                        "content": content,
+                        "timestamp": time.time(),
+                        "changed": True,
+                        "kwargs": kwargs
+                    }
+            
+            # handle mock biometric state changes from game UI
+            elif data.get("type") == "mock_state":
+                state_num = data.get("state")
+                if state_num in [1, 2, 3, 4, 5]:
+                    mock.set_state(state_num)
+            
+            elif data.get("type") == "app_focus": 
+                app_type = data.get("app_type")
+                if app_type:
+                    broadcast_sync({
+                        "type": "app_focus_change",
+                        "app_type": app_type,
+                        "timestamp": time.time()
+                    })
+            
     except WebSocketDisconnect:
         connected_clients.remove(ws)
         print (f"[ws]Client offline({len(connected_clients)} total)")
