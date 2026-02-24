@@ -9,8 +9,9 @@ from PIL import Image
 import imagehash 
 import base64
 import io
-import threading 
+import threading
 import time
+from config import CAPTURE_WIDTH, JPEG_QUALITY, HASH_THRESHOLD
 
 class ScreenCapture:
     def __init__(self):
@@ -25,7 +26,7 @@ class ScreenCapture:
     def capture (self):
         # take a screenshot of the primary monitor
         # returns PIL image, base 64 string
-        # resizes to 1280px and compress JPEG quality to 60 
+        # resizes to CAPTURE_WIDTHpx and compress JPEG quality to 60 
         monitor = self.sct.monitors[1]
         screenshot = self.sct.grab(monitor)
 
@@ -33,14 +34,14 @@ class ScreenCapture:
         # mss gives BGRA format, so we use BGRX to drop the alpha channel
         img = Image.frombytes("RGB", screenshot.size, screenshot.bgra, "raw", "BGRX")
 
-        # resize to 1280px 
-        ratio = 1280 / img.width 
-        new_size = (1280, int (img.height * ratio))
-        img = img.resize(new_size, Image.LANCZOS)
+        # resize to CAPTURE_WIDTHpx 
+        ratio = CAPTURE_WIDTH / img.width 
+        new_size = (CAPTURE_WIDTH, int (img.height * ratio))
+        img = img.resize(new_size, Image.Resampling.LANCZOS)
 
         # compress to jpg and encode as base64
         buffer = io.BytesIO()
-        img.save(buffer, format = "JPEG", quality = 60)
+        img.save(buffer, format = "JPEG", quality = JPEG_QUALITY)
         b64 = base64.b64encode(buffer.getvalue()).decode()
         return img, b64
 
@@ -63,7 +64,7 @@ class ScreenCapture:
         self.last_hash = current_hash
 
         # threshold of 5 works well for detecting real content changes
-        return distance > 5
+        return distance > HASH_THRESHOLD
 
     def add_to_buffer(self, b64):
         """add ss to the rolling buffer - keeps last 5"""

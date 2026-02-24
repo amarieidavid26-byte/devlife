@@ -11,7 +11,8 @@ so claude can detect things that are similar
 
 
 import anthropic 
-import json 
+import json
+from config import VISION_MODEL, VISION_MAX_TOKENS
 
 VISION_SYSTEM_PROMPT = """ You are Ghost, an AI desktop analyst. You receive 
 screenshots of a user's computer screen. 
@@ -101,8 +102,8 @@ class VisionAnalyzer:
 
         # claude vision api call 
         response = self.client.messages.create(
-            model = "claude-sonnet-4-20250514", 
-            max_tokens = 500,
+            model = VISION_MODEL,
+            max_tokens = VISION_MAX_TOKENS,
             system = VISION_SYSTEM_PROMPT, 
             messages =  [{"role": "user", "content": content}]
         )

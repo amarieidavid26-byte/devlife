@@ -6,9 +6,9 @@ from config import CLAUDE_API_KEY
 from screen_capture import ScreenCapture
 from vision_analyzer import VisionAnalyzer
 from biometric_engine import BiometricEngine
-from mock_biometrics import BiometricEngine
+from mock_biometrics import MockBiometrics
 from ghost_brain import GhostBrain
-from context_tracker import ContextTracker
+from context_history import ContextTracker
 
 def main():
     print("=" * 50)
@@ -17,10 +17,10 @@ def main():
     print()
 
     capture = ScreenCapture()
-    vision = VisionAnalyzer()
+    vision = VisionAnalyzer(CLAUDE_API_KEY)
     mock = MockBiometrics()
     bio = BiometricEngine()
-    brain = GhostBrain()
+    brain = GhostBrain(CLAUDE_API_KEY)
     tracker = ContextTracker()
 
     # screen capture test
@@ -28,7 +28,7 @@ def main():
     try: 
         img, b64 = capture.capture()
         capture.add_to_buffer(b64)
-        print(f" Screenshot captured: {len(64):,} bytes (base64)")
+        print(f"  Screenshot captured: {len(b64):,} bytes (base64)")
         print(f" Image size: {img.size}")
         print(f" Buffer size: {len(capture.get_buffer())}")
     except Exception as e: 
@@ -49,7 +49,7 @@ def main():
             "mistake_description": None,
             "help_opportunity": "Could help with testing",
             "suggested_intervention": {
-                "type": "sugestion",
+                "type": "suggestion",
                 "message": "Tests are running well!",
                 "priority": "low",
                 "code_suggestions": None
@@ -144,11 +144,11 @@ def main():
     print("[6] Testing HRV-based stress classification...")
     bio.hrv_baseline = 65.0
     #simulate very low HRV (high stress) 
-    test_data = {"recovery": 70, "strain": 100, "sleepPerformance": 0.8, "hrv": 30, "heartRate": 85}
+    test_data = {"recovery": 70, "strain": 10, "sleepPerformance": 0.8, "hrv": 30, "heartRate": 85}
     state = bio.classify(test_data)
-    print(f" Low HRV (30ms vs 65ms baseline): state = {state}, stress = bio{bio.estimated_stress:.1f}")
+    print(f" Low HRV (30ms vs 65ms baseline): state = {state}, stress = {bio.estimated_stress:.1f}")
     # simulate normal HRV
-    tast_data["hrv"] = 62
+    test_data["hrv"] = 62
     state = bio.classify(test_data)
     print(f" Medium HRV: state = {state}, stress = {bio.estimated_stress:.1f}")
     # simulate low HRV 
@@ -174,4 +174,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

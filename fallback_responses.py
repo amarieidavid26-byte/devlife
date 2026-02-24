@@ -15,12 +15,12 @@ FALLBACKS = {
         "You're locked in",
         "..."
     ],
-    "STRESSED" = [
+    "STRESSED": [
         "Your stress level is beyond normal. Take a deep breath before continuing the work.",
         "You're making progress, even if it doesn't feel like it",
         "One step at a time. What's the smallest thing you can't fix?",
         "HRV is dropping. Maybe take a short walk?",
-        "Want to break this problem into smaller pieces?"
+        "Want to break this problem into smaller pieces?",
         "This is a tough one, but you will conquer",
         "I can see you're pushing through. Want to try a 60-second breathing exercise?",
         "Remember that every expert or legend was once stuck here too",
@@ -77,7 +77,7 @@ def get_fallback_intervention(state):
         "priority": "low",
         "reason": "fallback",
         "state": state, 
-        "buttons": ["Thanks", "Now now"],
+        "buttons": ["Thanks", "Not Now"],
         "code_suggestion": None
     }
     

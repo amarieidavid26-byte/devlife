@@ -17,15 +17,11 @@ from vision_analyzer import VisionAnalyzer
 from biometric_engine import BiometricEngine 
 from mock_biometrics import MockBiometrics 
 from ghost_brain import GhostBrain 
-from context_tracker import ContextTracker 
-from fallback_response import get_fallback_intervention 
+from context_history import ContextTracker
+from fallback_responses import get_fallback_intervention
 
 # instances global component
-capture = ScreenC3 server.py
-Traceback (most recent call last):
-  File "/Users/david/devlife/server.py", line 16, in <module>
-    from vision_analyzer import VisionAnalyzer
-ModuleNotFoundError: No module named 'vision_analyzer'apture()
+capture = ScreenCapture()
 vision = VisionAnalyzer(CLAUDE_API_KEY)
 bio = BiometricEngine(WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET)
 mock = MockBiometrics()
@@ -248,7 +244,7 @@ async def status():
         "biometric_state": bio.current_state, 
         "biometric_data": bio_data, 
         "last_analysis": vision.last_analysis,
-        "interventions_total": brain.intervention.count, 
+        "interventions_total": brain.intervention_count, 
         "interventions_accepted": brain.accepted_count,
         "interventions_ignored": brain.ignored_count,
         "session_stats": tracker.get_session_stats(),

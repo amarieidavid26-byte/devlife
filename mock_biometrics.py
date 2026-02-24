@@ -27,7 +27,7 @@ class MockBiometrics:
             "strain": 10.2,
             "recovery": 75,
             "sleepPerformance": 0.85,
-            "hrv": 65,
+            "hrv": 52,
             "estimated_stress": 1.2,
             # float — blood oxygen saturation percentage (from WHOOP pulse oximeter)
             "spo2": 97.5,
@@ -38,7 +38,7 @@ class MockBiometrics:
             "heartRate": 95,
             "strain": 18.5,
             "recovery": 45,
-            "sleepPerformance": 0.60,
+            "sleepPerformance": 0.72,
             "hrv": 22,
             "estimated_stress": 2.6,
             "spo2": 96.0,
