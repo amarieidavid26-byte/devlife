@@ -48,6 +48,14 @@ export class Ghost {
         this._bubble = null;
         this._bubbleRoot = document.getElementById('ghost-bubble-root');
         this._currentData = null;
+
+        // Critical intervention extras
+        this._vignette = null;
+        this._vignetteStyle = null;
+        this._atmosphere = null;
+
+        // Reaction tracking
+        this._stateInitialized = false;
     }
 
     _buildSprite() {
@@ -176,9 +184,46 @@ export class Ghost {
         }
     }
 
+    _showStateReaction(state) {
+        const STATE_EMOJIS = {
+            DEEP_FOCUS: '🟣',
+            STRESSED:   '😰',
+            FATIGUED:   '😴',
+            RELAXED:    '🧘',
+            WIRED:      '⚡',
+        };
+        const emoji = STATE_EMOJIS[state];
+        if (!emoji || !this.container.parent) return;
+
+        const reaction = new PIXI.Text(emoji, { fontSize: 36 });
+        reaction.anchor.set(0.5);
+        reaction.x = this.container.x;
+        reaction.y = this.container.y - 55;
+        reaction.zIndex = 99999;
+        this.container.parent.addChild(reaction);
+
+        const startY = reaction.y;
+        const startTime = Date.now();
+        const animate = () => {
+            const progress = (Date.now() - startTime) / 1400;
+            reaction.y = startY - progress * 45;
+            reaction.alpha = 1 - progress;
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                if (reaction.parent) reaction.parent.removeChild(reaction);
+                reaction.destroy();
+            }
+        };
+        requestAnimationFrame(animate);
+    }
+
     setStateTint(stateName) {
         if (!STATE_COLORS[stateName]) return;
+        const changed = stateName !== this._state;
         this._state = stateName;
+        if (changed && this._stateInitialized) this._showStateReaction(stateName);
+        this._stateInitialized = true;
 
         // Redraw body outline color
         this._bodyGfx.clear();
@@ -362,6 +407,28 @@ export class Ghost {
         this._bubble = el;
         this._bubbleIsCritical = isCritical;
 
+        // Critical: red vignette + screen shake
+        if (isCritical) {
+            this._removeVignette();
+            if (!document.getElementById('vignette-kf')) {
+                const ks = document.createElement('style');
+                ks.id = 'vignette-kf';
+                ks.textContent = `@keyframes vignetteFlash { 0%{opacity:.55} 100%{opacity:1} }`;
+                document.head.appendChild(ks);
+                this._vignetteStyle = ks;
+            }
+            const vignette = document.createElement('div');
+            vignette.style.cssText = [
+                'position:fixed;top:0;left:0;width:100vw;height:100vh',
+                'pointer-events:none;z-index:199',
+                'background:radial-gradient(ellipse at center,transparent 45%,rgba(255,40,40,0.38) 100%)',
+                'animation:vignetteFlash 1s ease-in-out infinite alternate',
+            ].join(';');
+            document.body.appendChild(vignette);
+            this._vignette = vignette;
+            if (this._atmosphere) this._atmosphere.triggerShake(520, 5);
+        }
+
         // Typewriter effect on message
         this._typewriterEffect(document.getElementById('ghost-msg'), data.message || '');
 
@@ -414,9 +481,14 @@ export class Ghost {
         this.dismissBubble(true);
     }
 
+    _removeVignette() {
+        if (this._vignette) { this._vignette.remove(); this._vignette = null; }
+    }
+
     dismissBubble(animate = true) {
         clearTimeout(this._autoDismissTimer);
         clearInterval(this._typewriterInterval);
+        this._removeVignette();
 
         if (!this._bubble) return;
         const el = this._bubble;
@@ -439,4 +511,7 @@ export class Ghost {
     // Called by main.js to wire up feedback sending
     setFeedbackHandler(fn) { this._onFeedback = fn; }
     setApplyFixHandler(fn) { this._onApplyFix = fn; }
+
+    // Link atmosphere for screen-shake on critical interventions
+    setAtmosphere(atm) { this._atmosphere = atm; }
 }

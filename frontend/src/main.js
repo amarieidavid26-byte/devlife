@@ -95,6 +95,9 @@ ePrompt.visible = false;
 ePrompt.zIndex  = 10000;
 worldContainer.addChild(ePrompt);
 
+// Link atmosphere to ghost so critical interventions can trigger screen shake
+ghost.setAtmosphere(atmosphere);
+
 // ── HUD (HTML) ────────────────────────────────────────────────────────────────
 const hud = new HUD();
 
@@ -243,6 +246,9 @@ pixiApp.ticker.add((delta) => {
     gameContainer.x += (camTargetX - gameContainer.x) * camLerp;
     gameContainer.y += (camTargetY - gameContainer.y) * camLerp;
 
+    // Screen shake (critical interventions — Fatigue Firewall)
+    atmosphere.applyScreenShake(gameContainer);
+
     // C1: Isometric z-sorting — higher screen Y = closer to camera = renders last
     furniture._items.forEach(item => { item.container.zIndex = item.container.y; });
     player.container.zIndex = player.container.y;
@@ -265,27 +271,53 @@ pixiApp.ticker.add((delta) => {
     furniture.updateHighlights(player.gridX, player.gridY);
 });
 
-// ── Splash screen ─────────────────────────────────────────────────────────────
+// ── Splash screen (ECG / "Beneath the Surface" edition) ──────────────────────
 const splash = document.createElement('div');
-splash.style.cssText = `
-    position:fixed;top:0;left:0;width:100vw;height:100vh;
-    background:#1a1a2e;z-index:9999;color:#e0e0e0;
-    display:flex;align-items:center;justify-content:center;flex-direction:column;
-    font-family:'Segoe UI',monospace,sans-serif;
-    transition:opacity 0.8s ease;
+splash.style.cssText = [
+    'position:fixed;top:0;left:0;width:100vw;height:100vh',
+    'background:#1a1a2e;z-index:9999;color:#e0e0e0',
+    'display:flex;align-items:center;justify-content:center;flex-direction:column',
+    "font-family:'Segoe UI',monospace,sans-serif",
+    'transition:opacity 0.8s ease',
+].join(';');
+
+// Inject keyframes
+const splashStyle = document.createElement('style');
+splashStyle.textContent = `
+    @keyframes ghostFloat { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-8px) scale(1.08)} }
+    @keyframes ecgDraw { from{stroke-dashoffset:520} to{stroke-dashoffset:0} }
+    @keyframes subFade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 `;
+document.head.appendChild(splashStyle);
+
 splash.innerHTML = `
-    <div style="font-size:48px;margin-bottom:16px">👻</div>
-    <div style="font-weight:700;font-size:24px;letter-spacing:0.1em">DEVLIFE</div>
-    <div style="color:#555;margin-top:8px;font-size:14px">Ghost is waking up…</div>
-    <div style="margin-top:24px;color:#333;font-size:12px">
-        WASD · E interact / close · click to interact · 1-5 states · ESC
+    <div style="font-size:54px;animation:ghostFloat 1.8s ease-in-out infinite;margin-bottom:12px;filter:drop-shadow(0 0 18px rgba(128,0,255,0.6))">👻</div>
+    <div style="font-weight:800;font-size:26px;letter-spacing:0.18em;color:#ffffff">DEVLIFE</div>
+    <svg width="300" height="64" style="margin:18px 0;overflow:visible" viewBox="0 0 300 64">
+        <path d="M0,32 L70,32 L80,30 L90,32 L100,8 L106,56 L112,32 L122,22 L132,32 L190,32 L300,32"
+              fill="none" stroke="#00c864" stroke-width="2.5"
+              stroke-dasharray="520" stroke-dashoffset="520"
+              style="animation:ecgDraw 1.1s cubic-bezier(.4,0,.2,1) 0.25s forwards;
+                     filter:drop-shadow(0 0 5px #00c864)"/>
+    </svg>
+    <div id="splash-sub" style="color:#888;font-size:13px;letter-spacing:0.05em;
+         animation:subFade 0.6s ease 0.7s both">
+        Reading what's beneath the surface…
+    </div>
+    <div style="margin-top:22px;color:#2e2e48;font-size:11px;letter-spacing:0.08em">
+        WASD · E interact · 1-5 states · ESC
     </div>
 `;
 document.body.appendChild(splash);
+
+// After 1.5s swap sub-text to "Connected", then fade out
+setTimeout(() => {
+    const sub = document.getElementById('splash-sub');
+    if (sub) { sub.style.color = '#00c864'; sub.textContent = '● Connected'; }
+}, 1500);
 setTimeout(() => {
     splash.style.opacity = '0';
-    setTimeout(() => splash.remove(), 800);
-}, 1800);
+    setTimeout(() => { splash.remove(); splashStyle.remove(); }, 820);
+}, 2200);
 
 console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');

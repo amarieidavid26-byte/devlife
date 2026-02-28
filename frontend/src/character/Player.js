@@ -49,6 +49,7 @@ export class Player {
 
         this._sprite = this._buildSprite();
         this.container.addChild(this._sprite);
+        // Container order: 0=shadow, 1=sprite — dust spawns at index 1 (between them)
 
         this._bindKeys();
         this._updateScreenPos();

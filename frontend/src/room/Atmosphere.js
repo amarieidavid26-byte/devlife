@@ -35,6 +35,15 @@ export class Atmosphere {
         this._curR = cfg.r; this._curG = cfg.g; this._curB = cfg.b;
         this._curAlpha = cfg.alpha;
 
+        // Screen shake state
+        this._shake = null;
+
+        // Flash overlay for state transitions
+        this._flashAlpha = 0;
+        this._flashColor = 0xffffff;
+        this._flashOverlay = new PIXI.Graphics();
+        this.container.addChild(this._flashOverlay);
+
         this._initParticles();
         this._redrawOverlay();
     }
@@ -43,7 +52,26 @@ export class Atmosphere {
         if (!STATE_CONFIG[stateName]) return;
         if (stateName === this._currentState && this._lerpT >= 1) return;
         this._targetState = stateName;
-        if (this._lerpT >= 1) this._lerpT = 0;
+        if (this._lerpT >= 1) {
+            this._lerpT = 0;
+            // Brief color flash on state change
+            this._flashAlpha = 0.22;
+            this._flashColor = STATE_CONFIG[stateName].color;
+        }
+    }
+
+    triggerShake(duration = 500, intensity = 4) {
+        this._shake = { duration, maxDuration: duration, intensity };
+    }
+
+    applyScreenShake(gameContainer) {
+        if (!this._shake || this._shake.duration <= 0) return;
+        const pct = this._shake.duration / this._shake.maxDuration;
+        const strength = this._shake.intensity * pct;
+        gameContainer.x += (Math.random() - 0.5) * strength * 2;
+        gameContainer.y += (Math.random() - 0.5) * strength * 2;
+        this._shake.duration -= 16;
+        if (this._shake.duration <= 0) this._shake = null;
     }
 
     transition(from, to) {
@@ -113,6 +141,17 @@ export class Atmosphere {
 
             if (this._lerpT >= 1) {
                 this._currentState = this._targetState;
+            }
+        }
+
+        // Flash overlay decay (state-change punch flash)
+        if (this._flashAlpha > 0) {
+            this._flashAlpha = Math.max(0, this._flashAlpha - 0.018 * delta);
+            this._flashOverlay.clear();
+            if (this._flashAlpha > 0) {
+                this._flashOverlay.beginFill(this._flashColor, this._flashAlpha);
+                this._flashOverlay.drawRect(0, 0, window.innerWidth, window.innerHeight);
+                this._flashOverlay.endFill();
             }
         }
 
