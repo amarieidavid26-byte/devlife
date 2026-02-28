@@ -47,7 +47,8 @@ export class NotesApp {
             background: '#0d1117',
             zIndex: '1000',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            pointerEvents: 'auto'
         });
         document.getElementById('app-overlay-root').appendChild(this.overlay);
         ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>

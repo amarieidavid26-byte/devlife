@@ -42,7 +42,8 @@ export class CodeEditorApp {
             background: '#1e1e1e',
             zIndex: '1000',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            pointerEvents: 'auto'
         });
         document.getElementById('app-overlay-root').appendChild(this.overlay);
         ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>

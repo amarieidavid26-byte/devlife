@@ -2,36 +2,41 @@
 // Player walks to second_monitor → this opens.
 
 const BOOKMARKS = {
-    'Stack Overflow': 'https://stackoverflow.com',
-    'MDN': 'https://developer.mozilla.org',
-    'GitHub': 'https://github.com',
-    'Claude': 'https://claude.ai'
+    'Wikipedia': 'https://en.m.wikipedia.org',
+    'W3Schools': 'https://www.w3schools.com',
+    'Python Docs': 'https://docs.python.org/3/',
+    'Google': 'https://www.google.com'
 };
 
 const HOME_HTML = `
 <div style="max-width:720px;margin:80px auto;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a2e">
     <h1 style="font-size:32px;margin-bottom:8px">DevLife Browser</h1>
-    <p style="color:#666;margin-bottom:48px">Click a bookmark or type a URL</p>
+    <p style="color:#666;margin-bottom:32px">Search or enter a URL</p>
+    <div style="width:60%;margin:0 auto 40px;position:relative">
+        <span style="position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:20px;pointer-events:none">&#128269;</span>
+        <input id="home-search" type="text" placeholder="Search Google or enter URL..."
+               style="width:100%;height:48px;background:#2a2a4a;color:#fff;border:none;border-radius:24px;padding:0 20px 0 50px;font-size:18px;outline:none;box-shadow:0 4px 16px rgba(0,0,0,0.15)"/>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:480px;margin:0 auto">
-        <div data-url="https://stackoverflow.com" style="background:#f8f0e3;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #e8e0d3;transition:transform 0.15s">
-            <div style="font-size:28px;margin-bottom:8px">📋</div>
-            <div style="font-weight:600">Stack Overflow</div>
-            <div style="font-size:12px;color:#888;margin-top:4px">Q&A for developers</div>
+        <div data-url="https://en.m.wikipedia.org" style="background:#f8f0e3;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #e8e0d3;transition:transform 0.15s">
+            <div style="font-size:28px;margin-bottom:8px">📚</div>
+            <div style="font-weight:600">Wikipedia</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">The free encyclopedia</div>
         </div>
-        <div data-url="https://developer.mozilla.org" style="background:#e3f0f8;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #d3e0e8;transition:transform 0.15s">
+        <div data-url="https://www.w3schools.com" style="background:#e3f0f8;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #d3e0e8;transition:transform 0.15s">
             <div style="font-size:28px;margin-bottom:8px">📖</div>
-            <div style="font-weight:600">MDN Web Docs</div>
-            <div style="font-size:12px;color:#888;margin-top:4px">Web documentation</div>
+            <div style="font-weight:600">W3Schools</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">Web tutorials</div>
         </div>
-        <div data-url="https://github.com" style="background:#e8e3f8;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #d8d3e8;transition:transform 0.15s">
-            <div style="font-size:28px;margin-bottom:8px">🐙</div>
-            <div style="font-weight:600">GitHub</div>
-            <div style="font-size:12px;color:#888;margin-top:4px">Code repository</div>
+        <div data-url="https://docs.python.org/3/" style="background:#e8e3f8;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #d8d3e8;transition:transform 0.15s">
+            <div style="font-size:28px;margin-bottom:8px">🐍</div>
+            <div style="font-weight:600">Python Docs</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">Python 3 reference</div>
         </div>
-        <div data-url="https://claude.ai" style="background:#f8e8e3;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #e8d8d3;transition:transform 0.15s">
-            <div style="font-size:28px;margin-bottom:8px">🤖</div>
-            <div style="font-weight:600">Claude</div>
-            <div style="font-size:12px;color:#888;margin-top:4px">AI assistant</div>
+        <div data-url="https://www.google.com" style="background:#f8e8e3;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #e8d8d3;transition:transform 0.15s">
+            <div style="font-size:28px;margin-bottom:8px">🔍</div>
+            <div style="font-weight:600">Google</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">Search the web</div>
         </div>
     </div>
 </div>
@@ -51,6 +56,9 @@ export class BrowserApp {
         this.refreshBtn = null;
         this.blockedDiv = null;
         this.loadTimeout = null;
+        this._history = [];
+        this._historyIndex = -1;
+        this._navigatingFromHistory = false;
     }
 
     open() {
@@ -64,7 +72,8 @@ export class BrowserApp {
             background: '#1a1a2e',
             zIndex: '1000',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            pointerEvents: 'auto'
         });
         document.getElementById('app-overlay-root').appendChild(this.overlay);
         ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>
@@ -105,10 +114,13 @@ export class BrowserApp {
         Object.assign(this.backBtn.style, navBtnStyle);
         this.backBtn.textContent = '\u2190';
         this.backBtn.addEventListener('click', () => {
-            if (this.iframe && this.iframe.style.display !== 'none') {
-                try { this.iframe.contentWindow.history.back(); } catch (e) {}
-            } else {
+            if (this._historyIndex <= 0) {
                 this.showHome();
+            } else {
+                this._historyIndex--;
+                this._navigatingFromHistory = true;
+                this._loadUrl(this._history[this._historyIndex]);
+                this._updateNavButtons();
             }
         });
         row1.appendChild(this.backBtn);
@@ -118,8 +130,11 @@ export class BrowserApp {
         Object.assign(this.forwardBtn.style, navBtnStyle);
         this.forwardBtn.textContent = '\u2192';
         this.forwardBtn.addEventListener('click', () => {
-            if (this.iframe && this.iframe.style.display !== 'none') {
-                try { this.iframe.contentWindow.history.forward(); } catch (e) {}
+            if (this._historyIndex < this._history.length - 1) {
+                this._historyIndex++;
+                this._navigatingFromHistory = true;
+                this._loadUrl(this._history[this._historyIndex]);
+                this._updateNavButtons();
             }
         });
         row1.appendChild(this.forwardBtn);
@@ -239,6 +254,18 @@ export class BrowserApp {
             inset: '0'
         });
         this.homeDiv.innerHTML = HOME_HTML;
+        this.homeDiv.querySelector('#home-search').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                let q = e.target.value.trim();
+                if (!q) return;
+                if (q.includes('.') && !q.includes(' ') && !q.startsWith('http')) {
+                    q = 'https://' + q;
+                } else if (!q.startsWith('http')) {
+                    q = 'https://www.google.com/search?igu=1&q=' + encodeURIComponent(q);
+                }
+                this.navigate(q);
+            }
+        });
         this.homeDiv.addEventListener('click', (e) => {
             const tile = e.target.closest('[data-url]');
             if (tile) this.navigate(tile.dataset.url);
@@ -308,6 +335,7 @@ export class BrowserApp {
         this.overlay.appendChild(contentWrapper);
 
         this.showHome();
+        this._updateNavButtons();
         this.isOpen = true;
     }
 
@@ -317,10 +345,27 @@ export class BrowserApp {
         this.iframe.style.display = 'none';
         this.blockedDiv.style.display = 'none';
         this.iframe.src = 'about:blank';
+        this._history = [];
+        this._historyIndex = -1;
+        this._updateNavButtons();
         this.socket.sendContentUpdate(this.appType, 'devlife://home\nDevLife Browser Home Page', { url: 'devlife://home' });
+        const searchInput = this.homeDiv.querySelector('#home-search');
+        if (searchInput) setTimeout(() => searchInput.focus(), 150);
     }
 
     navigate(url) {
+        // Truncate forward history when navigating to a new page
+        if (!this._navigatingFromHistory) {
+            this._history = this._history.slice(0, this._historyIndex + 1);
+            this._history.push(url);
+            this._historyIndex = this._history.length - 1;
+        }
+        this._navigatingFromHistory = false;
+        this._updateNavButtons();
+        this._loadUrl(url);
+    }
+
+    _loadUrl(url) {
         this.addressBar.value = url;
         this.homeDiv.style.display = 'none';
         this.blockedDiv.style.display = 'none';
@@ -366,6 +411,16 @@ export class BrowserApp {
         this.blockedDiv.querySelector('#browser-go-home').addEventListener('click', () => this.showHome());
     }
 
+    _updateNavButtons() {
+        if (!this.backBtn) return;
+        const canBack = this._historyIndex >= 0;
+        const canForward = this._historyIndex < this._history.length - 1;
+        this.backBtn.style.opacity = canBack ? '1' : '0.3';
+        this.backBtn.style.cursor = canBack ? 'pointer' : 'default';
+        this.forwardBtn.style.opacity = canForward ? '1' : '0.3';
+        this.forwardBtn.style.cursor = canForward ? 'pointer' : 'default';
+    }
+
     close() {
         if (!this.isOpen) return;
         clearTimeout(this.loadTimeout);
@@ -380,6 +435,10 @@ export class BrowserApp {
         this.iframe = null;
         this.homeDiv = null;
         this.blockedDiv = null;
+        this.backBtn = null;
+        this.forwardBtn = null;
+        this._history = [];
+        this._historyIndex = -1;
         this.isOpen = false;
     }
 }

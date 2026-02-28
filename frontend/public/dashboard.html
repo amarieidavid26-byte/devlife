@@ -42,7 +42,7 @@
         }
         .topbar-logo{font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:0.18em;color:#fff;font-size:13px}
         .topbar-logo span{color:var(--state-color,#00c864);transition:color 0.5s}
-        .topbar-clock{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#666;letter-spacing:0.1em}
+        .topbar-clock{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#ccc;letter-spacing:0.1em}
         .topbar-right{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.06em}
         .session-dot{width:8px;height:8px;border-radius:50%;background:#333;transition:background 0.3s;flex-shrink:0}
         .session-dot.on{background:#00c864;animation:pulseGlow 2s ease-in-out infinite}
@@ -60,7 +60,7 @@
         /* Section headers — telemetry labels */
         .sec-hdr{
             font-size:11px;text-transform:uppercase;letter-spacing:2px;
-            color:#666;font-weight:600;margin-bottom:12px
+            color:#aaa;font-weight:600;margin-bottom:12px
         }
 
         /* Heart rate hero */
@@ -72,7 +72,7 @@
             color:#ffffff;line-height:1;transition:opacity 0.1s;
             text-shadow:0 0 20px var(--state-color,rgba(0,200,100,0.3))
         }
-        .hr-unit{font-family:'JetBrains Mono',monospace;font-size:24px;color:#555;font-weight:400}
+        .hr-unit{font-family:'JetBrains Mono',monospace;font-size:24px;color:#888;font-weight:400}
         @keyframes heartbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}}
 
         /* Metric trio */
@@ -82,8 +82,8 @@
             color:#ffffff;line-height:1;
             text-shadow:0 0 12px var(--state-color,rgba(0,200,100,0.2))
         }
-        .metric .unit{font-size:18px;font-weight:400;color:#555}
-        .metric .lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666;margin-top:6px}
+        .metric .unit{font-size:18px;font-weight:400;color:#888}
+        .metric .lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa;margin-top:6px}
 
         /* State name — dominant */
         .state-section{}
@@ -91,13 +91,13 @@
             font-family:'JetBrains Mono',monospace;font-size:64px;font-weight:700;
             line-height:1;transition:color 0.5s
         }
-        .state-lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666;margin-top:8px}
+        .state-lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa;margin-top:8px}
 
         /* Stress bar */
         .stress-section{}
         .stress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-        .stress-header .lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666}
-        .stress-header .val{font-family:'JetBrains Mono',monospace;font-size:14px;color:#999}
+        .stress-header .lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa}
+        .stress-header .val{font-family:'JetBrains Mono',monospace;font-size:14px;color:#ccc}
         .stress-track{width:100%;height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
         .stress-fill{height:100%;border-radius:4px;transition:width 0.6s ease,background 0.6s ease}
 
@@ -112,7 +112,7 @@
         .gauge-box{text-align:center}
         .gauge-box .sec-hdr{margin-bottom:8px}
         .gauge-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#ffffff}
-        .gauge-sub{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666;margin-top:4px}
+        .gauge-sub{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa;margin-top:4px}
 
         /* ── RIGHT PANEL ── */
         .right{
@@ -132,7 +132,7 @@
             transition:border-color 0.4s
         }
         .threat-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;transition:all 0.4s}
-        .threat-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666}
+        .threat-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa}
         .threat-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;letter-spacing:1px;transition:color 0.4s}
         .threat.nominal .threat-dot{background:#00c864;box-shadow:0 0 10px rgba(0,200,100,0.5)}
         .threat.nominal .threat-val{color:#00c864}
@@ -147,28 +147,28 @@
 
         /* Intervention count */
         .int-count{
-            font-family:'JetBrains Mono',monospace;font-size:14px;color:#555;
+            font-family:'JetBrains Mono',monospace;font-size:14px;color:#ccc;
             letter-spacing:1px;padding-bottom:4px;
             border-bottom:1px solid rgba(255,255,255,0.04)
         }
         .int-count strong{font-size:20px;color:#ffffff;font-weight:700}
 
         /* Log */
-        .log-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666;font-weight:600}
+        .log-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa;font-weight:600}
         .log-scroll{flex:1;overflow-y:auto;scrollbar-width:none}
         .log-scroll::-webkit-scrollbar{display:none}
         .log-entry{padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
         .log-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
         .log-icon{font-size:14px;line-height:1}
-        .log-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:#444}
+        .log-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:#888}
         .log-badge{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;color:#fff}
         .log-state{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;color:#fff}
-        .log-msg{font-size:13px;color:#aaa;line-height:1.55}
+        .log-msg{font-size:13px;color:#ddd;line-height:1.55}
         .log-entry.critical{
             background:rgba(255,50,50,0.04);border-left:3px solid #ff5050;
             padding-left:14px;margin-left:-14px
         }
-        .log-empty{color:#333;font-size:13px;letter-spacing:0.08em;padding:40px 0;text-align:center;
+        .log-empty{color:#666;font-size:13px;letter-spacing:0.08em;padding:40px 0;text-align:center;
             font-family:'JetBrains Mono',monospace}
 
         /* ── BOTTOM ECG ── */
@@ -182,10 +182,10 @@
         @keyframes ecgAlarm{0%,100%{border-top-color:#ff5050}50%{border-top-color:rgba(255,50,50,0.15)}}
         .ecg-canvas{width:100%;height:100%;display:block}
         .ecg-lbl-left{position:absolute;top:12px;left:20px;font-family:'JetBrains Mono',monospace;
-            font-size:11px;color:#333;text-transform:uppercase;letter-spacing:2px}
+            font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px}
         .ecg-lbl-right{position:absolute;top:10px;right:24px;display:flex;align-items:baseline;gap:5px}
-        .ecg-bpm-num{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#555;transition:color 0.3s}
-        .ecg-bpm-unit{font-family:'JetBrains Mono',monospace;font-size:12px;color:#333}
+        .ecg-bpm-num{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#ccc;transition:color 0.3s}
+        .ecg-bpm-unit{font-family:'JetBrains Mono',monospace;font-size:12px;color:#888}
 
         /* ── FIREWALL ALERT OVERLAY ── */
         .firewall-alert{
@@ -218,8 +218,8 @@
         <div class="topbar-clock" id="clock">--:--:--</div>
         <div class="topbar-right">
             <span class="session-dot" id="session-dot"></span>
-            <span id="session-label" style="color:#555">OFFLINE</span>
-            <span id="session-timer" style="color:#444">00:00:00</span>
+            <span id="session-label" style="color:#888">OFFLINE</span>
+            <span id="session-timer" style="color:#888">00:00:00</span>
         </div>
     </div>
 
@@ -313,7 +313,7 @@
                     </svg>
                     <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
                         <div class="gauge-val" id="cog-val" style="font-size:24px">0%</div>
-                        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#555;margin-top:2px">INDEX</div>
+                        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-top:2px">INDEX</div>
                     </div>
                 </div>
             </div>
@@ -614,7 +614,7 @@ function drawSparkline() {
     ctx.restore();
 
     // Axis labels
-    ctx.fillStyle = '#555';
+    ctx.fillStyle = '#999';
     ctx.font = '10px JetBrains Mono, monospace';
     ctx.textAlign = 'right';
     ctx.fillText(Math.round(max) + ' ms', W - 8, 12);
@@ -646,7 +646,7 @@ function lerpLoop() {
     // ECG BPM label
     const bpmRound = Math.round(ecgBPM);
     ecgBpmNum.textContent = bpmRound;
-    ecgBpmNum.style.color = bpmRound > 100 ? '#ff5050' : '#555';
+    ecgBpmNum.style.color = bpmRound > 100 ? '#ff5050' : '#ccc';
     if (bpmRound > 100) ecgContainerEl.classList.add('alarm');
     else                ecgContainerEl.classList.remove('alarm');
 
@@ -793,7 +793,7 @@ function connect() {
         isConnected = false;
         sessionDot.classList.remove('on');
         sessionLabel.textContent = 'OFFLINE';
-        sessionLabel.style.color = '#555';
+        sessionLabel.style.color = '#888';
         setTimeout(connect, 3000);
     };
 

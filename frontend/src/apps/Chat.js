@@ -65,7 +65,8 @@ export class ChatApp {
             inset: '0',
             background: '#111',
             zIndex: '1000',
-            display: 'flex'
+            display: 'flex',
+            pointerEvents: 'auto'
         });
         document.getElementById('app-overlay-root').appendChild(this.overlay);
         ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>

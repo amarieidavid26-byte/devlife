@@ -51,7 +51,8 @@ export class TerminalApp {
             zIndex: '1000',
             display: 'flex',
             flexDirection: 'column',
-            fontFamily: "'Courier New', 'Consolas', monospace"
+            fontFamily: "'Courier New', 'Consolas', monospace",
+            pointerEvents: 'auto'
         });
         document.getElementById('app-overlay-root').appendChild(this.overlay);
         ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>
