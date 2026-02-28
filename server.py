@@ -408,13 +408,20 @@ async def websocket_endpoint(ws: WebSocket):
 
             # handle the user feedback from the Ghost interventions
             if data.get("type") == "feedback":
-                brain.user_feedback(data.get("action", ""))
-                # suppress re-analysis for 10s so dismissing doesn't immediately re-trigger
-                if last_intervention_hash is not None:
-                    suppressed_hashes[last_intervention_hash] = time.time() + 10
-                    # evict expired entries to prevent unbounded growth
-                    now = time.time()
-                    suppressed_hashes = {h: t for h, t in suppressed_hashes.items() if t > now}
+                action = data.get("action", "")
+                brain.user_feedback(action)
+                if action == "Apply Fix":
+                    # Apply Fix changes the code — clear everything so Ghost re-analyzes immediately
+                    intervention_cooldown_until = 0
+                    last_analyzed_hashes.clear()
+                    suppressed_hashes.clear()
+                else:
+                    # suppress re-analysis for 10s so dismissing doesn't immediately re-trigger
+                    if last_intervention_hash is not None:
+                        suppressed_hashes[last_intervention_hash] = time.time() + 10
+                        # evict expired entries to prevent unbounded growth
+                        now = time.time()
+                        suppressed_hashes = {h: t for h, t in suppressed_hashes.items() if t > now}
 
             elif data.get("type") == "content_update":
                 app_type = data.get("app_type", "code")
