@@ -140,6 +140,9 @@ export class CodeEditorApp {
                 cursor_line: position ? position.lineNumber : 1
             });
         });
+
+        // Auto-focus so the user can type immediately without clicking
+        this.editor.focus();
     }
 
     close() {

@@ -211,6 +211,13 @@ socket.on('state_change', (data) => {
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
+    // 1-5: ALWAYS change mock biometric state, even inside app overlays
+    if (e.key >= '1' && e.key <= '5') {
+        e.preventDefault();
+        socket.sendMockState(parseInt(e.key));
+        return;
+    }
+
     // Escape always works (closes apps/bubbles even while typing)
     if (e.key === 'Escape') {
         if (ghost._bubble) { ghost.dismissBubble(true); return; }
@@ -218,17 +225,16 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    // Skip game shortcuts while the user is typing inside an app's input/editor
+    // Don't capture WASD/E when an app overlay is open — let the app handle them
+    if (activeApp) return;
+
+    // Skip game shortcuts while typing in an input field (e.g. HUD search)
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
 
     if (e.key.toLowerCase() === 'e') {
-        if (activeApp) { closeAllApps(); return; } // E also closes open apps
         const name = furniture.getNearbyInteractable(player.gridX, player.gridY);
         if (name) furniture.emit('interact', name);
-    }
-    if (['1','2','3','4','5'].includes(e.key)) {
-        socket.sendMockState(parseInt(e.key));
     }
 });
 

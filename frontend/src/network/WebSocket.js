@@ -95,7 +95,7 @@ export class GhostSocket {
                 ...metadata,
                 timestamp: new Date().toISOString()
             });
-        }, 3000);
+        }, 1500);
     }
 
     sendFeedback(action) {

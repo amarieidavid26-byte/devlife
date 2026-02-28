@@ -253,7 +253,7 @@ def ghost_loop():
 
         except Exception as e:
             print(f"[ghost_loop] Error: {e}")
-        sleep_time = modifiers.get("capture_interval", 3)
+        sleep_time = min(modifiers.get("capture_interval", 3), 3)
         time.sleep(sleep_time)
 
 # lifecycle of the app
@@ -438,6 +438,10 @@ async def websocket_endpoint(ws: WebSocket):
                 state_num = data.get("state")
                 if state_num in [1, 2, 3, 4, 5]:
                     mock.set_state(state_num)
+                    # immediately classify and broadcast — don't wait for biometric_loop
+                    data_now = mock.get_data()
+                    new_state = bio.classify(data_now)
+                    await ws.send_json(build_biometric_msg(data_now, new_state))
             
             elif data.get("type") == "app_focus": 
                 app_type = data.get("app_type")
