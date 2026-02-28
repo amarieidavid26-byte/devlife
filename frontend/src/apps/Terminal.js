@@ -129,6 +129,8 @@ export class TerminalApp {
 
         this.inputEl = document.createElement('input');
         this.inputEl.type = 'text';
+        this.inputEl.tabIndex = 0;
+        this.inputEl.autofocus = true;
         Object.assign(this.inputEl.style, {
             flex: '1',
             background: 'transparent',
@@ -172,7 +174,14 @@ export class TerminalApp {
         inputLine.appendChild(this.inputEl);
         this.overlay.appendChild(inputLine);
 
-        this.inputEl.focus();
+        // Delayed focus — DOM may not be painted yet on the synchronous call
+        setTimeout(() => { this.inputEl.focus(); }, 150);
+
+        // Clicking anywhere in the terminal re-focuses the input
+        this.overlay.addEventListener('click', () => {
+            if (this.inputEl) this.inputEl.focus();
+        });
+
         this.isOpen = true;
     }
 
