@@ -7,6 +7,8 @@ import { Atmosphere }   from './room/Atmosphere.js';
 import { Player }       from './character/Player.js';
 import { Ghost }        from './character/Ghost.js';
 import { HUD }          from './hud/HUD.js';
+import { BeneathView }  from './hud/BeneathView.js';
+import { DemoHotbar }   from './hud/DemoHotbar.js';
 import { CodeEditorApp } from './apps/CodeEditor.js';
 import { TerminalApp }  from './apps/Terminal.js';
 import { BrowserApp }   from './apps/Browser.js';
@@ -99,7 +101,10 @@ worldContainer.addChild(ePrompt);
 ghost.setAtmosphere(atmosphere);
 
 // ── HUD (HTML) ────────────────────────────────────────────────────────────────
-const hud = new HUD();
+const hud         = new HUD();
+const beneathView = new BeneathView();
+const demoHotbar  = new DemoHotbar();
+demoHotbar.setClickHandler((key) => socket.sendMockState(key));
 
 // ── App overlays ──────────────────────────────────────────────────────────────
 const apps = {
@@ -206,12 +211,15 @@ socket.on('intervention',     (data) => ghost.showSpeechBubble(data));
 
 socket.on('biometric_update', (data) => {
     hud.update(data);
+    beneathView.update(data);
+    demoHotbar.setActive(data.state);
     atmosphere.setState(data.state);
     ghost.setStateTint(data.state);
     furniture.setMonitorState(data.state);
 });
 
 socket.on('state_change', (data) => {
+    demoHotbar.setActive(data.to);
     atmosphere.transition(data.from, data.to);
     ghost.setStateTint(data.to);
     furniture.setMonitorState(data.to);
@@ -230,6 +238,13 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (ghost._bubble) { ghost.dismissBubble(true); return; }
         closeAllApps();
+        return;
+    }
+
+    // TAB: toggle Beneath the Surface overlay (only when no app is open)
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        if (!activeApp) beneathView.toggle();
         return;
     }
 
@@ -262,6 +277,20 @@ pixiApp.ticker.add((delta) => {
 
     // Screen shake (critical interventions — Fatigue Firewall)
     atmosphere.applyScreenShake(gameContainer);
+
+    // Beneath the Surface: feed screen-space positions for rings + particles
+    if (beneathView._visible) {
+        beneathView.setPositions(
+            {
+                x: gameContainer.x + player.container.x * GAME_ZOOM,
+                y: gameContainer.y + player.container.y * GAME_ZOOM,
+            },
+            {
+                x: gameContainer.x + ghost.container.x * GAME_ZOOM,
+                y: gameContainer.y + ghost.container.y * GAME_ZOOM,
+            }
+        );
+    }
 
     // C1: Isometric z-sorting — higher screen Y = closer to camera = renders last
     furniture._items.forEach(item => { item.container.zIndex = item.container.y; });
