@@ -54,6 +54,8 @@ export class BeneathView {
     }
 
     show() {
+        // Cancel any orphaned loop from a previous show() call
+        if (this._animFrame) { cancelAnimationFrame(this._animFrame); this._animFrame = null; }
         this._visible   = true;
         this._particles = [];
         this._lastParticleSpawn = 0;
@@ -183,10 +185,10 @@ export class BeneathView {
         ];
 
         metrics.forEach((text, i) => {
-            const ox = Math.sin(t * 0.7 + i * 1.8) * 10;
-            const oy = Math.sin(t * 0.5 + i * 2.2) * 5;
-            const ax = px - 50 + i * 60 + ox;
-            const ay = py - 62 + oy;
+            const ox = Math.sin(t * 0.7 + i * 1.8) * 8;
+            const oy = Math.sin(t * 0.5 + i * 2.2) * 4;
+            const ax = px - 110 + i * 110 + ox;
+            const ay = py - 48 + oy;
             ctx.save();
             ctx.globalAlpha = 0.88;
             ctx.font        = 'bold 14px monospace';
@@ -206,7 +208,7 @@ export class BeneathView {
         ctx.shadowBlur  = 10;
         ctx.globalAlpha = 0.65;
         ctx.textAlign   = 'center';
-        ctx.fillText(this._data.state, px, py - 78);
+        ctx.fillText(this._data.state, px, py - 90);
         ctx.restore();
 
         // ── 7. Title at top center ─────────────────────────────────────────────
