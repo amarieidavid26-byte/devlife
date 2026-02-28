@@ -190,6 +190,14 @@ ghost.setFeedbackHandler((label) => {
     }
 });
 
+// ── Apply Fix: insert code suggestion into the active code editor ────────────
+ghost.setApplyFixHandler((code) => {
+    const editor = apps.desk_computer;
+    if (editor && editor.isOpen && code) {
+        editor.replaceContent(code);
+    }
+});
+
 // ── WebSocket events ──────────────────────────────────────────────────────────
 socket.on('connected',    ()     => hud.setConnected(true));   // V5
 socket.on('disconnected', ()     => hud.setConnected(false));  // V5

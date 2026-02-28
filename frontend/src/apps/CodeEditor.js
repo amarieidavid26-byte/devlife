@@ -145,6 +145,25 @@ export class CodeEditorApp {
         this.editor.focus();
     }
 
+    replaceContent(newCode) {
+        if (!this.editor) return;
+        this.editor.setValue(newCode);
+
+        // Green flash to confirm the fix was applied
+        const flash = document.createElement('div');
+        Object.assign(flash.style, {
+            position: 'absolute',
+            inset: '0',
+            background: 'rgba(0,200,100,0.12)',
+            pointerEvents: 'none',
+            transition: 'opacity 0.6s ease-out',
+            zIndex: '10'
+        });
+        this.overlay.appendChild(flash);
+        requestAnimationFrame(() => { flash.style.opacity = '0'; });
+        setTimeout(() => flash.remove(), 650);
+    }
+
     close() {
         if (!this.isOpen) return;
         if (this.editor) {
