@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevLife — Ghost Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a14; color: #e0e0e0; font-family: 'Inter', sans-serif; }
+
+        .dashboard {
+            width: 100%; height: 100%; padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 24px;
+        }
+
+        .title-bar {
+            grid-column: 1 / -1;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 8px;
+        }
+        .title-bar h1 { font-size: 20px; font-weight: 700; color: #fff; }
+        .title-bar .meta { display: flex; align-items: center; gap: 20px; font-size: 13px; color: #888; }
+        .session-timer { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: #fff; }
+        .connection-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; transition: background 0.3s; }
+        .connection-dot.connected { background: #00C864; }
+        .connection-dot.disconnected { background: #FF5050; }
+
+        .card {
+            background: rgba(20, 20, 40, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        .card h2 { font-size: 15px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+
+        .state-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 14px;
+            color: #fff;
+            margin-bottom: 20px;
+            transition: background-color 0.5s ease;
+        }
+
+        .bio-big { font-family: 'JetBrains Mono', monospace; font-size: 48px; font-weight: 700; color: #fff; line-height: 1; }
+        .bio-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .bio-unit { font-size: 18px; font-weight: 400; color: #888; }
+
+        .bio-row { display: flex; gap: 24px; margin-bottom: 20px; align-items: flex-end; }
+        .bio-item { flex: 1; }
+
+        .bar-track { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+        .bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease, background 0.5s ease; }
+
+        .recovery-gauge { position: relative; width: 120px; height: 120px; margin: 0 auto 16px; }
+        .recovery-gauge svg { transform: rotate(-90deg); }
+        .recovery-gauge .value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: #fff; }
+
+        .secondary-readings { display: flex; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .secondary-readings .item { flex: 1; }
+        .secondary-readings .val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 600; color: #ccc; }
+        .secondary-readings .lbl { font-size: 11px; color: #666; margin-top: 2px; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        .heart-icon { display: inline-block; animation: pulse 1s infinite; }
+
+        .intervention-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+        .intervention-card .timestamp { font-size: 11px; color: #555; font-family: 'JetBrains Mono', monospace; }
+        .intervention-card .badges { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
+        .badge { padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; color: #fff; }
+        .badge-app { background: rgba(255,255,255,0.1); }
+        .intervention-card .msg { font-size: 14px; color: #e0e0e0; line-height: 1.4; margin: 8px 0; }
+        .intervention-card .btns { display: flex; gap: 4px; flex-wrap: wrap; }
+        .intervention-card .btns span { background: rgba(255,255,255,0.08); color: #888; padding: 2px 10px; border-radius: 10px; font-size: 11px; }
+
+        @keyframes pulseCritical {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 80, 80, 0.4); }
+            50% { box-shadow: 0 0 12px 4px rgba(255, 80, 80, 0.2); }
+        }
+        .badge-critical { animation: pulseCritical 1.5s infinite; }
+
+        .stat-big { font-family: 'JetBrains Mono', monospace; font-size: 40px; font-weight: 700; color: #fff; line-height: 1; }
+        .stat-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+        .stat-row { display: flex; gap: 24px; margin-bottom: 20px; }
+        .stat-item { flex: 1; }
+
+        .feedback-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .feedback-item { flex: 1; text-align: center; padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.04); }
+        .feedback-item .num { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; color: #fff; }
+        .feedback-item .lbl { font-size: 10px; color: #888; text-transform: uppercase; margin-top: 2px; }
+
+        .current-app { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; padding: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 10px; }
+        .current-app .icon { font-size: 20px; }
+        .current-app .name { font-size: 14px; color: #ccc; font-weight: 500; }
+
+        .state-timeline { width: 100%; height: 16px; border-radius: 8px; overflow: hidden; display: flex; margin-bottom: 16px; background: rgba(255,255,255,0.05); }
+        .state-timeline .segment { height: 100%; transition: width 0.5s ease; min-width: 1px; }
+
+        .state-times { display: flex; flex-direction: column; gap: 6px; }
+        .state-time-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .state-time-row .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .state-time-row .name { color: #ccc; width: 100px; }
+        .state-time-row .dur { font-family: 'JetBrains Mono', monospace; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="title-bar">
+            <h1>DevLife — Ghost Dashboard</h1>
+            <div class="meta">
+                <span class="session-timer" id="session-timer">00:00:00</span>
+                <span><span class="connection-dot disconnected" id="conn-dot"></span><span id="conn-text">Disconnected</span></span>
+            </div>
+        </div>
+
+        <!-- Column 1: Biometrics -->
+        <div class="card" id="bio-card">
+            <h2>Biometrics</h2>
+            <div class="state-badge" id="state-badge" style="background:#00C864">RELAXED</div>
+
+            <div class="bio-row">
+                <div class="bio-item">
+                    <div><span class="heart-icon" id="heart-icon">❤️</span> <span class="bio-big" id="hr-value">--</span><span class="bio-unit"> bpm</span></div>
+                    <div class="bio-label">Heart Rate</div>
+                </div>
+                <div class="bio-item">
+                    <div><span class="bio-big" style="font-size:36px" id="hrv-value">--</span><span class="bio-unit"> ms</span></div>
+                    <div class="bio-label">HRV</div>
+                </div>
+            </div>
+
+            <div class="recovery-gauge">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="#00C864" stroke-width="10" stroke-linecap="round"
+                        stroke-dasharray="326.7" stroke-dashoffset="326.7" id="recovery-ring"
+                        style="transition: stroke-dashoffset 0.5s ease, stroke 0.5s ease"/>
+                </svg>
+                <div class="value" id="recovery-value">--%</div>
+            </div>
+            <div class="bio-label" style="text-align:center;margin-bottom:16px">Recovery</div>
+
+            <div style="margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                    <span class="bio-label">Strain</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#ccc" id="strain-value">--</span><span style="font-size:11px;color:#666"> / 21</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" id="strain-bar" style="width:0%;background:#0096FF"></div></div>
+            </div>
+
+            <div style="margin-bottom:12px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                    <span class="bio-label">Stress</span>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#ccc" id="stress-value">--</span><span style="font-size:11px;color:#666"> / 3</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" id="stress-bar" style="width:0%;background:#00C864"></div></div>
+            </div>
+
+            <div class="secondary-readings">
+                <div class="item">
+                    <div class="val" id="spo2-value">--</div>
+                    <div class="lbl">SpO2 %</div>
+                </div>
+                <div class="item">
+                    <div class="val" id="temp-value">--</div>
+                    <div class="lbl">Skin Temp °C</div>
+                </div>
+                <div class="item">
+                    <div class="val" id="sleep-value">--</div>
+                    <div class="lbl">Sleep %</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Ghost Activity -->
+        <div class="card" id="activity-card">
+            <h2>Ghost Activity</h2>
+            <div id="activity-feed" style="display:flex;flex-direction:column;gap:0"></div>
+            <div id="activity-empty" style="text-align:center;color:#555;padding:40px 0;font-size:14px">Waiting for Ghost interventions...</div>
+        </div>
+
+        <!-- Column 3: Session Stats -->
+        <div class="card" id="stats-card">
+            <h2>Session Stats</h2>
+
+            <div class="stat-row">
+                <div class="stat-item">
+                    <div class="stat-big" id="focus-score">0%</div>
+                    <div class="stat-label">Focus Score</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-big" id="total-interventions">0</div>
+                    <div class="stat-label">Interventions</div>
+                </div>
+            </div>
+
+            <div class="feedback-row">
+                <div class="feedback-item">
+                    <div class="num" id="fb-accepted">0</div>
+                    <div class="lbl">Accepted</div>
+                </div>
+                <div class="feedback-item">
+                    <div class="num" id="fb-dismissed">0</div>
+                    <div class="lbl">Dismissed</div>
+                </div>
+                <div class="feedback-item">
+                    <div class="num" id="fb-snoozed">0</div>
+                    <div class="lbl">Snoozed</div>
+                </div>
+            </div>
+
+            <div class="current-app" id="current-app">
+                <span class="icon">🏠</span>
+                <span class="name">Room</span>
+            </div>
+
+            <div class="bio-label" style="margin-bottom:8px">State Timeline</div>
+            <div class="state-timeline" id="state-timeline"></div>
+
+            <div class="state-times" id="state-times"></div>
+        </div>
+    </div>
+
+    <script>
+        const STATE_COLORS = {
+            DEEP_FOCUS: '#8000FF',
+            STRESSED: '#FF5050',
+            FATIGUED: '#FFA000',
+            RELAXED: '#00C864',
+            WIRED: '#0096FF'
+        };
+
+        const APP_ICONS = {
+            code: '💻', terminal: '⌨️', browser: '🌐', notes: '📝', chat: '💬', dashboard: '📊'
+        };
+
+        const PRIORITY_COLORS = {
+            low: '#666',
+            medium: '#0096FF',
+            high: '#FFA000',
+            critical: '#FF5050'
+        };
+
+        // Session state
+        let sessionStart = null;
+        let sessionTimerInterval = null;
+        let currentState = 'RELAXED';
+        let interventions = [];
+        let totalInterventions = 0;
+        let feedbackCounts = { accepted: 0, dismissed: 0, snoozed: 0 };
+        let currentApp = null;
+        let stateSeconds = { DEEP_FOCUS: 0, STRESSED: 0, FATIGUED: 0, RELAXED: 0, WIRED: 0 };
+        let stateTrackInterval = null;
+        let totalSeconds = 0;
+
+        // DOM refs
+        const connDot = document.getElementById('conn-dot');
+        const connText = document.getElementById('conn-text');
+        const sessionTimerEl = document.getElementById('session-timer');
+        const stateBadge = document.getElementById('state-badge');
+        const hrValue = document.getElementById('hr-value');
+        const hrvValue = document.getElementById('hrv-value');
+        const recoveryRing = document.getElementById('recovery-ring');
+        const recoveryValue = document.getElementById('recovery-value');
+        const strainValue = document.getElementById('strain-value');
+        const strainBar = document.getElementById('strain-bar');
+        const stressValue = document.getElementById('stress-value');
+        const stressBar = document.getElementById('stress-bar');
+        const spo2Value = document.getElementById('spo2-value');
+        const tempValue = document.getElementById('temp-value');
+        const sleepValue = document.getElementById('sleep-value');
+        const heartIcon = document.getElementById('heart-icon');
+        const activityFeed = document.getElementById('activity-feed');
+        const activityEmpty = document.getElementById('activity-empty');
+        const focusScore = document.getElementById('focus-score');
+        const totalInterventionsEl = document.getElementById('total-interventions');
+        const fbAccepted = document.getElementById('fb-accepted');
+        const fbDismissed = document.getElementById('fb-dismissed');
+        const fbSnoozed = document.getElementById('fb-snoozed');
+        const currentAppEl = document.getElementById('current-app');
+        const stateTimeline = document.getElementById('state-timeline');
+        const stateTimes = document.getElementById('state-times');
+
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function formatShortDuration(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}m ${s.toString().padStart(2, '0')}s`;
+        }
+
+        function startSessionTimer() {
+            sessionStart = Date.now();
+            sessionTimerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+                sessionTimerEl.textContent = formatDuration(elapsed);
+            }, 1000);
+            stateTrackInterval = setInterval(() => {
+                stateSeconds[currentState]++;
+                totalSeconds++;
+                updateTimeline();
+                updateFocusScore();
+            }, 1000);
+        }
+
+        function updateBiometrics(msg) {
+            hrValue.textContent = msg.heartRate;
+            hrvValue.textContent = msg.hrv;
+
+            // Heart rate pulse speed
+            const bpm = msg.heartRate || 72;
+            heartIcon.style.animationDuration = (60 / bpm) + 's';
+
+            // Recovery gauge
+            const recovery = msg.recovery || 0;
+            const circumference = 2 * Math.PI * 52;
+            const offset = circumference - (recovery / 100) * circumference;
+            recoveryRing.setAttribute('stroke-dashoffset', offset);
+            recoveryValue.textContent = recovery + '%';
+            if (recovery > 66) recoveryRing.setAttribute('stroke', '#00C864');
+            else if (recovery > 33) recoveryRing.setAttribute('stroke', '#FFA000');
+            else recoveryRing.setAttribute('stroke', '#FF5050');
+
+            // Strain bar
+            const strain = msg.strain || 0;
+            strainValue.textContent = strain.toFixed(1);
+            strainBar.style.width = ((strain / 21) * 100) + '%';
+            if (strain > 14) strainBar.style.background = '#FF5050';
+            else if (strain > 7) strainBar.style.background = '#FFA000';
+            else strainBar.style.background = '#0096FF';
+
+            // Stress bar
+            const stress = msg.estimated_stress || 0;
+            stressValue.textContent = stress.toFixed(1);
+            stressBar.style.width = ((stress / 3) * 100) + '%';
+            if (stress > 2) stressBar.style.background = '#FF5050';
+            else if (stress > 1) stressBar.style.background = '#FFA000';
+            else stressBar.style.background = '#00C864';
+
+            // Secondary
+            spo2Value.textContent = msg.spo2 || '--';
+            tempValue.textContent = msg.skinTemp ? msg.skinTemp.toFixed(1) : '--';
+            sleepValue.textContent = msg.sleepPerformance ? Math.round(msg.sleepPerformance * 100) : '--';
+
+            // Update state badge
+            if (msg.state) {
+                currentState = msg.state;
+                stateBadge.textContent = msg.state;
+                stateBadge.style.background = STATE_COLORS[msg.state] || '#888';
+            }
+        }
+
+        function addIntervention(msg) {
+            activityEmpty.style.display = 'none';
+            totalInterventions++;
+            totalInterventionsEl.textContent = totalInterventions;
+
+            const card = document.createElement('div');
+            card.className = 'intervention-card';
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            let priorityClass = '';
+            if (msg.priority === 'critical') priorityClass = ' badge-critical';
+
+            card.innerHTML = `
+                <div class="timestamp">${timeStr}</div>
+                <div class="badges">
+                    <span class="badge badge-app">${msg.app_type || 'code'}</span>
+                    <span class="badge${priorityClass}" style="background:${PRIORITY_COLORS[msg.priority] || '#666'}">${msg.priority}</span>
+                    ${msg.risky ? '<span class="badge" style="background:#FF5050">⚠️ RISKY</span>' : ''}
+                </div>
+                <div class="msg">${escapeHtml(msg.message)}</div>
+                <div class="btns">${(msg.buttons || []).map(b => `<span>${escapeHtml(b)}</span>`).join('')}</div>
+            `;
+
+            activityFeed.prepend(card);
+            interventions.unshift(msg);
+            if (interventions.length > 50) {
+                interventions.pop();
+                if (activityFeed.lastChild) activityFeed.removeChild(activityFeed.lastChild);
+            }
+        }
+
+        function handleStateChange(msg) {
+            currentState = msg.to;
+            stateBadge.textContent = msg.to;
+            stateBadge.style.background = STATE_COLORS[msg.to] || '#888';
+        }
+
+        function handleFeedback(msg) {
+            const action = (msg.action || '').toLowerCase();
+            if (action.includes('not now') || action.includes('dismiss')) {
+                feedbackCounts.dismissed++;
+                fbDismissed.textContent = feedbackCounts.dismissed;
+            } else if (action.includes('snooze') || action.includes('later')) {
+                feedbackCounts.snoozed++;
+                fbSnoozed.textContent = feedbackCounts.snoozed;
+            } else {
+                feedbackCounts.accepted++;
+                fbAccepted.textContent = feedbackCounts.accepted;
+            }
+        }
+
+        function updateCurrentApp(app) {
+            currentApp = app;
+            const icon = app ? (APP_ICONS[app] || '📱') : '🏠';
+            const name = app ? app.charAt(0).toUpperCase() + app.slice(1) : 'Room';
+            currentAppEl.innerHTML = `<span class="icon">${icon}</span><span class="name">${name}</span>`;
+        }
+
+        function updateTimeline() {
+            if (totalSeconds === 0) return;
+            const states = ['DEEP_FOCUS', 'STRESSED', 'FATIGUED', 'RELAXED', 'WIRED'];
+            stateTimeline.innerHTML = '';
+            states.forEach(s => {
+                if (stateSeconds[s] > 0) {
+                    const seg = document.createElement('div');
+                    seg.className = 'segment';
+                    seg.style.width = ((stateSeconds[s] / totalSeconds) * 100) + '%';
+                    seg.style.background = STATE_COLORS[s];
+                    seg.title = s + ': ' + formatShortDuration(stateSeconds[s]);
+                    stateTimeline.appendChild(seg);
+                }
+            });
+
+            stateTimes.innerHTML = '';
+            states.forEach(s => {
+                if (stateSeconds[s] > 0) {
+                    const row = document.createElement('div');
+                    row.className = 'state-time-row';
+                    row.innerHTML = `
+                        <span class="dot" style="background:${STATE_COLORS[s]}"></span>
+                        <span class="name">${s}</span>
+                        <span class="dur">${formatShortDuration(stateSeconds[s])}</span>
+                    `;
+                    stateTimes.appendChild(row);
+                }
+            });
+        }
+
+        function updateFocusScore() {
+            if (totalSeconds === 0) return;
+            const score = Math.round((stateSeconds.DEEP_FOCUS / totalSeconds) * 100);
+            focusScore.textContent = score + '%';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function initDashboard(msg) {
+            if (msg.current_state) {
+                currentState = msg.current_state;
+                stateBadge.textContent = msg.current_state;
+                stateBadge.style.background = STATE_COLORS[msg.current_state] || '#888';
+            }
+            startSessionTimer();
+        }
+
+        // WebSocket
+        let ws;
+        function connectWS() {
+            ws = new WebSocket('ws://localhost:8000/ws');
+
+            ws.onopen = () => {
+                connDot.className = 'connection-dot connected';
+                connText.textContent = 'Connected';
+                ws.send(JSON.stringify({ type: 'app_focus', app: 'dashboard', timestamp: new Date().toISOString() }));
+            };
+
+            ws.onclose = () => {
+                connDot.className = 'connection-dot disconnected';
+                connText.textContent = 'Disconnected';
+                setTimeout(connectWS, 3000);
+            };
+
+            ws.onerror = () => {};
+
+            ws.onmessage = (event) => {
+                let msg;
+                try {
+                    msg = JSON.parse(event.data);
+                } catch (e) {
+                    return;
+                }
+                switch (msg.type) {
+                    case 'biometric_update':
+                        updateBiometrics(msg);
+                        break;
+                    case 'intervention':
+                        addIntervention(msg);
+                        break;
+                    case 'state_change':
+                        handleStateChange(msg);
+                        break;
+                    case 'connection_established':
+                        initDashboard(msg);
+                        break;
+                    case 'feedback':
+                        handleFeedback(msg);
+                        break;
+                }
+            };
+        }
+
+        connectWS();
+    </script>
+</body>
+</html>
