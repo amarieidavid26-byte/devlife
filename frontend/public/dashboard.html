@@ -10,26 +10,21 @@
         *{margin:0;padding:0;box-sizing:border-box}
         html,body{width:100%;height:100%;overflow:hidden;background:#0a0a19;color:#e0e0e0;font-family:'Inter',system-ui,sans-serif}
 
-        /* Scan line overlay */
-        body::after{
-            content:'';position:fixed;top:0;left:0;width:100%;height:100%;
-            background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
-            pointer-events:none;z-index:9998
-        }
-        /* Subtle grid background */
+        /* Faint grid background */
         body::before{
             content:'';position:fixed;top:0;left:0;width:100%;height:100%;
             background-image:
-                linear-gradient(rgba(255,255,255,0.012) 1px,transparent 1px),
-                linear-gradient(90deg,rgba(255,255,255,0.012) 1px,transparent 1px);
-            background-size:40px 40px;
+                linear-gradient(rgba(255,255,255,0.008) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(255,255,255,0.008) 1px,transparent 1px);
+            background-size:48px 48px;
             pointer-events:none;z-index:0
         }
 
+        /* ── GRID ── */
         .dash{
             display:grid;
             grid-template-columns:60fr 40fr;
-            grid-template-rows:44px 1fr 150px;
+            grid-template-rows:48px 1fr 150px;
             width:100%;height:100%;gap:0;
             position:relative;z-index:1;
             border:2px solid transparent;transition:border-color 0.4s
@@ -41,152 +36,156 @@
         .topbar{
             grid-column:1/-1;
             display:flex;align-items:center;justify-content:space-between;
-            padding:0 24px;
-            background:rgba(0,0,0,0.5);
-            border-bottom:1px solid rgba(255,255,255,0.08)
+            padding:0 32px;
+            background:rgba(0,0,0,0.4);
+            border-bottom:1px solid rgba(255,255,255,0.06)
         }
-        .topbar-logo{font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:0.15em;color:#fff;font-size:13px}
+        .topbar-logo{font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:0.18em;color:#fff;font-size:13px}
         .topbar-logo span{color:var(--state-color,#00c864);transition:color 0.5s}
-        .topbar-clock{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:#777;letter-spacing:0.08em}
-        .topbar-right{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#555;letter-spacing:0.05em}
-        .session-dot{width:8px;height:8px;border-radius:50%;background:#333;transition:background 0.3s}
+        .topbar-clock{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#666;letter-spacing:0.1em}
+        .topbar-right{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.06em}
+        .session-dot{width:8px;height:8px;border-radius:50%;background:#333;transition:background 0.3s;flex-shrink:0}
         .session-dot.on{background:#00c864;animation:pulseGlow 2s ease-in-out infinite}
-        @keyframes pulseGlow{0%,100%{box-shadow:0 0 4px rgba(0,200,100,0.4)}50%{box-shadow:0 0 14px rgba(0,200,100,0.8)}}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 4px rgba(0,200,100,0.3)}50%{box-shadow:0 0 12px rgba(0,200,100,0.7)}}
 
         /* ── LEFT PANEL ── */
         .left{
-            padding:18px 28px 14px;
-            display:flex;flex-direction:column;
-            border-right:1px solid rgba(255,255,255,0.06);
+            padding:32px 40px;
+            display:flex;flex-direction:column;gap:32px;
+            border-right:1px solid rgba(255,255,255,0.05);
             overflow-y:auto;scrollbar-width:none
         }
         .left::-webkit-scrollbar{display:none}
 
-        /* Telemetry section headers */
-        .sec-hdr{font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#444;margin:14px 0 8px;font-weight:600}
+        /* Section headers — telemetry labels */
+        .sec-hdr{
+            font-size:11px;text-transform:uppercase;letter-spacing:2px;
+            color:#666;font-weight:600;margin-bottom:12px
+        }
 
         /* Heart rate hero */
-        .hr-row{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
-        .hr-value{font-family:'JetBrains Mono',monospace;font-size:72px;font-weight:700;color:#fff;line-height:1;transition:opacity 0.1s}
-        .hr-unit{font-family:'JetBrains Mono',monospace;font-size:20px;color:#555;font-weight:400}
-        .hr-heart{font-size:30px;display:inline-block;transform-origin:center}
+        .hr-section{display:flex;flex-direction:column}
+        .hr-row{display:flex;align-items:baseline;gap:14px}
+        .hr-heart{font-size:34px;display:inline-block;transform-origin:center}
+        .hr-value{
+            font-family:'JetBrains Mono',monospace;font-size:100px;font-weight:700;
+            color:#ffffff;line-height:1;transition:opacity 0.1s;
+            text-shadow:0 0 20px var(--state-color,rgba(0,200,100,0.3))
+        }
+        .hr-unit{font-family:'JetBrains Mono',monospace;font-size:24px;color:#555;font-weight:400}
         @keyframes heartbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}}
 
-        /* Number glow */
-        .glow{text-shadow:0 0 10px var(--state-color,rgba(0,200,100,0.4))}
+        /* Metric trio */
+        .metrics{display:flex;gap:48px}
+        .metric .val{
+            font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:700;
+            color:#ffffff;line-height:1;
+            text-shadow:0 0 12px var(--state-color,rgba(0,200,100,0.2))
+        }
+        .metric .unit{font-size:18px;font-weight:400;color:#555}
+        .metric .lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666;margin-top:6px}
 
-        /* Metrics */
-        .metrics{display:flex;gap:28px;margin-bottom:14px}
-        .metric .val{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;color:#fff;line-height:1}
-        .metric .lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#444;margin-top:3px}
-        .metric .unit{font-size:14px;font-weight:400;color:#555}
-
-        /* State */
-        .state-row{margin-bottom:12px}
-        .state-name{font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;line-height:1;transition:color 0.5s}
-        .state-lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#444;margin-top:3px}
+        /* State name — dominant */
+        .state-section{}
+        .state-name{
+            font-family:'JetBrains Mono',monospace;font-size:64px;font-weight:700;
+            line-height:1;transition:color 0.5s
+        }
+        .state-lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666;margin-top:8px}
 
         /* Stress bar */
-        .stress-section{margin-bottom:6px}
-        .stress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-        .stress-header .lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#444}
-        .stress-header .val{font-family:'JetBrains Mono',monospace;font-size:13px;color:#aaa}
-        .stress-track{width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
+        .stress-section{}
+        .stress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .stress-header .lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666}
+        .stress-header .val{font-family:'JetBrains Mono',monospace;font-size:14px;color:#999}
+        .stress-track{width:100%;height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
         .stress-fill{height:100%;border-radius:4px;transition:width 0.6s ease,background 0.6s ease}
 
-        /* ANS Balance */
-        .ans-balance{margin-bottom:10px}
-        .ans-labels{display:flex;justify-content:space-between;margin-bottom:4px}
-        .ans-labels span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#555}
-        .ans-track{width:100%;height:10px;background:rgba(255,255,255,0.04);border-radius:5px;display:flex;overflow:hidden}
-        .ans-seg{height:100%;transition:width 0.6s ease}
-
-        /* HRV Sparkline */
-        .hrv-spark-wrap{margin-bottom:10px}
-        .hrv-spark-canvas{width:100%;height:40px;display:block;border-radius:4px;background:rgba(0,0,0,0.25)}
+        /* HRV Sparkline — bigger */
+        .hrv-section{}
+        .hrv-spark-canvas{width:100%;height:80px;display:block;border-radius:6px;background:rgba(0,0,0,0.2)}
 
         /* Gauges row */
-        .gauges-row{display:flex;gap:16px;align-items:flex-start}
-        .gauge-box{text-align:center}
-        .gauge-box .lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#444;margin-top:2px}
-        .gauge-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:#fff}
+        .gauges-row{display:flex;gap:48px;align-items:flex-start}
 
-        /* HR Zones */
-        .hr-zones-wrap{flex:1}
-        .hr-zones{display:flex;gap:3px}
-        .hr-zone{flex:1;padding:5px 0;text-align:center;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;
-            color:#333;background:rgba(255,255,255,0.02);border-radius:3px;border:1px solid rgba(255,255,255,0.04);
-            transition:all 0.4s ease}
-        .hr-zone.active{color:#fff;background:rgba(255,255,255,0.06);border-color:var(--state-color,#00c864);
-            box-shadow:inset 0 0 8px rgba(255,255,255,0.05)}
-        .hr-zone .zn{display:block;font-weight:600}
-        .hr-zone .zr{display:block;font-family:'JetBrains Mono',monospace;font-size:8px;margin-top:1px;opacity:0.5}
+        /* Recovery Arc Gauge — 120px */
+        .gauge-box{text-align:center}
+        .gauge-box .sec-hdr{margin-bottom:8px}
+        .gauge-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#ffffff}
+        .gauge-sub{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666;margin-top:4px}
 
         /* ── RIGHT PANEL ── */
         .right{
-            padding:16px 20px;overflow-y:auto;
-            border-left:1px solid rgba(255,255,255,0.06);
-            scrollbar-width:none
+            padding:32px 28px;
+            display:flex;flex-direction:column;gap:24px;
+            border-left:1px solid rgba(255,255,255,0.05);
+            overflow-y:auto;scrollbar-width:none
         }
         .right::-webkit-scrollbar{display:none}
 
-        /* Threat */
-        .threat{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;
-            border-radius:6px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.05);
-            transition:border-color 0.4s}
-        .threat-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;transition:all 0.4s}
-        .threat-label{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#444}
-        .threat-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;letter-spacing:1px;transition:color 0.4s}
-        .threat.nominal .threat-dot{background:#00c864;box-shadow:0 0 8px rgba(0,200,100,0.5)}
+        /* Threat level — bigger */
+        .threat{
+            display:flex;align-items:center;gap:14px;
+            padding:16px 20px;border-radius:8px;
+            background:rgba(0,0,0,0.25);
+            border:1px solid rgba(255,255,255,0.04);
+            transition:border-color 0.4s
+        }
+        .threat-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;transition:all 0.4s}
+        .threat-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666}
+        .threat-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;letter-spacing:1px;transition:color 0.4s}
+        .threat.nominal .threat-dot{background:#00c864;box-shadow:0 0 10px rgba(0,200,100,0.5)}
         .threat.nominal .threat-val{color:#00c864}
-        .threat.nominal{border-color:rgba(0,200,100,0.15)}
-        .threat.elevated .threat-dot{background:#ffa000;box-shadow:0 0 8px rgba(255,160,0,0.5)}
+        .threat.nominal{border-color:rgba(0,200,100,0.12)}
+        .threat.elevated .threat-dot{background:#ffa000;box-shadow:0 0 10px rgba(255,160,0,0.5)}
         .threat.elevated .threat-val{color:#ffa000}
-        .threat.elevated{border-color:rgba(255,160,0,0.15)}
-        .threat.critical .threat-dot{background:#ff5050;box-shadow:0 0 8px rgba(255,80,80,0.5);animation:pulseRed 1s ease-in-out infinite}
+        .threat.elevated{border-color:rgba(255,160,0,0.12)}
+        .threat.critical .threat-dot{background:#ff5050;box-shadow:0 0 10px rgba(255,80,80,0.5);animation:pulseRed 1s ease-in-out infinite}
         .threat.critical .threat-val{color:#ff5050}
-        .threat.critical{border-color:rgba(255,80,80,0.2)}
-        @keyframes pulseRed{0%,100%{box-shadow:0 0 8px rgba(255,80,80,0.5)}50%{box-shadow:0 0 20px rgba(255,80,80,0.9)}}
+        .threat.critical{border-color:rgba(255,80,80,0.15)}
+        @keyframes pulseRed{0%,100%{box-shadow:0 0 8px rgba(255,80,80,0.4)}50%{box-shadow:0 0 22px rgba(255,80,80,0.9)}}
 
-        /* Intervention stats */
-        .int-stats{display:flex;gap:14px;align-items:flex-end;margin-bottom:14px}
-        .int-total-wrap{text-align:center}
-        .int-total{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#fff}
-        .int-total-lbl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#444}
-        .int-chart-wrap{flex:1}
-        .int-chart{display:flex;gap:3px;align-items:flex-end;height:32px}
-        .int-bar{flex:1;border-radius:2px 2px 0 0;min-height:2px;transition:height 0.4s ease}
-        .int-chart-labels{display:flex;gap:3px;margin-top:2px}
-        .int-chart-labels span{flex:1;font-size:7px;text-transform:uppercase;text-align:center;color:#333;
-            font-family:'JetBrains Mono',monospace}
+        /* Intervention count */
+        .int-count{
+            font-family:'JetBrains Mono',monospace;font-size:14px;color:#555;
+            letter-spacing:1px;padding-bottom:4px;
+            border-bottom:1px solid rgba(255,255,255,0.04)
+        }
+        .int-count strong{font-size:20px;color:#ffffff;font-weight:700}
 
         /* Log */
-        .right-title{font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#444;margin-bottom:10px;font-weight:600}
-        .log-entry{padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
-        .log-entry:first-child{padding-top:0}
-        .log-meta{display:flex;align-items:center;gap:5px;margin-bottom:3px;flex-wrap:wrap}
-        .log-icon{font-size:13px;line-height:1}
-        .log-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:#333}
-        .log-badge{padding:1px 6px;border-radius:8px;font-size:9px;font-weight:700;color:#fff}
-        .log-state{padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;color:#fff}
-        .log-msg{font-size:12px;color:#999;line-height:1.45}
-        .log-entry.critical{background:rgba(255,50,50,0.05);border-left:3px solid #ff5050;
-            margin-left:-10px;padding-left:7px;margin-right:-10px;padding-right:10px}
-        .log-empty{text-align:center;color:#333;padding:30px 0;font-size:12px;letter-spacing:0.05em}
+        .log-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#666;font-weight:600}
+        .log-scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+        .log-scroll::-webkit-scrollbar{display:none}
+        .log-entry{padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+        .log-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+        .log-icon{font-size:14px;line-height:1}
+        .log-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:#444}
+        .log-badge{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;color:#fff}
+        .log-state{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;color:#fff}
+        .log-msg{font-size:13px;color:#aaa;line-height:1.55}
+        .log-entry.critical{
+            background:rgba(255,50,50,0.04);border-left:3px solid #ff5050;
+            padding-left:14px;margin-left:-14px
+        }
+        .log-empty{color:#333;font-size:13px;letter-spacing:0.08em;padding:40px 0;text-align:center;
+            font-family:'JetBrains Mono',monospace}
 
         /* ── BOTTOM ECG ── */
         .bottom{
-            grid-column:1/-1;border-top:1px solid rgba(255,255,255,0.08);
-            position:relative;background:rgba(0,0,0,0.3);transition:border-color 0.3s
+            grid-column:1/-1;
+            border-top:1px solid rgba(255,255,255,0.06);
+            position:relative;background:rgba(0,0,0,0.3);
+            transition:border-color 0.3s
         }
         .bottom.alarm{border-top:2px solid #ff5050;animation:ecgAlarm 0.8s ease-in-out infinite}
-        @keyframes ecgAlarm{0%,100%{border-top-color:#ff5050}50%{border-top-color:rgba(255,50,50,0.2)}}
+        @keyframes ecgAlarm{0%,100%{border-top-color:#ff5050}50%{border-top-color:rgba(255,50,50,0.15)}}
         .ecg-canvas{width:100%;height:100%;display:block}
-        .ecg-lbl-left{position:absolute;top:10px;left:16px;font-family:'JetBrains Mono',monospace;
-            font-size:10px;color:#333;text-transform:uppercase;letter-spacing:2px}
-        .ecg-lbl-right{position:absolute;top:10px;right:20px;display:flex;align-items:baseline;gap:4px}
+        .ecg-lbl-left{position:absolute;top:12px;left:20px;font-family:'JetBrains Mono',monospace;
+            font-size:11px;color:#333;text-transform:uppercase;letter-spacing:2px}
+        .ecg-lbl-right{position:absolute;top:10px;right:24px;display:flex;align-items:baseline;gap:5px}
         .ecg-bpm-num{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#555;transition:color 0.3s}
-        .ecg-bpm-unit{font-family:'JetBrains Mono',monospace;font-size:11px;color:#333}
+        .ecg-bpm-unit{font-family:'JetBrains Mono',monospace;font-size:12px;color:#333}
 
         /* ── FIREWALL ALERT OVERLAY ── */
         .firewall-alert{
@@ -213,74 +212,85 @@
 <body>
 <div class="dash" id="dash">
 
-    <!-- TOP BAR -->
+    <!-- ── TOP BAR ── -->
     <div class="topbar">
         <div class="topbar-logo">DEVLIFE <span id="topbar-accent">&times;</span> GHOST</div>
         <div class="topbar-clock" id="clock">--:--:--</div>
         <div class="topbar-right">
             <span class="session-dot" id="session-dot"></span>
-            <span id="session-label">OFFLINE</span>
+            <span id="session-label" style="color:#555">OFFLINE</span>
             <span id="session-timer" style="color:#444">00:00:00</span>
         </div>
     </div>
 
-    <!-- LEFT 60% -->
+    <!-- ── LEFT 60% ── -->
     <div class="left">
-        <div class="sec-hdr" style="margin-top:0">Cardiac Output</div>
 
-        <div class="hr-row">
-            <span class="hr-heart" id="heart">&#10084;&#65039;</span>
-            <span class="hr-value glow" id="hr">--</span>
-            <span class="hr-unit">BPM</span>
-        </div>
-
-        <div class="metrics">
-            <div class="metric"><div><span class="val glow" id="hrv">--</span><span class="unit"> ms</span></div><div class="lbl">HRV</div></div>
-            <div class="metric"><div><span class="val glow" id="rec">--</span><span class="unit"> %</span></div><div class="lbl">Recovery</div></div>
-            <div class="metric"><div><span class="val glow" id="strain">--</span></div><div class="lbl">Strain</div></div>
-        </div>
-
-        <div class="state-row">
-            <div class="state-name glow" id="state">CONNECTING</div>
-            <div class="state-lbl">Cognitive State</div>
-        </div>
-
-        <div class="stress-section">
-            <div class="stress-header"><span class="lbl">Stress Level</span><span class="val" id="stress-val">0.0 / 3.0</span></div>
-            <div class="stress-track"><div class="stress-fill" id="stress-bar" style="width:0%;background:#00c864"></div></div>
-        </div>
-
-        <!-- ANS Section -->
-        <div class="sec-hdr">Autonomic Nervous System</div>
-        <div class="ans-balance">
-            <div class="ans-labels"><span>Parasympathetic</span><span>Sympathetic</span></div>
-            <div class="ans-track">
-                <div class="ans-seg" id="ans-para" style="width:65%;background:linear-gradient(90deg,#00c864,#0096ff)"></div>
-                <div class="ans-seg" id="ans-symp" style="width:35%;background:linear-gradient(90deg,#ffa000,#ff5050)"></div>
+        <!-- 1. Heart Rate -->
+        <div class="hr-section">
+            <div class="sec-hdr">Cardiac Output</div>
+            <div class="hr-row">
+                <span class="hr-heart" id="heart">&#10084;&#65039;</span>
+                <span class="hr-value" id="hr">--</span>
+                <span class="hr-unit">BPM</span>
             </div>
         </div>
 
-        <!-- HRV Sparkline -->
-        <div class="hrv-spark-wrap">
-            <div class="sec-hdr" style="margin-bottom:4px;margin-top:8px">HRV Trend</div>
+        <!-- 2. Three metrics -->
+        <div class="metrics">
+            <div class="metric">
+                <div><span class="val" id="hrv">--</span><span class="unit"> ms</span></div>
+                <div class="lbl">HRV</div>
+            </div>
+            <div class="metric">
+                <div><span class="val" id="rec">--</span><span class="unit"> %</span></div>
+                <div class="lbl">Recovery</div>
+            </div>
+            <div class="metric">
+                <div><span class="val" id="strain">--</span></div>
+                <div class="lbl">Strain</div>
+            </div>
+        </div>
+
+        <!-- 3. State name -->
+        <div class="state-section">
+            <div class="state-name" id="state" style="color:var(--state-color,#666)">CONNECTING</div>
+            <div class="state-lbl">Cognitive State</div>
+        </div>
+
+        <!-- 4. Stress bar -->
+        <div class="stress-section">
+            <div class="stress-header">
+                <span class="lbl">Stress Level</span>
+                <span class="val" id="stress-val">0.0 / 3.0</span>
+            </div>
+            <div class="stress-track">
+                <div class="stress-fill" id="stress-bar" style="width:0%;background:#00c864"></div>
+            </div>
+        </div>
+
+        <!-- 5. HRV Trend -->
+        <div class="hrv-section">
+            <div class="sec-hdr">HRV Trend</div>
             <canvas class="hrv-spark-canvas" id="hrv-spark"></canvas>
         </div>
 
-        <!-- Gauges row -->
+        <!-- 6. Recovery gauge + Cognitive load ring -->
         <div class="gauges-row">
-            <!-- Recovery Arc Gauge -->
             <div class="gauge-box">
-                <div class="sec-hdr" style="margin:0 0 2px;text-align:center">Recovery Zones</div>
-                <svg width="110" height="62" viewBox="0 0 110 62">
-                    <path d="M10 58 A45 45 0 0 1 100 58" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7" stroke-linecap="round"/>
-                    <!-- Zone colors drawn as 3 bg arcs -->
-                    <path d="M10 58 A45 45 0 0 1 100 58" fill="none" stroke="url(#recGrad)" stroke-width="3" stroke-linecap="round" opacity="0.15"/>
+                <div class="sec-hdr">Recovery Zones</div>
+                <svg width="140" height="80" viewBox="0 0 140 80">
+                    <!-- Background arc -->
+                    <path d="M15 72 A55 55 0 0 1 125 72" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="8" stroke-linecap="round"/>
+                    <!-- Zone gradient hint -->
+                    <path d="M15 72 A55 55 0 0 1 125 72" fill="none" stroke="url(#recGrad)" stroke-width="3" stroke-linecap="round" opacity="0.12"/>
                     <!-- Active arc -->
-                    <path d="M10 58 A45 45 0 0 1 100 58" fill="none" stroke="#00c864" stroke-width="7" stroke-linecap="round"
-                          id="rec-arc" stroke-dasharray="141.37" stroke-dashoffset="141.37" style="transition:stroke-dashoffset 0.6s,stroke 0.4s"/>
+                    <path d="M15 72 A55 55 0 0 1 125 72" fill="none" stroke="#00c864" stroke-width="8" stroke-linecap="round"
+                          id="rec-arc" stroke-dasharray="172.79" stroke-dashoffset="172.79"
+                          style="transition:stroke-dashoffset 0.6s ease,stroke 0.4s"/>
                     <!-- Needle -->
-                    <line x1="55" y1="58" x2="55" y2="18" stroke="#e0e0e0" stroke-width="1.5" stroke-linecap="round"
-                          id="rec-needle" style="transform-origin:55px 58px;transition:transform 0.6s ease"/>
+                    <line x1="70" y1="72" x2="70" y2="22" stroke="#e0e0e0" stroke-width="1.5" stroke-linecap="round"
+                          id="rec-needle" style="transform-origin:70px 72px;transition:transform 0.6s ease"/>
                     <defs><linearGradient id="recGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stop-color="#ff5050"/><stop offset="33%" stop-color="#ff5050"/>
                         <stop offset="34%" stop-color="#ffa000"/><stop offset="66%" stop-color="#ffa000"/>
@@ -288,76 +298,63 @@
                     </linearGradient></defs>
                 </svg>
                 <div class="gauge-val" id="rec-gauge-val">--%</div>
+                <div class="gauge-sub">Recovery</div>
             </div>
 
-            <!-- Cognitive Load Ring -->
             <div class="gauge-box">
-                <div class="sec-hdr" style="margin:0 0 2px;text-align:center">Cognitive Load</div>
-                <div style="position:relative;width:70px;height:70px">
-                    <svg width="70" height="70" viewBox="0 0 70 70">
-                        <circle cx="35" cy="35" r="28" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="5"/>
-                        <circle cx="35" cy="35" r="28" fill="none" stroke="#0096ff" stroke-width="5"
-                                stroke-dasharray="175.93" stroke-dashoffset="175.93" stroke-linecap="round"
-                                id="cog-fill" style="transition:stroke-dashoffset 0.6s,stroke 0.4s;transform:rotate(-90deg);transform-origin:35px 35px"/>
+                <div class="sec-hdr">Cognitive Load</div>
+                <div style="position:relative;width:120px;height:120px">
+                    <svg width="120" height="120" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="7"/>
+                        <circle cx="60" cy="60" r="48" fill="none" stroke="#0096ff" stroke-width="7"
+                                stroke-dasharray="301.59" stroke-dashoffset="301.59" stroke-linecap="round"
+                                id="cog-fill"
+                                style="transition:stroke-dashoffset 0.6s ease,stroke 0.4s;transform:rotate(-90deg);transform-origin:60px 60px"/>
                     </svg>
-                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
-                        <span class="gauge-val" id="cog-val">0%</span>
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+                        <div class="gauge-val" id="cog-val" style="font-size:24px">0%</div>
+                        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#555;margin-top:2px">INDEX</div>
                     </div>
                 </div>
             </div>
-
-            <!-- HR Zones -->
-            <div class="hr-zones-wrap">
-                <div class="sec-hdr" style="margin:0 0 4px">Heart Rate Zones</div>
-                <div class="hr-zones">
-                    <div class="hr-zone" id="zone-rest"><span class="zn">Rest</span><span class="zr">&lt;60</span></div>
-                    <div class="hr-zone" id="zone-normal"><span class="zn">Normal</span><span class="zr">60-80</span></div>
-                    <div class="hr-zone" id="zone-elev"><span class="zn">Elevated</span><span class="zr">80-100</span></div>
-                    <div class="hr-zone" id="zone-high"><span class="zn">High</span><span class="zr">&gt;100</span></div>
-                </div>
-            </div>
         </div>
     </div>
 
-    <!-- RIGHT 40% -->
+    <!-- ── RIGHT 40% ── -->
     <div class="right">
+
         <!-- Threat Level -->
         <div class="threat nominal" id="threat">
             <div class="threat-dot"></div>
-            <div><div class="threat-label">Threat Level</div><div class="threat-val" id="threat-val">NOMINAL</div></div>
-        </div>
-
-        <!-- Intervention Stats -->
-        <div class="int-stats">
-            <div class="int-total-wrap">
-                <div class="int-total glow" id="int-total">0</div>
-                <div class="int-total-lbl">Total</div>
-            </div>
-            <div class="int-chart-wrap">
-                <div class="int-chart" id="int-chart">
-                    <div class="int-bar" style="height:2px;background:#8000ff"></div>
-                    <div class="int-bar" style="height:2px;background:#ff5050"></div>
-                    <div class="int-bar" style="height:2px;background:#ffa000"></div>
-                    <div class="int-bar" style="height:2px;background:#00c864"></div>
-                    <div class="int-bar" style="height:2px;background:#0096ff"></div>
-                </div>
-                <div class="int-chart-labels"><span>DF</span><span>ST</span><span>FA</span><span>RL</span><span>WI</span></div>
+            <div>
+                <div class="threat-label">Threat Level</div>
+                <div class="threat-val" id="threat-val">NOMINAL</div>
             </div>
         </div>
 
-        <div class="right-title">Intervention Log</div>
-        <div id="log"><div class="log-empty" id="log-empty">Waiting for Ghost...</div></div>
+        <!-- Intervention count -->
+        <div class="int-count" id="int-count"><strong>0</strong> INTERVENTIONS</div>
+
+        <!-- Log -->
+        <div class="log-title">Intervention Log</div>
+        <div class="log-scroll" id="log">
+            <div class="log-empty" id="log-empty">Monitoring...</div>
+        </div>
     </div>
 
-    <!-- BOTTOM ECG (150px) -->
+    <!-- ── BOTTOM ECG ── -->
     <div class="bottom" id="ecg-container">
         <div class="ecg-lbl-left">Lead II &middot; ECG</div>
-        <div class="ecg-lbl-right"><span class="ecg-bpm-num" id="ecg-bpm-num">72</span><span class="ecg-bpm-unit">BPM</span></div>
+        <div class="ecg-lbl-right">
+            <span class="ecg-bpm-num" id="ecg-bpm-num">72</span>
+            <span class="ecg-bpm-unit">BPM</span>
+        </div>
         <canvas class="ecg-canvas" id="ecg"></canvas>
     </div>
 </div>
 
 <script>
+// ── Constants ──────────────────────────────────────────────────────────────
 const STATE_COLORS = {
     DEEP_FOCUS: '#8000ff',
     STRESSED:   '#ff5050',
@@ -365,9 +362,7 @@ const STATE_COLORS = {
     RELAXED:    '#00c864',
     WIRED:      '#0096ff',
 };
-const STATE_ORDER = ['DEEP_FOCUS','STRESSED','FATIGUED','RELAXED','WIRED'];
 
-// ── ECG waveform (P-QRS-T) ────────────────────────────────────────────────
 const BEAT_SHAPE = [
     0.5, 0.5, 0.5, 0.5,
     0.44, 0.38, 0.38, 0.44,
@@ -380,16 +375,22 @@ const BEAT_SHAPE = [
     0.5, 0.5, 0.5, 0.5,
 ];
 
+// Recovery gauge arc: path "M15 72 A55 55 0 0 1 125 72" = semicircle r=55 → arc = pi * 55 ≈ 172.79
+const REC_ARC_LEN = 172.79;
+// Cognitive load ring: circle r=48 → circumference = 2 * pi * 48 ≈ 301.59
+const COG_CIRC = 301.59;
+
 // ── State ──────────────────────────────────────────────────────────────────
-let curState     = 'RELAXED';
-let ecgColor     = STATE_COLORS.RELAXED;
-let ecgTargetBPM = 72;
-let ecgBPM       = 72;
-let ecgBuffer    = [];
+let curState       = 'RELAXED';
+let ecgColor       = STATE_COLORS.RELAXED;
+let ecgTargetBPM   = 72;
+let ecgBPM         = 72;
+let ecgBuffer      = [];
 let ecgBeatIndex   = -1;
 let ecgMsSinceBeat = 0;
 let ecgLastTs      = null;
 let interventions  = [];
+let intTotalCount  = 0;
 
 // Lerp targets
 let targetHR = 0, displayHR = 0;
@@ -398,84 +399,54 @@ let targetRec = 0, displayRec = 0;
 let targetStrain = 0, displayStrain = 0;
 let targetStress = 0, displayStress = 0;
 
-// NEW: HRV history for sparkline
+// HRV sparkline history
 const hrvHistory = [];
 const HRV_MAX_POINTS = 30;
 
-// NEW: Intervention counts per state
-const intPerState = { DEEP_FOCUS:0, STRESSED:0, FATIGUED:0, RELAXED:0, WIRED:0 };
-let intTotalCount = 0;
-
-// NEW: Session timer
+// Session timer
 let sessionStart = null;
 let isConnected  = false;
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const dash          = document.getElementById('dash');
-const clockEl       = document.getElementById('clock');
-const sessionDot    = document.getElementById('session-dot');
-const sessionLabel  = document.getElementById('session-label');
-const sessionTimer  = document.getElementById('session-timer');
-const topbarAccent  = document.getElementById('topbar-accent');
-const heartEl       = document.getElementById('heart');
-const hrEl          = document.getElementById('hr');
-const hrvEl         = document.getElementById('hrv');
-const recEl         = document.getElementById('rec');
-const strainEl      = document.getElementById('strain');
-const stateEl       = document.getElementById('state');
-const stressValEl   = document.getElementById('stress-val');
-const stressBarEl   = document.getElementById('stress-bar');
-const logEl         = document.getElementById('log');
-const logEmpty      = document.getElementById('log-empty');
-const ecgCanvas     = document.getElementById('ecg');
-const ecgBpmNum     = document.getElementById('ecg-bpm-num');
-const ecgContainerEl= document.getElementById('ecg-container');
-const ecgCtx        = ecgCanvas.getContext('2d');
+const dash           = document.getElementById('dash');
+const clockEl        = document.getElementById('clock');
+const sessionDot     = document.getElementById('session-dot');
+const sessionLabel   = document.getElementById('session-label');
+const sessionTimerEl = document.getElementById('session-timer');
+const topbarAccent   = document.getElementById('topbar-accent');
+const heartEl        = document.getElementById('heart');
+const hrEl           = document.getElementById('hr');
+const hrvEl          = document.getElementById('hrv');
+const recEl          = document.getElementById('rec');
+const strainEl       = document.getElementById('strain');
+const stateEl        = document.getElementById('state');
+const stressValEl    = document.getElementById('stress-val');
+const stressBarEl    = document.getElementById('stress-bar');
+const logEl          = document.getElementById('log');
+const logEmpty       = document.getElementById('log-empty');
+const ecgCanvas      = document.getElementById('ecg');
+const ecgBpmNum      = document.getElementById('ecg-bpm-num');
+const ecgContainerEl = document.getElementById('ecg-container');
+const ecgCtx         = ecgCanvas.getContext('2d');
+const sparkCanvas    = document.getElementById('hrv-spark');
+const sparkCtx       = sparkCanvas.getContext('2d');
+const recArc         = document.getElementById('rec-arc');
+const recNeedle      = document.getElementById('rec-needle');
+const recGaugeVal    = document.getElementById('rec-gauge-val');
+const cogFill        = document.getElementById('cog-fill');
+const cogVal         = document.getElementById('cog-val');
+const threatEl       = document.getElementById('threat');
+const threatValEl    = document.getElementById('threat-val');
+const intCountEl     = document.getElementById('int-count');
 
-// ANS
-const ansParaEl = document.getElementById('ans-para');
-const ansSympEl = document.getElementById('ans-symp');
-
-// HRV sparkline
-const sparkCanvas = document.getElementById('hrv-spark');
-const sparkCtx    = sparkCanvas.getContext('2d');
-
-// Recovery gauge
-const recArc    = document.getElementById('rec-arc');
-const recNeedle = document.getElementById('rec-needle');
-const recGaugeVal = document.getElementById('rec-gauge-val');
-
-// Cognitive load ring
-const cogFill = document.getElementById('cog-fill');
-const cogVal  = document.getElementById('cog-val');
-
-// HR Zones
-const zoneRest   = document.getElementById('zone-rest');
-const zoneNormal = document.getElementById('zone-normal');
-const zoneElev   = document.getElementById('zone-elev');
-const zoneHigh   = document.getElementById('zone-high');
-
-// Threat
-const threatEl  = document.getElementById('threat');
-const threatVal = document.getElementById('threat-val');
-
-// Intervention chart
-const intChartEl = document.getElementById('int-chart');
-const intTotalEl = document.getElementById('int-total');
-
-// ── CLOCK + SESSION TIMER ──────────────────────────────────────────────────
-function padZ(n){ return n < 10 ? '0'+n : ''+n; }
-
+// ── Clock + Session timer ──────────────────────────────────────────────────
+function padZ(n) { return n < 10 ? '0' + n : '' + n; }
 setInterval(() => {
     const now = new Date();
     clockEl.textContent = padZ(now.getHours()) + ':' + padZ(now.getMinutes()) + ':' + padZ(now.getSeconds());
-
     if (sessionStart && isConnected) {
-        const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
-        const h = Math.floor(elapsed / 3600);
-        const m = Math.floor((elapsed % 3600) / 60);
-        const s = elapsed % 60;
-        sessionTimer.textContent = padZ(h) + ':' + padZ(m) + ':' + padZ(s);
+        const s = Math.floor((Date.now() - sessionStart) / 1000);
+        sessionTimerEl.textContent = padZ(Math.floor(s/3600)) + ':' + padZ(Math.floor(s%3600/60)) + ':' + padZ(s%60);
     }
 }, 1000);
 
@@ -502,11 +473,11 @@ function resizeSpark() {
     const rect = sparkCanvas.parentElement.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     sparkCanvas.width  = rect.width * dpr;
-    sparkCanvas.height = 40 * dpr;
+    sparkCanvas.height = 80 * dpr;
     sparkCtx.setTransform(1,0,0,1,0,0);
     sparkCtx.scale(dpr, dpr);
     sparkCanvas._w = rect.width;
-    sparkCanvas._h = 40;
+    sparkCanvas._h = 80;
 }
 
 window.addEventListener('resize', () => { resizeECG(); resizeSpark(); });
@@ -518,9 +489,7 @@ function ecgTick(ts) {
     if (ecgLastTs !== null) {
         const delta = Math.min(ts - ecgLastTs, 50);
         ecgBPM += (ecgTargetBPM - ecgBPM) * 0.05;
-        const clampedBPM  = Math.max(30, Math.min(150, ecgBPM));
-        const beatInterval = 60000 / clampedBPM;
-
+        const beatInterval = 60000 / Math.max(30, Math.min(150, ecgBPM));
         ecgMsSinceBeat += delta;
         if (ecgBeatIndex < 0 && ecgMsSinceBeat >= beatInterval) {
             ecgMsSinceBeat -= beatInterval;
@@ -546,132 +515,114 @@ function drawECG() {
     const ctx = ecgCtx;
     ctx.clearRect(0, 0, W, H);
 
-    // Dark BG
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fillRect(0, 0, W, H);
 
-    // ECG paper gridlines — minor grid every 20px, major every 100px
+    // Minor grid
     ctx.strokeStyle = 'rgba(255,255,255,0.025)';
     ctx.lineWidth = 0.5;
-    for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    // Major grid
     ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 100) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    for (let y = 0; y < H; y += 100) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-    // Center line
+    for (let x = 0; x < W; x += 100) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 100) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    // Baseline
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
 
     const buf = ecgBuffer, len = buf.length, pad = 12;
 
-    // Glow pass
+    // Glow
     ctx.save();
-    ctx.strokeStyle = ecgColor;
-    ctx.globalAlpha = 0.15;
-    ctx.lineWidth = 6;
-    ctx.lineJoin = 'round';
+    ctx.strokeStyle = ecgColor; ctx.globalAlpha = 0.15; ctx.lineWidth = 6; ctx.lineJoin = 'round';
     ctx.beginPath();
-    for (let i = 0; i < len; i++) {
-        const x = (i / len) * W, y = buf[i] * (H - pad*2) + pad;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    ctx.restore();
+    for (let i = 0; i < len; i++) { const x = (i/len)*W, y = buf[i]*(H-pad*2)+pad; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke(); ctx.restore();
 
-    // Main line
+    // Main
     ctx.save();
-    ctx.shadowBlur  = 10;
-    ctx.shadowColor = ecgColor;
-    ctx.strokeStyle = ecgColor;
-    ctx.lineWidth   = 2;
-    ctx.lineJoin    = 'round';
+    ctx.shadowBlur = 10; ctx.shadowColor = ecgColor;
+    ctx.strokeStyle = ecgColor; ctx.lineWidth = 2; ctx.lineJoin = 'round';
     ctx.beginPath();
-    for (let i = 0; i < len; i++) {
-        const x = (i / len) * W, y = buf[i] * (H - pad*2) + pad;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    }
+    for (let i = 0; i < len; i++) { const x = (i/len)*W, y = buf[i]*(H-pad*2)+pad; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
     ctx.stroke();
 
-    // Leading dot
-    const lastY = buf[len - 1] * (H - pad*2) + pad;
-    ctx.shadowBlur  = 16;
-    ctx.fillStyle   = ecgColor;
-    ctx.beginPath();
-    ctx.arc(W - 1, lastY, 3.5, 0, Math.PI * 2);
-    ctx.fill();
+    // Dot
+    const lastY = buf[len-1]*(H-pad*2)+pad;
+    ctx.shadowBlur = 16; ctx.fillStyle = ecgColor;
+    ctx.beginPath(); ctx.arc(W-1, lastY, 3.5, 0, Math.PI*2); ctx.fill();
     ctx.restore();
 }
 
 // ── HRV Sparkline ──────────────────────────────────────────────────────────
+function hexToRgba(hex, a) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return 'rgba('+r+','+g+','+b+','+a+')';
+}
+
 function drawSparkline() {
     const W = sparkCanvas._w, H = sparkCanvas._h;
     if (!W || hrvHistory.length < 2) return;
     const ctx = sparkCtx;
     ctx.clearRect(0, 0, W, H);
-
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.fillRect(0, 0, W, H);
 
     const vals = hrvHistory;
     const min = Math.max(0, Math.min(...vals) - 5);
     const max = Math.max(...vals) + 5;
     const range = max - min || 1;
-    const pad = 4;
+    const padX = 6, padY = 14;
 
     // Fill area
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(0, H);
+    ctx.moveTo(padX, H - padY);
     for (let i = 0; i < vals.length; i++) {
-        const x = (i / (HRV_MAX_POINTS - 1)) * W;
-        const y = H - pad - ((vals[i] - min) / range) * (H - pad * 2);
+        const x = padX + (i / (HRV_MAX_POINTS - 1)) * (W - padX * 2);
+        const y = H - padY - ((vals[i] - min) / range) * (H - padY * 2);
         ctx.lineTo(x, y);
     }
-    ctx.lineTo(((vals.length - 1) / (HRV_MAX_POINTS - 1)) * W, H);
+    ctx.lineTo(padX + ((vals.length - 1) / (HRV_MAX_POINTS - 1)) * (W - padX * 2), H - padY);
     ctx.closePath();
-    ctx.fillStyle = ecgColor.replace(')', ',0.08)').replace('rgb', 'rgba').replace('#', '');
-    // Hex to rgba fill
-    const hexToRgba = (hex, a) => {
-        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-        return `rgba(${r},${g},${b},${a})`;
-    };
-    ctx.fillStyle = hexToRgba(ecgColor, 0.1);
+    ctx.fillStyle = hexToRgba(ecgColor, 0.08);
     ctx.fill();
     ctx.restore();
 
     // Line
     ctx.save();
-    ctx.strokeStyle = ecgColor;
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = 'round';
-    ctx.shadowBlur = 6;
-    ctx.shadowColor = ecgColor;
+    ctx.strokeStyle = ecgColor; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.shadowBlur = 8; ctx.shadowColor = ecgColor;
     ctx.beginPath();
     for (let i = 0; i < vals.length; i++) {
-        const x = (i / (HRV_MAX_POINTS - 1)) * W;
-        const y = H - pad - ((vals[i] - min) / range) * (H - pad * 2);
+        const x = padX + (i / (HRV_MAX_POINTS - 1)) * (W - padX * 2);
+        const y = H - padY - ((vals[i] - min) / range) * (H - padY * 2);
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
 
     // Dots
+    ctx.shadowBlur = 0;
     ctx.fillStyle = ecgColor;
     for (let i = 0; i < vals.length; i++) {
-        const x = (i / (HRV_MAX_POINTS - 1)) * W;
-        const y = H - pad - ((vals[i] - min) / range) * (H - pad * 2);
-        ctx.beginPath();
-        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-        ctx.fill();
+        const x = padX + (i / (HRV_MAX_POINTS - 1)) * (W - padX * 2);
+        const y = H - padY - ((vals[i] - min) / range) * (H - padY * 2);
+        ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
 
-    // Min/max labels
-    ctx.fillStyle = '#333';
-    ctx.font = '9px JetBrains Mono, monospace';
+    // Axis labels
+    ctx.fillStyle = '#555';
+    ctx.font = '10px JetBrains Mono, monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(Math.round(max) + 'ms', W - 4, 10);
-    ctx.fillText(Math.round(min) + 'ms', W - 4, H - 2);
+    ctx.fillText(Math.round(max) + ' ms', W - 8, 12);
+    ctx.fillText(Math.round(min) + ' ms', W - 8, H - 4);
+    // Latest value
+    ctx.textAlign = 'left';
+    ctx.fillStyle = ecgColor;
+    ctx.fillText(Math.round(vals[vals.length - 1]) + ' ms', 8, 12);
 }
 
 // ── Number lerp loop ───────────────────────────────────────────────────────
@@ -690,46 +641,29 @@ function lerpLoop() {
     // Stress bar
     stressValEl.textContent = displayStress.toFixed(1) + ' / 3.0';
     stressBarEl.style.width = (Math.min(displayStress / 3, 1) * 100) + '%';
-    if (displayStress > 2)      stressBarEl.style.background = '#ff5050';
-    else if (displayStress > 1) stressBarEl.style.background = '#ffa000';
-    else                        stressBarEl.style.background = '#00c864';
+    stressBarEl.style.background = displayStress > 2 ? '#ff5050' : displayStress > 1 ? '#ffa000' : '#00c864';
 
-    // ECG BPM labels
+    // ECG BPM label
     const bpmRound = Math.round(ecgBPM);
     ecgBpmNum.textContent = bpmRound;
     ecgBpmNum.style.color = bpmRound > 100 ? '#ff5050' : '#555';
-
-    // ECG alarm border
     if (bpmRound > 100) ecgContainerEl.classList.add('alarm');
     else                ecgContainerEl.classList.remove('alarm');
 
-    // ANS balance: stress 0 = parasympathetic dominant, stress 3 = sympathetic dominant
-    const sympPct = Math.min(100, (displayStress / 3) * 100);
-    const paraPct = 100 - sympPct;
-    ansParaEl.style.width = paraPct + '%';
-    ansSympEl.style.width = sympPct + '%';
-
-    // Recovery gauge arc (arc length ~141.37)
+    // Recovery gauge
     const recPct = Math.max(0, Math.min(100, displayRec));
-    recArc.setAttribute('stroke-dashoffset', (141.37 * (1 - recPct / 100)).toFixed(2));
+    recArc.setAttribute('stroke-dashoffset', (REC_ARC_LEN * (1 - recPct / 100)).toFixed(2));
     recArc.setAttribute('stroke', recPct < 33 ? '#ff5050' : recPct < 67 ? '#ffa000' : '#00c864');
     recNeedle.setAttribute('transform', 'rotate(' + (-90 + recPct / 100 * 180) + ')');
     recGaugeVal.textContent = (targetRec > 0 ? Math.round(displayRec) : '--') + '%';
 
-    // Cognitive load ring (circumference 175.93)
+    // Cognitive load ring
     const cogPct = Math.min(100, (displayStress / 3) * 100);
-    cogFill.setAttribute('stroke-dashoffset', (175.93 * (1 - cogPct / 100)).toFixed(2));
+    cogFill.setAttribute('stroke-dashoffset', (COG_CIRC * (1 - cogPct / 100)).toFixed(2));
     cogFill.setAttribute('stroke', cogPct > 66 ? '#ff5050' : cogPct > 33 ? '#ffa000' : '#0096ff');
     cogVal.textContent = Math.round(cogPct) + '%';
 
-    // HR Zones
-    const hr = Math.round(displayHR);
-    zoneRest.classList.toggle('active',   hr > 0 && hr < 60);
-    zoneNormal.classList.toggle('active', hr >= 60 && hr < 80);
-    zoneElev.classList.toggle('active',   hr >= 80 && hr <= 100);
-    zoneHigh.classList.toggle('active',   hr > 100);
-
-    // Sparkline redraw
+    // Sparkline
     drawSparkline();
 
     requestAnimationFrame(lerpLoop);
@@ -761,28 +695,31 @@ function setState(s) {
 
     stateEl.textContent = s;
     stateEl.style.color = color;
+    stateEl.style.textShadow = '0 0 24px ' + color + ', 0 0 48px ' + hexToRgba(color, 0.3);
     topbarAccent.style.color = color;
     dash.style.setProperty('--state-color', color);
+
+    // Update number glow to match state
+    hrEl.style.textShadow = '0 0 20px ' + hexToRgba(color, 0.3);
+    hrvEl.style.textShadow = '0 0 12px ' + hexToRgba(color, 0.15);
+    recEl.style.textShadow = '0 0 12px ' + hexToRgba(color, 0.15);
+    strainEl.style.textShadow = '0 0 12px ' + hexToRgba(color, 0.15);
 
     if (changed) {
         dash.classList.remove('pulse');
         void dash.offsetWidth;
         dash.classList.add('pulse');
     }
-
     updateThreat();
 }
 
 // ── Threat level ───────────────────────────────────────────────────────────
 function updateThreat() {
     let level = 'nominal';
-    if (curState === 'STRESSED' || displayStress > 2) {
-        level = 'critical';
-    } else if (curState === 'FATIGUED' || curState === 'WIRED' || displayStress > 1) {
-        level = 'elevated';
-    }
+    if (curState === 'STRESSED' || displayStress > 2) level = 'critical';
+    else if (curState === 'FATIGUED' || curState === 'WIRED' || displayStress > 1) level = 'elevated';
     threatEl.className = 'threat ' + level;
-    threatVal.textContent = level.toUpperCase();
+    threatValEl.textContent = level.toUpperCase();
 }
 
 // ── Intervention log ───────────────────────────────────────────────────────
@@ -798,27 +735,20 @@ function addIntervention(msg) {
     msg._time = new Date().toLocaleTimeString('en-US', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
     interventions.unshift(msg);
     if (interventions.length > 8) interventions.pop();
-
-    // Update per-state counts
-    const st = msg.state || curState;
-    if (intPerState.hasOwnProperty(st)) intPerState[st]++;
     intTotalCount++;
-    intTotalEl.textContent = intTotalCount;
-    updateIntChart();
+    intCountEl.innerHTML = '<strong>' + intTotalCount + '</strong> INTERVENTION' + (intTotalCount !== 1 ? 'S' : '');
 
-    // Rebuild log
     logEl.innerHTML = '';
     interventions.forEach(m => {
         const isCritical = m.priority === 'critical';
         const stateColor = STATE_COLORS[m.state] || '#888';
         const prioColor = m.priority === 'critical' ? '#ff5050' : m.priority === 'high' ? '#ffa000' : m.priority === 'medium' ? '#0096ff' : '#444';
-        const icon = getIcon(m);
 
         const div = document.createElement('div');
         div.className = 'log-entry' + (isCritical ? ' critical' : '');
         div.innerHTML =
             '<div class="log-meta">' +
-                '<span class="log-icon">' + icon + '</span>' +
+                '<span class="log-icon">' + getIcon(m) + '</span>' +
                 '<span class="log-time">' + (m._time || '') + '</span>' +
                 '<span class="log-state" style="background:' + stateColor + '">' + (m.state || '') + '</span>' +
                 '<span class="log-badge" style="background:' + prioColor + '">' + (m.priority || 'low') + '</span>' +
@@ -830,31 +760,17 @@ function addIntervention(msg) {
     updateThreat();
 }
 
-function updateIntChart() {
-    const maxCount = Math.max(1, ...Object.values(intPerState));
-    const bars = intChartEl.children;
-    STATE_ORDER.forEach((s, i) => {
-        const count = intPerState[s];
-        const h = Math.max(2, (count / maxCount) * 32);
-        bars[i].style.height = h + 'px';
-        bars[i].style.background = STATE_COLORS[s];
-        bars[i].title = s + ': ' + count;
-    });
-}
-
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
-// ── FIREWALL ALERT ─────────────────────────────────────────────────────────
+// ── Firewall alert ─────────────────────────────────────────────────────────
 function showFirewallAlert(msg) {
     const el = document.createElement('div');
     el.className = 'firewall-alert';
-
     const isStress = msg.message && msg.message.includes('STRESS');
     el.innerHTML =
         '<div class="fa-icon">\u{1F6A8}</div>' +
         '<div class="fa-text">' + (isStress ? 'STRESS ALERT<br>ACTIVATED' : 'FATIGUE FIREWALL<br>ACTIVATED') + '</div>' +
         '<div class="fa-sub">Biometric safety override engaged</div>';
-
     document.body.appendChild(el);
     setTimeout(() => el.classList.add('fade'), 3500);
     setTimeout(() => el.remove(), 5000);
@@ -897,8 +813,6 @@ function connect() {
                 ecgTargetBPM = msg.heartRate || 72;
                 syncHeartbeat(msg.heartRate || 72);
                 if (msg.state) setState(msg.state);
-
-                // HRV sparkline history
                 if (msg.hrv && msg.hrv > 0) {
                     hrvHistory.push(msg.hrv);
                     if (hrvHistory.length > HRV_MAX_POINTS) hrvHistory.shift();
@@ -907,7 +821,6 @@ function connect() {
 
             case 'intervention':
                 addIntervention(msg);
-                // Firewall alert overlay
                 if (msg.message && (msg.message.includes('FIREWALL') || msg.message.includes('STRESS ALERT'))) {
                     showFirewallAlert(msg);
                 }
