@@ -52,10 +52,21 @@ class GhostBrain:
 
     # here is the decision being made
     def should_intervene(self, vision_analysis, biometric_state, modifiers):
-        if vision_analysis.get("risky_action"):
-            return True, "risky_action_detected"
         now = time.time()
         time_since_last = now - self.last_intervention_time
+
+        # Risky actions get priority but still respect a minimum 10s cooldown
+        # to prevent spam when the same content is re-analyzed
+        if vision_analysis.get("risky_action"):
+            if time_since_last < 10:
+                return False, "cooldown"
+            if biometric_state == "FATIGUED":
+                return True, "fatigue_firewall"
+            if biometric_state == "STRESSED":
+                return True, "stress_firewall"
+            return True, "risky_action_detected"
+
+        # Normal cooldown for non-risky interventions
         effective_cooldown = self.cooldown
         if self.ignored_count >= 3:
             effective_cooldown = 60

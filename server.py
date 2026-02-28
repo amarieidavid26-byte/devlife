@@ -45,6 +45,10 @@ intervention_history: list[dict] = []
 ghost_running = False 
 pending_content = {}
 content_lock = threading.Lock()
+last_analyzed_hashes = {}          # {app_type: hash} — skip re-analysis of identical content
+intervention_cooldown_until = 0    # timestamp — skip ALL analysis during cooldown
+last_intervention_hash = None      # hash of content that triggered the last intervention
+suppressed_hashes = set()          # hashes the user already responded to — never re-analyze
 main_event_loop: asyncio.AbstractEventLoop = None
 
 # electron broadcast 
@@ -139,6 +143,7 @@ def ghost_loop():
     GAME_MODE (True): Waits for content from in-game apps via WebSocket.
     DESKTOP_MODE (False): Captures screenshots and uses Claude Vision.
     """
+    global intervention_cooldown_until, last_intervention_hash
     time.sleep(2)
 
     while ghost_running:
@@ -147,11 +152,13 @@ def ghost_loop():
             modifiers = bio.get_personality_modifiers(state)
 
             if GAME_MODE:
-                # game mode - analyze from in-game apps 
+                # game mode - analyze content from in-game apps
                 analysis = None
                 app_type = None
                 content_data = None
+                content_hash = None
 
+                # grab the most recent pending content
                 with content_lock:
                     latest_time = 0
                     for atype, data in pending_content.items():
@@ -161,8 +168,21 @@ def ghost_loop():
                             content_data = data
 
                 if content_data and len(content_data.get("content", "")) >= CONTENT_MIN_LENGTH:
-                    last_time = getattr(content_analyzer, 'last_analysis_time', 0)
-                    if time.time() - last_time >= CONTENT_REANALYZE_INTERVAL or content_data.get("changed", True):
+                    content_hash = hash(content_data["content"][:500])
+
+                    # DEDUP: skip if we already analyzed this exact content
+                    already_analyzed = content_hash == last_analyzed_hashes.get(app_type)
+                    # COOLDOWN: skip if Ghost just sent an intervention
+                    in_cooldown = time.time() < intervention_cooldown_until
+                    # SUPPRESSED: skip if user already responded to this content
+                    user_suppressed = content_hash in suppressed_hashes
+
+                    if already_analyzed or in_cooldown or user_suppressed:
+                        # clear this pending content — it's been handled
+                        with content_lock:
+                            if app_type in pending_content:
+                                del pending_content[app_type]
+                    else:
                         context_summary = tracker.get_summary()
                         try:
                             analysis = content_analyzer.analyze(
@@ -171,9 +191,12 @@ def ghost_loop():
                                 extra_context=context_summary or "",
                                 **content_data.get("kwargs", {})
                             )
+                            # mark this content hash as analyzed
+                            last_analyzed_hashes[app_type] = content_hash
+                            # clear pending content — we consumed it
                             with content_lock:
                                 if app_type in pending_content:
-                                    pending_content[app_type]["changed"] = False
+                                    del pending_content[app_type]
                         except Exception as e:
                             print(f"[ghost_loop] Content analysis failed: {e}")
 
@@ -183,6 +206,9 @@ def ghost_loop():
                     intervention = brain.process(analysis, state, modifiers)
 
                     if intervention:
+                        # set 30s cooldown so ghost_loop doesn't re-analyze during this window
+                        intervention_cooldown_until = time.time() + 30
+                        last_intervention_hash = content_hash
                         bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
                         intervention["biometric"] = build_biometric_msg(bio_data, state)
                         intervention["app_type"] = app_type
@@ -377,8 +403,13 @@ async def websocket_endpoint(ws: WebSocket):
             data = await ws.receive_json()
 
             # handle the user feedback from the Ghost interventions
-            if data.get("type") == "feedback": 
+            if data.get("type") == "feedback":
                 brain.user_feedback(data.get("action", ""))
+                # suppress re-analysis of the content that triggered this intervention
+                if last_intervention_hash is not None:
+                    suppressed_hashes.add(last_intervention_hash)
+                    if len(suppressed_hashes) > 100:
+                        suppressed_hashes.clear()
 
             elif data.get("type") == "content_update":
                 app_type = data.get("app_type", "code")

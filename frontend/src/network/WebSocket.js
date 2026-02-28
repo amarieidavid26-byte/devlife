@@ -9,6 +9,7 @@ export class GhostSocket {
         this.contentTimer = null;
         this.reconnectTimer = null;
         this.isConnected = false;
+        this.lastSentContent = {};
         this.connect();
     }
 
@@ -81,8 +82,12 @@ export class GhostSocket {
     }
 
     sendContentUpdate(appType, content, metadata = {}) {
+        // Skip if content hasn't changed since last send for this app
+        if (this.lastSentContent[appType] === content) return;
+
         clearTimeout(this.contentTimer);
         this.contentTimer = setTimeout(() => {
+            this.lastSentContent[appType] = content;
             this.send({
                 type: 'content_update',
                 app_type: appType,

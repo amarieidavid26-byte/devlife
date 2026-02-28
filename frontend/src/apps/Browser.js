@@ -49,6 +49,8 @@ export class BrowserApp {
         this.backBtn = null;
         this.forwardBtn = null;
         this.refreshBtn = null;
+        this.blockedDiv = null;
+        this.loadTimeout = null;
     }
 
     open() {
@@ -261,16 +263,47 @@ export class BrowserApp {
         this.iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals');
         this.iframe.setAttribute('referrerpolicy', 'no-referrer');
         this.iframe.addEventListener('load', () => {
+            if (!this.iframe || this.iframe.src === 'about:blank') return;
             try {
                 const iframeUrl = this.iframe.contentWindow.location.href;
                 if (iframeUrl && iframeUrl !== 'about:blank') {
                     this.addressBar.value = iframeUrl;
                 }
+                // Check if the page actually loaded content
+                const doc = this.iframe.contentDocument;
+                if (doc && doc.body && doc.body.innerHTML.length < 10) {
+                    this.showBlockedMessage(this.addressBar.value);
+                }
             } catch (e) {
-                // Cross-origin — can't read URL, keep what we set
+                // Cross-origin: can't access contentDocument = site loaded but blocks reading
+                // This is actually SUCCESS (site rendered in iframe but is cross-origin)
+                // Only show blocked message if we detect a known blocking pattern
+            }
+        });
+        this.iframe.addEventListener('error', () => {
+            if (this.iframe && this.iframe.src !== 'about:blank') {
+                this.showBlockedMessage(this.addressBar.value);
             }
         });
         contentWrapper.appendChild(this.iframe);
+
+        // Blocked message overlay (hidden by default)
+        this.blockedDiv = document.createElement('div');
+        Object.assign(this.blockedDiv.style, {
+            width: '100%',
+            height: '100%',
+            background: '#ffffff',
+            position: 'absolute',
+            inset: '0',
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            color: '#1a1a2e',
+            textAlign: 'center',
+            padding: '40px'
+        });
+        contentWrapper.appendChild(this.blockedDiv);
 
         this.overlay.appendChild(contentWrapper);
 
@@ -282,6 +315,7 @@ export class BrowserApp {
         this.addressBar.value = 'devlife://home';
         this.homeDiv.style.display = 'block';
         this.iframe.style.display = 'none';
+        this.blockedDiv.style.display = 'none';
         this.iframe.src = 'about:blank';
         this.socket.sendContentUpdate(this.appType, 'devlife://home\nDevLife Browser Home Page', { url: 'devlife://home' });
     }
@@ -289,13 +323,52 @@ export class BrowserApp {
     navigate(url) {
         this.addressBar.value = url;
         this.homeDiv.style.display = 'none';
+        this.blockedDiv.style.display = 'none';
         this.iframe.style.display = 'block';
         this.iframe.src = url;
         this.socket.sendContentUpdate(this.appType, url + '\nBrowsing: ' + url, { url: url });
+
+        // Timeout: if iframe hasn't loaded in 8s, site probably blocks embedding
+        clearTimeout(this.loadTimeout);
+        this.loadTimeout = setTimeout(() => {
+            if (!this.iframe) return;
+            try {
+                const doc = this.iframe.contentDocument;
+                if (doc && doc.body && doc.body.innerHTML.length < 10) {
+                    this.showBlockedMessage(url);
+                }
+            } catch (e) {
+                // Cross-origin = site actually loaded, just can't read it — that's OK
+            }
+        }, 8000);
+    }
+
+    showBlockedMessage(url) {
+        if (!this.blockedDiv) return;
+        this.iframe.style.display = 'none';
+        this.blockedDiv.style.display = 'flex';
+        this.blockedDiv.innerHTML = `
+            <div>
+                <div style="font-size:48px;margin-bottom:16px">🚫</div>
+                <h2 style="font-size:20px;margin-bottom:8px">This site blocks embedding</h2>
+                <p style="color:#666;margin-bottom:24px;font-size:14px">${url.replace(/</g, '&lt;')}</p>
+                <a href="${url.replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer"
+                   style="display:inline-block;background:#0096FF;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+                    Open in new tab
+                </a>
+                <div style="margin-top:12px">
+                    <button id="browser-go-home" style="background:transparent;border:1px solid #ddd;color:#666;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">
+                        Back to home
+                    </button>
+                </div>
+            </div>
+        `;
+        this.blockedDiv.querySelector('#browser-go-home').addEventListener('click', () => this.showHome());
     }
 
     close() {
         if (!this.isOpen) return;
+        clearTimeout(this.loadTimeout);
         if (this.iframe) {
             this.iframe.src = 'about:blank';
         }
@@ -306,6 +379,7 @@ export class BrowserApp {
         this.addressBar = null;
         this.iframe = null;
         this.homeDiv = null;
+        this.blockedDiv = null;
         this.isOpen = false;
     }
 }

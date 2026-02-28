@@ -5,39 +5,70 @@
 # returns the same analysis dict format as vision_analyzer file so ghost brain can consume either one without changes
 
 import json
+import re
 import time
 from anthropic import Anthropic
 from config import CLAUDE_API_KEY, VISION_MODEL, VISION_MAX_TOKENS
 
+# Deterministic risky command patterns for the Fatigue Firewall
+# These trigger IMMEDIATELY without waiting for Claude's analysis
+RISKY_COMMAND_PATTERNS = [
+    (r'rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+|.*-rf\s+)', 'Destructive file deletion (rm -rf)'),
+    (r'git\s+push\s+.*--force', 'Force push — can overwrite remote history'),
+    (r'git\s+push\s+-f\b', 'Force push — can overwrite remote history'),
+    (r'git\s+reset\s+--hard', 'Hard reset — discards all uncommitted changes'),
+    (r'DROP\s+(TABLE|DATABASE|INDEX)', 'Database destructive command'),
+    (r'DELETE\s+FROM\s+\w+\s*;?\s*$', 'DELETE without WHERE clause — drops all rows'),
+    (r'TRUNCATE\s+TABLE', 'Table truncation — irrecoverable data loss'),
+    (r'chmod\s+777\b', 'Overly permissive file permissions'),
+    (r'sudo\s+rm\b', 'Elevated destructive command'),
+    (r':\s*\)\s*\{\s*:\s*\|', 'Fork bomb detected'),
+    (r'mkfs\b', 'Filesystem format command'),
+    (r'dd\s+if=', 'Raw disk write — potential data destruction'),
+    (r'npm\s+publish', 'Publishing package — verify version and contents first'),
+    (r'deploy\s+(prod|production|main|master)', 'Production deployment'),
+    (r'kubectl\s+delete', 'Kubernetes resource deletion'),
+    (r'docker\s+system\s+prune\s+-a', 'Docker full prune — removes all unused data'),
+]
+
 class ContentAnalyzer:
     APP_PROMPTS = {
-        "code": """ You are Ghost, an AI assistant analyzing code in real-time. analyze this
-code and respond ONLY with a JSON onject:
+        "code": """You are Ghost, an AI assistant analyzing code in real-time. Analyze this
+code and respond ONLY with a JSON object:
 {
-        "app": "code_editor",
-        "language": "detected language",
-        "activity": "what the user is doing (writing, debugging, refactoring, etc)",
-        "stuck_probability": "0.0 to 1.0",
-        "stuck_reason": "why the conversation might be going badly or null"
-        "mistake_detected": true/false,
-        "mistake_description": "describe the communication issue or null",
-        "help_opportunity": "how Ghost could help or null",
-        "risky_action": false,
-        "risky_description": null,
-        "suggested_intervention": {
-            "type": "suggestion | warning | encouragement",
-            "message": "concise Ghost message(2-3 sentences max)",
-            "priority": "low | medium | high",
-            "code_suggestion": null
-        },
-        "context_summary": "one-line summary of conversation"
+    "app": "code_editor",
+    "language": "detected language",
+    "activity": "what the user is doing (writing, debugging, refactoring, etc)",
+    "stuck_probability": 0.0 to 1.0,
+    "stuck_reason": "why the user might be stuck or null",
+    "mistake_detected": true/false,
+    "mistake_description": "describe the bug or error or null",
+    "help_opportunity": "how Ghost could help or null",
+    "risky_action": false,
+    "risky_description": null,
+    "suggested_intervention": {
+        "type": "fix | suggestion | warning | encouragement",
+        "message": "concise Ghost message (2-3 sentences max)",
+        "priority": "low | medium | high",
+        "code_suggestion": "corrected code snippet or null"
+    },
+    "context_summary": "one-line summary of coding session"
 }
-Signs of communication issues:
-- escalating tone (ALL CAPS, exclamation marks, sarcasm)
-- defensive or aggresive phrasing
-- circular arguments (same point repeated)
-- passive-aggeresive messages
-- responding while clearly frustrated """,
+
+Signs of bugs and mistakes:
+- TypeError risks (calling methods on None, wrong argument types)
+- Undefined or uninitialized variables
+- Off-by-one errors in loops or array indexing
+- Missing null/None checks before accessing attributes
+- Infinite loops or missing break conditions
+- Missing imports or undefined functions
+- Logic errors (wrong operator, inverted condition)
+- Resource leaks (unclosed files, connections)
+
+Signs of being stuck:
+- Same code unchanged for multiple checks
+- Repeated undo/redo patterns
+- Adding and deleting the same lines""",
 
         "terminal": """You are Ghost, an AI assistant monitoring a terminal session.
 Analyze this terminal output and respond with ONLY a JSON object:
@@ -160,6 +191,14 @@ Signs of communication issues:
         self.last_analysis_time = 0
         self.content_history = {}
 
+    def detect_risky_commands(self, content):
+        """Deterministic pattern matching for dangerous terminal commands.
+        Returns (is_risky, description) — runs INSTANTLY, no API call needed."""
+        for pattern, description in RISKY_COMMAND_PATTERNS:
+            if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
+                return True, description
+        return False, None
+
     def analyze(self, app_type, content, extra_context = "", **kwargs):
         # analyze content from an ingame app
         # unlike vision analyzer, which takes ss this takes raw text content which is 10x cheaper
@@ -219,6 +258,15 @@ Signs of communication issues:
                     text = text[:-3]
 
             analysis = json.loads(text)
+
+            # Deterministic override: if terminal has risky commands, force risky_action=True
+            # This ensures the Fatigue Firewall triggers even if Claude missed it
+            if app_type == "terminal":
+                is_risky, risky_desc = self.detect_risky_commands(content)
+                if is_risky:
+                    analysis["risky_action"] = True
+                    analysis["risky_description"] = analysis.get("risky_description") or risky_desc
+
             self.last_analysis = analysis
             self.last_analysis_time = now
             return analysis
