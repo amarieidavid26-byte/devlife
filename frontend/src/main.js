@@ -134,7 +134,7 @@ function closeAllApps() {
 // ── B2: Ambient music — Howler with onloaderror (not try/catch) ───────────────
 // Drop ambient.mp3/ogg in /public to enable speaker toggle
 let ambientSound = new Howl({
-    src:         ['/ambient.ogg', '/ambient.mp3'],
+    src:         ['/ambient.mp3', '/ambient.ogg'],
     loop:        true,
     volume:      0.35,
     html5:       true,
