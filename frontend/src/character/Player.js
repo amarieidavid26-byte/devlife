@@ -41,10 +41,10 @@ export class Player {
 
         // Shadow — added before sprite so it renders behind
         this._shadow = new PIXI.Graphics();
-        this._shadow.beginFill(0x000000, 0.22);
-        this._shadow.drawEllipse(0, 0, 14, 5);
+        this._shadow.beginFill(0x000000, 0.28);
+        this._shadow.drawEllipse(0, 0, 16, 6);
         this._shadow.endFill();
-        this._shadow.y = 18;
+        this._shadow.y = 20;
         this.container.addChild(this._shadow);
 
         this._sprite = this._buildSprite();
@@ -57,6 +57,7 @@ export class Player {
 
     _buildSprite() {
         const container = new PIXI.Container();
+        const OL_C = 0x0d0d1a; // outline colour
 
         // ── Legs behind body ────────────────────────────────────────────────────
         this._legLeft  = new PIXI.Graphics();
@@ -65,22 +66,26 @@ export class Player {
         container.addChild(this._legLeft);
         container.addChild(this._legRight);
 
-        // ── Body: dark navy hoodie ───────────────────────────────────────────────
+        // ── Body: hoodie (medium slate-blue) ────────────────────────────────────
         const body = new PIXI.Graphics();
-        body.beginFill(0x1e3556);
-        body.drawRoundedRect(-11, -26, 22, 26, 4);
+        // Main hoodie body
+        body.lineStyle(1.8, OL_C, 0.88);
+        body.beginFill(0x4a6fa5);
+        body.drawRoundedRect(-12, -28, 24, 28, 5);
         body.endFill();
         // Hood collar dip
-        body.beginFill(0x162844);
-        body.drawEllipse(0, -26, 7, 4);
+        body.lineStyle(0);
+        body.beginFill(0x3a5588);
+        body.drawEllipse(0, -28, 8, 4.5);
         body.endFill();
         // Kangaroo pocket
-        body.beginFill(0x162844);
-        body.drawRoundedRect(-7, -12, 14, 9, 2);
+        body.lineStyle(1, OL_C, 0.45);
+        body.beginFill(0x3a5588);
+        body.drawRoundedRect(-8, -14, 16, 10, 3);
         body.endFill();
         // Zipper line
-        body.lineStyle(1, 0x2a4060, 0.55);
-        body.moveTo(0, -26); body.lineTo(0, -3);
+        body.lineStyle(1, 0x1e3060, 0.5);
+        body.moveTo(0, -28); body.lineTo(0, -4);
         container.addChild(body);
 
         // ── Arms in front of body ────────────────────────────────────────────────
@@ -92,41 +97,49 @@ export class Player {
 
         // ── Head ─────────────────────────────────────────────────────────────────
         const head = new PIXI.Graphics();
-        // Face
-        head.beginFill(0xf5c99a);
-        head.drawEllipse(0, -36, 11, 13);
+        // Face — bigger (rx 13, ry 14) and lifted slightly
+        head.lineStyle(1.8, OL_C, 0.88);
+        head.beginFill(0xf8c9a0);
+        head.drawEllipse(0, -38, 13, 14);
         head.endFill();
         // Eye whites
-        head.beginFill(0xffffff, 0.9);
-        head.drawCircle(-3.5, -37, 3);
-        head.drawCircle(3.5, -37, 3);
+        head.lineStyle(0);
+        head.beginFill(0xffffff, 0.95);
+        head.drawCircle(-4,   -39.5, 3.5);
+        head.drawCircle( 4,   -39.5, 3.5);
         head.endFill();
         // Pupils
         head.beginFill(0x1a1440);
-        head.drawCircle(-3, -37, 1.8);
-        head.drawCircle(4, -37, 1.8);
+        head.drawCircle(-3.5, -39.5, 2.0);
+        head.drawCircle( 4.5, -39.5, 2.0);
         head.endFill();
-        // Glasses frames
-        head.lineStyle(1.5, 0x1a1a28, 0.92);
-        head.drawRoundedRect(-8, -41, 6, 5, 1);
-        head.drawRoundedRect(2, -41, 6, 5, 1);
-        head.moveTo(-2, -39); head.lineTo(2, -39); // bridge
-        head.lineStyle(1, 0x1a1a28, 0.6);
-        head.moveTo(-8, -39); head.lineTo(-10, -37); // left temple
-        head.moveTo(8, -39);  head.lineTo(10, -37);  // right temple
-        // Subtle smile
-        head.lineStyle(1.2, 0xb8885a, 0.7);
-        head.moveTo(-2.5, -31);
-        head.bezierCurveTo(-1, -29.5, 1, -29.5, 2.5, -31);
+        // Eye-shine dots
+        head.beginFill(0xffffff, 0.75);
+        head.drawCircle(-2.8, -40.5, 0.85);
+        head.drawCircle( 5.2, -40.5, 0.85);
+        head.endFill();
+        // Smile
+        head.lineStyle(1.5, 0xb8885a, 0.82);
+        head.moveTo(-3, -32);
+        head.bezierCurveTo(-1, -30, 1, -30, 3, -32);
+        // Nose hint
+        head.lineStyle(0);
+        head.beginFill(0xd4a070, 0.45);
+        head.drawCircle(0, -35.5, 1.3);
+        head.endFill();
         container.addChild(head);
 
-        // ── Hair ─────────────────────────────────────────────────────────────────
+        // ── Hair — clean rounded cap ──────────────────────────────────────────────
         const hair = new PIXI.Graphics();
-        hair.beginFill(0x180d04);
-        hair.drawEllipse(0, -46, 11, 7);
-        hair.drawRect(-11, -48, 22, 9);
-        hair.drawEllipse(-10, -42, 3.5, 5);
-        hair.drawEllipse(10, -42, 3.5, 5);
+        hair.lineStyle(1.5, OL_C, 0.75);
+        hair.beginFill(0x2c1800);
+        hair.drawEllipse(0, -52, 13, 5);   // top dome — short
+        hair.endFill();
+        hair.lineStyle(0);
+        hair.beginFill(0x2c1800);
+        hair.drawRect(-13, -52, 26, 8);    // fill connecting dome to head
+        hair.drawEllipse(-12, -47, 4, 5);  // left side
+        hair.drawEllipse( 12, -47, 4, 5);  // right side
         hair.endFill();
         container.addChild(hair);
 
@@ -134,57 +147,69 @@ export class Player {
     }
 
     _drawLegs(walkPhase) {
-        const lOff =  Math.sin(walkPhase) * 4;
-        const rOff = -Math.sin(walkPhase) * 4;
+        const lOff =  Math.sin(walkPhase) * 5;
+        const rOff = -Math.sin(walkPhase) * 5;
+        const OL_C = 0x0d0d1a;
 
-        // Dark denim jeans
+        // Jeans — clear denim blue
         this._legLeft.clear();
-        this._legLeft.beginFill(0x1a2840);
-        this._legLeft.drawRoundedRect(-7, -2 + lOff, 6, 14, 2);
+        this._legLeft.lineStyle(1.5, OL_C, 0.85);
+        this._legLeft.beginFill(0x2a4a7f);
+        this._legLeft.drawRoundedRect(-8, -2 + lOff, 7, 15, 2.5);
         this._legLeft.endFill();
 
         this._legRight.clear();
-        this._legRight.beginFill(0x1a2840);
-        this._legRight.drawRoundedRect(1, -2 + rOff, 6, 14, 2);
+        this._legRight.lineStyle(1.5, OL_C, 0.85);
+        this._legRight.beginFill(0x2a4a7f);
+        this._legRight.drawRoundedRect(1, -2 + rOff, 7, 15, 2.5);
         this._legRight.endFill();
 
-        // White sneakers with blue stripe
-        this._legLeft.beginFill(0xe8e8f0);
-        this._legLeft.drawRoundedRect(-8.5, 12 + lOff, 9, 5, 2);
+        // Sneakers — warm white with red stripe
+        this._legLeft.lineStyle(1.2, OL_C, 0.8);
+        this._legLeft.beginFill(0xf0f0f8);
+        this._legLeft.drawRoundedRect(-9.5, 13 + lOff, 10, 6, 2.5);
         this._legLeft.endFill();
-        this._legLeft.beginFill(0x4477cc);
-        this._legLeft.drawRect(-8, 15 + lOff, 8, 1.5);
+        this._legLeft.lineStyle(0);
+        this._legLeft.beginFill(0xe94560);
+        this._legLeft.drawRect(-9, 16.5 + lOff, 9, 1.5);
         this._legLeft.endFill();
 
-        this._legRight.beginFill(0xe8e8f0);
-        this._legRight.drawRoundedRect(0, 12 + rOff, 9, 5, 2);
+        this._legRight.lineStyle(1.2, OL_C, 0.8);
+        this._legRight.beginFill(0xf0f0f8);
+        this._legRight.drawRoundedRect(0, 13 + rOff, 10, 6, 2.5);
         this._legRight.endFill();
-        this._legRight.beginFill(0x4477cc);
-        this._legRight.drawRect(1, 15 + rOff, 8, 1.5);
+        this._legRight.lineStyle(0);
+        this._legRight.beginFill(0xe94560);
+        this._legRight.drawRect(1, 16.5 + rOff, 9, 1.5);
         this._legRight.endFill();
     }
 
     _drawArms(walkPhase) {
-        const lOff =  Math.sin(walkPhase + Math.PI) * 3;
-        const rOff = -Math.sin(walkPhase + Math.PI) * 3;
+        const lOff =  Math.sin(walkPhase + Math.PI) * 4;
+        const rOff = -Math.sin(walkPhase + Math.PI) * 4;
+        const OL_C = 0x0d0d1a;
 
-        // Hoodie sleeves
+        // Hoodie sleeves — match body colour
         this._armLeft.clear();
-        this._armLeft.beginFill(0x1e3556);
-        this._armLeft.drawRoundedRect(-17, -24 + lOff, 7, 15, 2);
+        this._armLeft.lineStyle(1.5, OL_C, 0.85);
+        this._armLeft.beginFill(0x4a6fa5);
+        this._armLeft.drawRoundedRect(-19, -26 + lOff, 8, 16, 3);
         this._armLeft.endFill();
-        // Hand (skin)
-        this._armLeft.beginFill(0xf0c090);
-        this._armLeft.drawEllipse(-13, -9 + lOff, 4, 3);
+        // Hand
+        this._armLeft.lineStyle(1, OL_C, 0.65);
+        this._armLeft.beginFill(0xf8c9a0);
+        this._armLeft.drawEllipse(-15, -10 + lOff, 4.5, 3.5);
         this._armLeft.endFill();
 
         this._armRight.clear();
-        this._armRight.beginFill(0x1e3556);
-        this._armRight.drawRoundedRect(10, -24 + rOff, 7, 15, 2);
+        this._armRight.lineStyle(1.5, OL_C, 0.85);
+        this._armRight.beginFill(0x4a6fa5);
+        this._armRight.drawRoundedRect(11, -26 + rOff, 8, 16, 3);
         this._armRight.endFill();
-        // Hand (skin)
-        this._armRight.beginFill(0xf0c090);
-        this._armRight.drawEllipse(14, -9 + rOff, 4, 3);
+        // Hand
+        this._armRight.lineStyle(1, OL_C, 0.65);
+        this._armRight.beginFill(0xf8c9a0);
+        this._armRight.drawEllipse(15, -10 + rOff, 4.5, 3.5);
         this._armRight.endFill();
     }
 
