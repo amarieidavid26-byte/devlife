@@ -203,10 +203,36 @@ Signs of communication issues:
         # analyze content from an ingame app
         # unlike vision analyzer, which takes ss this takes raw text content which is 10x cheaper
 
+        # CUT 1: Risky command detection BEFORE Claude API call — instant response
+        if app_type == "terminal":
+            is_risky, risky_desc = self.detect_risky_commands(content)
+            if is_risky:
+                analysis = {
+                    "app": "terminal",
+                    "activity": "risky command detected",
+                    "stuck_probability": 0.0,
+                    "stuck_reason": None,
+                    "mistake_detected": False,
+                    "mistake_description": None,
+                    "help_opportunity": None,
+                    "risky_action": True,
+                    "risky_description": risky_desc,
+                    "suggested_intervention": {
+                        "type": "warning",
+                        "message": f"Risky command detected: {risky_desc}",
+                        "priority": "critical",
+                        "code_suggestion": None
+                    },
+                    "context_summary": f"User ran risky command: {risky_desc}"
+                }
+                self.last_analysis = analysis
+                self.last_analysis_time = time.time()
+                print(f"[content_analyzer] INSTANT risky detection: {risky_desc}")
+                return analysis
+
         system_prompt = self.APP_PROMPTS.get(app_type, self.APP_PROMPTS["code"])
         user_msg = f"App type: {app_type}\n"
         user_msg += f"Content:\n{content}\n"
-
 
         # append optional metadata fields from **kwargs
         if kwargs.get("language"):
@@ -258,14 +284,6 @@ Signs of communication issues:
                     text = text[:-3]
 
             analysis = json.loads(text)
-
-            # Deterministic override: if terminal has risky commands, force risky_action=True
-            # This ensures the Fatigue Firewall triggers even if Claude missed it
-            if app_type == "terminal":
-                is_risky, risky_desc = self.detect_risky_commands(content)
-                if is_risky:
-                    analysis["risky_action"] = True
-                    analysis["risky_description"] = analysis.get("risky_description") or risky_desc
 
             self.last_analysis = analysis
             self.last_analysis_time = now

@@ -48,7 +48,7 @@ content_lock = threading.Lock()
 last_analyzed_hashes = {}          # {app_type: hash} — skip re-analysis of identical content
 intervention_cooldown_until = 0    # timestamp — skip ALL analysis during cooldown
 last_intervention_hash = None      # hash of content that triggered the last intervention
-suppressed_hashes = set()          # hashes the user already responded to — never re-analyze
+suppressed_hashes = {}             # {hash: expiry_timestamp} — suppressed for 10s after user responds
 main_event_loop: asyncio.AbstractEventLoop = None
 
 # electron broadcast 
@@ -174,8 +174,8 @@ def ghost_loop():
                     already_analyzed = content_hash == last_analyzed_hashes.get(app_type)
                     # COOLDOWN: skip if Ghost just sent an intervention
                     in_cooldown = time.time() < intervention_cooldown_until
-                    # SUPPRESSED: skip if user already responded to this content
-                    user_suppressed = content_hash in suppressed_hashes
+                    # SUPPRESSED: skip if user responded recently (10s window)
+                    user_suppressed = suppressed_hashes.get(content_hash, 0) > time.time()
 
                     if already_analyzed or in_cooldown or user_suppressed:
                         # clear this pending content — it's been handled
@@ -206,9 +206,11 @@ def ghost_loop():
                     intervention = brain.process(analysis, state, modifiers)
 
                     if intervention:
-                        # set 30s cooldown so ghost_loop doesn't re-analyze during this window
-                        intervention_cooldown_until = time.time() + 30
+                        # set 8s cooldown — short enough for demo re-triggering
+                        intervention_cooldown_until = time.time() + 8
                         last_intervention_hash = content_hash
+                        # clear analyzed hashes so same content can re-trigger after cooldown
+                        last_analyzed_hashes.clear()
                         bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
                         intervention["biometric"] = build_biometric_msg(bio_data, state)
                         intervention["app_type"] = app_type
@@ -253,8 +255,9 @@ def ghost_loop():
 
         except Exception as e:
             print(f"[ghost_loop] Error: {e}")
-        sleep_time = min(modifiers.get("capture_interval", 3), 3)
-        time.sleep(sleep_time)
+            import traceback
+            traceback.print_exc()
+        time.sleep(1)
 
 # lifecycle of the app
 
@@ -389,27 +392,29 @@ async def websocket_endpoint(ws: WebSocket):
     -biometric_update messages
     -state_change messages
     """
+    global suppressed_hashes, intervention_cooldown_until
     await ws.accept()
     connected_clients.append(ws)
     print(f"[ws] Client connected ({len(connected_clients)} total)")
 
-    # current state on conenction 
+    # current state on conenction
     bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
     await ws.send_json(build_biometric_msg(bio_data, bio.current_state))
 
     try:
-        # listen for the messages coming from the frontend 
-        while True: 
+        # listen for the messages coming from the frontend
+        while True:
             data = await ws.receive_json()
 
             # handle the user feedback from the Ghost interventions
             if data.get("type") == "feedback":
                 brain.user_feedback(data.get("action", ""))
-                # suppress re-analysis of the content that triggered this intervention
+                # suppress re-analysis for 10s so dismissing doesn't immediately re-trigger
                 if last_intervention_hash is not None:
-                    suppressed_hashes.add(last_intervention_hash)
-                    if len(suppressed_hashes) > 100:
-                        suppressed_hashes.clear()
+                    suppressed_hashes[last_intervention_hash] = time.time() + 10
+                    # evict expired entries to prevent unbounded growth
+                    now = time.time()
+                    suppressed_hashes = {h: t for h, t in suppressed_hashes.items() if t > now}
 
             elif data.get("type") == "content_update":
                 app_type = data.get("app_type", "code")
@@ -442,6 +447,11 @@ async def websocket_endpoint(ws: WebSocket):
                     data_now = mock.get_data()
                     new_state = bio.classify(data_now)
                     await ws.send_json(build_biometric_msg(data_now, new_state))
+                    # clear all anti-spam state so Ghost is ready to analyze immediately
+                    intervention_cooldown_until = 0
+                    last_analyzed_hashes.clear()
+                    suppressed_hashes.clear()
+                    brain.last_intervention_time = 0
             
             elif data.get("type") == "app_focus": 
                 app_type = data.get("app_type")

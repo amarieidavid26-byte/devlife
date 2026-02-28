@@ -149,6 +149,20 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
             print (f"[ghost_brain] Claude API error: {e}")
             return None
 
+    def _instant_risky_response(self, reason, vision_analysis, biometric_state, modifiers):
+        """Hardcoded response for risky commands — skips Claude API entirely."""
+        cmd = vision_analysis.get("risky_description", "unknown command")
+        hrv = f"{modifiers.get('hrv_baseline', 50):.0f}"
+        rec = f"{modifiers.get('estimated_stress', 0):.1f}"
+        stress = f"{modifiers.get('estimated_stress', 0):.1f}"
+
+        if reason == "fatigue_firewall":
+            return f"FATIGUE FIREWALL — HRV {hrv}ms, stress {stress}/3.0. '{cmd}' is irreversible. You're too exhausted for this. Save your work and rest first."
+        elif reason == "stress_firewall":
+            return f"STRESS ALERT — HRV {hrv}ms, stress {stress}/3.0. '{cmd}' is dangerous when you're this stressed. Take a breath, then decide."
+        else:
+            return f"Risky command detected: '{cmd}'. Double-check before running this."
+
     def process(self, vision_analysis, biometric_state, modifiers):
         self.context_history.append(vision_analysis)
         if len(self.context_history) > self.max_history:
@@ -157,7 +171,12 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
         should_speak, reason = self.should_intervene(vision_analysis, biometric_state, modifiers)
         if not should_speak:
             return None
-        ghost_message = self.generate_response(vision_analysis, biometric_state, modifiers)
+
+        # CUT 2: Skip Claude API for risky commands — use instant template
+        if reason in ("fatigue_firewall", "stress_firewall", "risky_action_detected") and vision_analysis.get("risky_action"):
+            ghost_message = self._instant_risky_response(reason, vision_analysis, biometric_state, modifiers)
+        else:
+            ghost_message = self.generate_response(vision_analysis, biometric_state, modifiers)
         if ghost_message is None:
             intervention = vision_analysis.get("suggested_intervention")
             if intervention:
