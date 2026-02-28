@@ -8,6 +8,7 @@ import { Player }       from './character/Player.js';
 import { Ghost }        from './character/Ghost.js';
 import { HUD }          from './hud/HUD.js';
 import { BeneathView }  from './hud/BeneathView.js';
+import { DemoHotbar }   from './hud/DemoHotbar.js';
 import { CodeEditorApp } from './apps/CodeEditor.js';
 import { TerminalApp }  from './apps/Terminal.js';
 import { BrowserApp }   from './apps/Browser.js';
@@ -102,6 +103,8 @@ ghost.setAtmosphere(atmosphere);
 // ── HUD (HTML) ────────────────────────────────────────────────────────────────
 const hud         = new HUD();
 const beneathView = new BeneathView();
+const demoHotbar  = new DemoHotbar();
+demoHotbar.setClickHandler((key) => socket.sendMockState(key));
 
 // ── App overlays ──────────────────────────────────────────────────────────────
 const apps = {
@@ -209,12 +212,14 @@ socket.on('intervention',     (data) => ghost.showSpeechBubble(data));
 socket.on('biometric_update', (data) => {
     hud.update(data);
     beneathView.update(data);
+    demoHotbar.setActive(data.state);
     atmosphere.setState(data.state);
     ghost.setStateTint(data.state);
     furniture.setMonitorState(data.state);
 });
 
 socket.on('state_change', (data) => {
+    demoHotbar.setActive(data.to);
     atmosphere.transition(data.from, data.to);
     ghost.setStateTint(data.to);
     furniture.setMonitorState(data.to);
