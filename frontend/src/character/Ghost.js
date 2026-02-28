@@ -33,12 +33,26 @@ export class Ghost {
         this._x  = 300;
         this._y  = 300;
 
-        // Shadow on floor — added BEFORE sprite so it renders behind
+        // Movement tracking for lean
+        this._prevX     = 300;
+        this._prevY     = 300;
+        this._leanAngle = 0;
+
+        // Shadow on floor — soft multi-layer radial gradient effect
         this._shadow = new PIXI.Graphics();
-        this._shadow.beginFill(0x000000, 0.2);
-        this._shadow.drawEllipse(0, 0, 20, 7);
+        // Outer feathered ring (very faint)
+        this._shadow.beginFill(0x000000, 0.06);
+        this._shadow.drawEllipse(0, 0, 34, 12);
         this._shadow.endFill();
-        this._shadow.y = 32;
+        // Mid ring
+        this._shadow.beginFill(0x000000, 0.10);
+        this._shadow.drawEllipse(0, 0, 24, 8);
+        this._shadow.endFill();
+        // Core (stacks to ~0.28 total at centre)
+        this._shadow.beginFill(0x000000, 0.18);
+        this._shadow.drawEllipse(0, 0, 14, 5);
+        this._shadow.endFill();
+        this._shadow.y = 38;
         this.container.addChild(this._shadow);
 
         this._sprite = this._buildSprite();
@@ -61,43 +75,63 @@ export class Ghost {
     _buildSprite() {
         const c = new PIXI.Container();
 
-        // Body — semi-transparent oval
+        // ── Unified ghost shape (single path — body + bumps as one) ───────────────
         const body = new PIXI.Graphics();
-        body.beginFill(0xffffff, 0.15);
-        body.drawEllipse(0, 0, 22, 28);
-        body.endFill();
-        // Outer glow ring
-        body.lineStyle(2, STATE_COLORS[this._state], 0.6);
-        body.drawEllipse(0, 0, 22, 28);
+        this._drawGhostShape(body, STATE_COLORS[this._state]);
 
-        // Wavy bottom (ghost tail) — 3 bumps
-        const tail = new PIXI.Graphics();
-        tail.beginFill(0xffffff, 0.12);
-        tail.moveTo(-22, 10);
-        tail.bezierCurveTo(-22, 30, -12, 38, -7, 28);
-        tail.bezierCurveTo(-2, 18, 2, 38, 7, 28);
-        tail.bezierCurveTo(12, 18, 22, 38, 22, 28);
-        tail.lineTo(22, 10);
-        tail.closePath();
-        tail.endFill();
-
-        // Eyes
+        // ── Eyes ──────────────────────────────────────────────────────────────────
         const eyes = new PIXI.Graphics();
-        eyes.beginFill(0xffffff, 0.9);
-        eyes.drawCircle(-7, -4, 5);
-        eyes.drawCircle( 7, -4, 5);
+        eyes.beginFill(0xffffff, 0.92);
+        eyes.drawCircle(-9, -6, 6);
+        eyes.drawCircle( 9, -6, 6);
         eyes.endFill();
         eyes.beginFill(0x1a1a40, 0.95);
-        eyes.drawCircle(-7, -4, 3);
-        eyes.drawCircle( 7, -4, 3);
+        eyes.drawCircle(-9, -6, 3.5);
+        eyes.drawCircle( 9, -6, 3.5);
+        eyes.endFill();
+        eyes.beginFill(0xffffff, 0.75);
+        eyes.drawCircle(-7.2, -8, 1.4);
+        eyes.drawCircle(10.8, -8, 1.4);
         eyes.endFill();
 
         this._bodyGfx = body;
         this._eyesGfx = eyes;
-        c.addChild(tail);
         c.addChild(body);
         c.addChild(eyes);
         return c;
+    }
+
+    // Draws the unified ghost silhouette (dome + body + 3 bumps) into a Graphics object
+    _drawGhostShape(g, color) {
+        g.clear();
+
+        // ── Fill: dome arcs connect directly to bumps — no corner segments ────────
+        // The tangent at the dome/bump junction is straight-down on both sides → perfectly smooth
+        g.beginFill(0xffffff, 0.22);
+        g.moveTo(0, -26);
+        g.bezierCurveTo( 13, -26,  22, -14,  22,   2);   // right dome arc
+        g.bezierCurveTo( 22,  32,  10,  38,   6,  16);   // right bump
+        g.bezierCurveTo(  2,  34,  -2,  34,  -6,  16);   // centre bump
+        g.bezierCurveTo(-10,  38, -22,  32, -22,   2);   // left bump
+        g.bezierCurveTo(-22, -14, -13, -26,   0, -26);   // left dome arc
+        g.closePath();
+        g.endFill();
+
+        // ── Outline ───────────────────────────────────────────────────────────────
+        g.lineStyle(2.2, color, 0.72);
+        g.moveTo(0, -26);
+        g.bezierCurveTo( 13, -26,  22, -14,  22,   2);
+        g.bezierCurveTo( 22,  32,  10,  38,   6,  16);
+        g.bezierCurveTo(  2,  34,  -2,  34,  -6,  16);
+        g.bezierCurveTo(-10,  38, -22,  32, -22,   2);
+        g.bezierCurveTo(-22, -14, -13, -26,   0, -26);
+        g.closePath();
+
+        // ── Soft inner glow ───────────────────────────────────────────────────────
+        g.lineStyle(0);
+        g.beginFill(0xffffff, 0.08);
+        g.drawEllipse(0, -8, 10, 13);
+        g.endFill();
     }
 
     _redrawEyes(state) {
@@ -107,78 +141,82 @@ export class Ghost {
             case 'STRESSED':
                 // Worried whites + furrowed brows
                 g.beginFill(0xffffff, 0.9);
-                g.drawEllipse(-7, -4, 5, 4);
-                g.drawEllipse( 7, -4, 5, 4);
+                g.drawEllipse(-9, -6, 6, 4.5);
+                g.drawEllipse( 9, -6, 6, 4.5);
                 g.endFill();
                 g.beginFill(0x1a1a40, 0.95);
-                g.drawCircle(-7, -3, 2.8); // pupils slightly low
-                g.drawCircle( 7, -3, 2.8);
+                g.drawCircle(-9, -5, 3.0);
+                g.drawCircle( 9, -5, 3.0);
                 g.endFill();
-                // Furrowed brow — lines angling inward
-                g.lineStyle(1.5, 0xffffff, 0.65);
-                g.moveTo(-10, -10); g.lineTo(-4,  -8);
-                g.moveTo(  4,  -8); g.lineTo(10, -10);
+                // Furrowed brows angling inward
+                g.lineStyle(1.8, 0xffffff, 0.7);
+                g.moveTo(-14, -13); g.lineTo(-5, -10);
+                g.moveTo(  5, -10); g.lineTo(14, -13);
                 break;
 
             case 'FATIGUED':
                 // Half-closed droopy eyes
                 g.beginFill(0xffffff, 0.9);
-                g.drawEllipse(-7, -3, 5, 3);
-                g.drawEllipse( 7, -3, 5, 3);
+                g.drawEllipse(-9, -5, 6, 3.5);
+                g.drawEllipse( 9, -5, 6, 3.5);
                 g.endFill();
                 g.beginFill(0x1a1a40, 0.95);
-                g.drawEllipse(-7, -2, 3, 2); // oval pupils looking down
-                g.drawEllipse( 7, -2, 3, 2);
+                g.drawEllipse(-9, -4, 3.5, 2.5);
+                g.drawEllipse( 9, -4, 3.5, 2.5);
                 g.endFill();
                 // Heavy eyelid overlay
                 g.beginFill(0xffffff, 0.18);
-                g.drawEllipse(-7, -4.5, 5.5, 2.5);
-                g.drawEllipse( 7, -4.5, 5.5, 2.5);
+                g.drawEllipse(-9, -7.5, 6.5, 3);
+                g.drawEllipse( 9, -7.5, 6.5, 3);
                 g.endFill();
                 break;
 
             case 'WIRED':
                 // Wide-open, hyper-alert
                 g.beginFill(0xffffff, 0.98);
-                g.drawCircle(-7, -4, 6.5);
-                g.drawCircle( 7, -4, 6.5);
+                g.drawCircle(-9, -6, 7.5);
+                g.drawCircle( 9, -6, 7.5);
                 g.endFill();
                 g.beginFill(0x1a1a40, 0.98);
-                g.drawCircle(-7, -4, 3.5);
-                g.drawCircle( 7, -4, 3.5);
+                g.drawCircle(-9, -6, 4.2);
+                g.drawCircle( 9, -6, 4.2);
                 g.endFill();
                 // Sharp highlight dots
                 g.beginFill(0xffffff, 0.85);
-                g.drawCircle(-5.5, -5.5, 1.2);
-                g.drawCircle( 8.5, -5.5, 1.2);
+                g.drawCircle(-7,  -8.5, 1.5);
+                g.drawCircle(11,  -8.5, 1.5);
                 g.endFill();
                 break;
 
             case 'DEEP_FOCUS':
                 // Narrowed, intent
                 g.beginFill(0xffffff, 0.9);
-                g.drawEllipse(-7, -4, 5, 3.5);
-                g.drawEllipse( 7, -4, 5, 3.5);
+                g.drawEllipse(-9, -6, 6, 4);
+                g.drawEllipse( 9, -6, 6, 4);
                 g.endFill();
                 g.beginFill(0x1a1a40, 0.95);
-                g.drawCircle(-7, -4, 2.5); // smaller focused pupils
-                g.drawCircle( 7, -4, 2.5);
+                g.drawCircle(-9, -6, 3.0);
+                g.drawCircle( 9, -6, 3.0);
                 g.endFill();
                 // Purple focus glint
-                g.beginFill(0x8000ff, 0.45);
-                g.drawCircle(-5.5, -5.5, 1);
-                g.drawCircle( 8.5, -5.5, 1);
+                g.beginFill(0x8000ff, 0.5);
+                g.drawCircle(-7,  -8, 1.2);
+                g.drawCircle(11,  -8, 1.2);
                 g.endFill();
                 break;
 
-            default: // RELAXED — original look
-                g.beginFill(0xffffff, 0.9);
-                g.drawCircle(-7, -4, 5);
-                g.drawCircle( 7, -4, 5);
+            default: // RELAXED
+                g.beginFill(0xffffff, 0.92);
+                g.drawCircle(-9, -6, 6);
+                g.drawCircle( 9, -6, 6);
                 g.endFill();
                 g.beginFill(0x1a1a40, 0.95);
-                g.drawCircle(-7, -4, 3);
-                g.drawCircle( 7, -4, 3);
+                g.drawCircle(-9, -6, 3.5);
+                g.drawCircle( 9, -6, 3.5);
+                g.endFill();
+                g.beginFill(0xffffff, 0.75);
+                g.drawCircle(-7.2, -8, 1.4);
+                g.drawCircle(10.8, -8, 1.4);
                 g.endFill();
                 break;
         }
@@ -225,13 +263,8 @@ export class Ghost {
         if (changed && this._stateInitialized) this._showStateReaction(stateName);
         this._stateInitialized = true;
 
-        // Redraw body outline color
-        this._bodyGfx.clear();
-        this._bodyGfx.beginFill(0xffffff, 0.15);
-        this._bodyGfx.drawEllipse(0, 0, 22, 28);
-        this._bodyGfx.endFill();
-        this._bodyGfx.lineStyle(2, STATE_COLORS[stateName], 0.7);
-        this._bodyGfx.drawEllipse(0, 0, 22, 28);
+        // Redraw unified ghost shape with new outline colour
+        this._drawGhostShape(this._bodyGfx, STATE_COLORS[stateName]);
 
         // Also update the tint
         this._sprite.tint = STATE_COLORS[stateName];
@@ -261,6 +294,14 @@ export class Ghost {
         const followSpeed = (this._rushing ? 0.25 : 0.06) * delta;
         this._x += (this._tx - this._x) * followSpeed;
         this._y += (this._ty - this._y) * followSpeed;
+
+        // Whole-body lean — ghost tilts into direction of travel
+        const vx = this._x - this._prevX;
+        this._prevX = this._x;
+        this._prevY = this._y;
+        const targetLean = Math.max(-0.14, Math.min(0.14, vx * 0.045));
+        this._leanAngle += (targetLean - this._leanAngle) * 0.1;
+        this._sprite.rotation = this._leanAngle;
 
         // Bob animation (5px up-down, 3s loop) — applied to sprite only, not container
         this._bobTick += delta;
