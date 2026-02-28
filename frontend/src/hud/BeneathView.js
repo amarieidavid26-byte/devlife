@@ -10,16 +10,14 @@ const STATE_COLORS = {
 
 export class BeneathView {
     constructor() {
-        this._visible    = false;
-        this._data       = { heartRate: '—', hrv: '—', recovery: '—', state: 'RELAXED' };
-        this._playerPos  = { x: window.innerWidth / 2,       y: window.innerHeight / 2 };
-        this._ghostPos   = { x: window.innerWidth / 2 + 120, y: window.innerHeight / 2 - 40 };
-        this._animFrame  = null;
-        this._startTs    = 0;
-        this._particles  = [];
-        this._floaters   = [];
+        this._visible   = false;
+        this._data      = { heartRate: '—', hrv: '—', recovery: '—', state: 'RELAXED' };
+        this._playerPos = { x: window.innerWidth / 2,       y: window.innerHeight / 2 };
+        this._ghostPos  = { x: window.innerWidth / 2 + 120, y: window.innerHeight / 2 - 40 };
+        this._animFrame = null;
+        this._startTs   = 0;
+        this._particles = [];
         this._lastParticleSpawn = 0;
-        this._lastFloaterSpawn  = 0;
 
         this._canvas = document.createElement('canvas');
         this._canvas.style.cssText = [
@@ -58,14 +56,12 @@ export class BeneathView {
     show() {
         this._visible   = true;
         this._particles = [];
-        this._floaters  = [];
         this._lastParticleSpawn = 0;
-        this._lastFloaterSpawn  = 0;
         this._canvas.style.display = 'block';
         this._startTs = performance.now();
         const tick = (ts) => {
             if (!this._visible) return;
-            this._draw(ts);
+            try { this._draw(ts); } catch (e) { console.warn('[BeneathView]', e); }
             this._animFrame = requestAnimationFrame(tick);
         };
         this._animFrame = requestAnimationFrame(tick);
@@ -92,6 +88,11 @@ export class BeneathView {
         const gx  = this._ghostPos.x;
         const gy  = this._ghostPos.y;
 
+        // Hard reset canvas state so nothing leaks between frames
+        ctx.globalAlpha     = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.shadowBlur      = 0;
+        ctx.shadowColor     = 'transparent';
         ctx.clearRect(0, 0, W, H);
 
         // ── 1. Dark translucent overlay ────────────────────────────────────────
@@ -100,7 +101,7 @@ export class BeneathView {
 
         // ── 2. Scanline grid (X-ray / thermal feel) ────────────────────────────
         ctx.save();
-        ctx.globalAlpha = 0.035;
+        ctx.globalAlpha = 0.03;
         ctx.fillStyle   = col;
         for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
         ctx.restore();
@@ -108,18 +109,18 @@ export class BeneathView {
         // ── 3. Pulsing heartbeat rings around player ───────────────────────────
         const bpm          = parseFloat(this._data.heartRate) || 72;
         const beatInterval = 60 / bpm;
-        const beatPhase    = (t % beatInterval) / beatInterval; // 0..1
+        const beatPhase    = (t % beatInterval) / beatInterval;
 
         for (let ring = 0; ring < 3; ring++) {
             const phase  = (beatPhase + ring * 0.18) % 1;
             const radius = 55 + phase * 130;
             const alpha  = (1 - phase) * 0.4;
             ctx.save();
-            ctx.strokeStyle  = col;
-            ctx.lineWidth    = 2.5 - phase * 2;
-            ctx.globalAlpha  = alpha;
-            ctx.shadowColor  = col;
-            ctx.shadowBlur   = 14;
+            ctx.strokeStyle = col;
+            ctx.lineWidth   = Math.max(0.1, 2.5 - phase * 2);
+            ctx.globalAlpha = alpha;
+            ctx.shadowColor = col;
+            ctx.shadowBlur  = 14;
             ctx.beginPath();
             ctx.arc(px, py, radius, 0, Math.PI * 2);
             ctx.stroke();
@@ -154,58 +155,48 @@ export class BeneathView {
             });
         }
 
-        this._particles = this._particles.filter(p => p.life > 0);
+        this._particles = this._particles.filter(p => p.life > 0.01);
         for (const p of this._particles) {
             p.x    += p.vx;
             p.y    += p.vy;
             p.life -= 0.011;
+            const r = Math.max(0.1, p.size * p.life);
             ctx.save();
-            ctx.globalAlpha = p.life * 0.85;
+            ctx.globalAlpha = Math.max(0, p.life * 0.85);
             ctx.fillStyle   = col;
             ctx.shadowColor = col;
             ctx.shadowBlur  = 7;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
         }
 
-        // ── 5. Floating biometric numbers near player ─────────────────────────
-        if (ts - this._lastFloaterSpawn > 2200) {
-            this._lastFloaterSpawn = ts;
-            const labels = [
-                `❤ ${Math.round(parseFloat(this._data.heartRate) || 0)} bpm`,
-                `HRV ${Math.round(parseFloat(this._data.hrv) || 0)}ms`,
-                `REC ${parseFloat(this._data.recovery) || 0}%`,
-            ];
-            labels.forEach((text, i) => {
-                this._floaters.push({
-                    text,
-                    x:     px + (Math.random() - 0.5) * 90,
-                    y:     py - 30 - i * 22,
-                    vy:    -(0.28 + Math.random() * 0.25),
-                    alpha: 1.0,
-                    born:  ts + i * 250,
-                });
-            });
-        }
+        // ── 5. Animated biometric labels near player (always visible) ─────────
+        // Each metric gently sways using sine — no spawn/fade, always on-screen
+        const hrv      = parseFloat(this._data.hrv)      || 0;
+        const recovery = parseFloat(this._data.recovery)  || 0;
+        const metrics  = [
+            `❤  ${Math.round(bpm)} bpm`,
+            `HRV  ${Math.round(hrv)} ms`,
+            `REC  ${recovery}%`,
+        ];
 
-        this._floaters = this._floaters.filter(f => f.alpha > 0);
-        for (const f of this._floaters) {
-            const age = ts - f.born;
-            if (age < 0) continue;
-            f.y    += f.vy;
-            f.alpha = Math.max(0, 1 - age / 3200);
+        metrics.forEach((text, i) => {
+            const ox = Math.sin(t * 0.7 + i * 1.8) * 10;
+            const oy = Math.sin(t * 0.5 + i * 2.2) * 5;
+            const ax = px - 50 + i * 60 + ox;
+            const ay = py - 62 + oy;
             ctx.save();
-            ctx.globalAlpha = f.alpha;
-            ctx.font        = 'bold 15px monospace';
+            ctx.globalAlpha = 0.88;
+            ctx.font        = 'bold 14px monospace';
             ctx.fillStyle   = col;
             ctx.shadowColor = col;
             ctx.shadowBlur  = 10;
             ctx.textAlign   = 'center';
-            ctx.fillText(f.text, f.x, f.y);
+            ctx.fillText(text, ax, ay);
             ctx.restore();
-        }
+        });
 
         // ── 6. State label above player ────────────────────────────────────────
         ctx.save();
@@ -213,51 +204,50 @@ export class BeneathView {
         ctx.fillStyle   = col;
         ctx.shadowColor = col;
         ctx.shadowBlur  = 10;
-        ctx.globalAlpha = 0.75;
+        ctx.globalAlpha = 0.65;
         ctx.textAlign   = 'center';
-        ctx.fillText(this._data.state, px, py - 50);
+        ctx.fillText(this._data.state, px, py - 78);
         ctx.restore();
 
         // ── 7. Title at top center ─────────────────────────────────────────────
-        const titleAlpha = 0.85 + Math.sin(t * 1.6) * 0.12;
         ctx.save();
         ctx.font        = 'bold 20px "Segoe UI", monospace';
         ctx.fillStyle   = col;
         ctx.shadowColor = col;
         ctx.shadowBlur  = 24;
-        ctx.globalAlpha = titleAlpha;
+        ctx.globalAlpha = 0.85 + Math.sin(t * 1.6) * 0.1;
         ctx.textAlign   = 'center';
         ctx.fillText('👁  BENEATH THE SURFACE', W / 2, 52);
+        ctx.restore();
 
-        // Subtitle
+        ctx.save();
         ctx.font        = '12px monospace';
         ctx.fillStyle   = '#aaaaaa';
-        ctx.shadowBlur  = 0;
         ctx.globalAlpha = 0.5;
+        ctx.textAlign   = 'center';
         ctx.fillText('what ghost sees — press TAB to hide', W / 2, 72);
         ctx.restore();
 
         // ── 8. Large biometric readout (bottom center) ────────────────────────
         const stats = [
-            { label: 'HEART RATE', value: `${Math.round(parseFloat(this._data.heartRate) || 0)}`, unit: 'bpm' },
-            { label: 'HRV',        value: `${Math.round(parseFloat(this._data.hrv) || 0)}`,        unit: 'ms'  },
-            { label: 'RECOVERY',   value: `${parseFloat(this._data.recovery) || 0}`,               unit: '%'   },
+            { label: 'HEART RATE', value: `${Math.round(bpm)}`,        unit: 'bpm' },
+            { label: 'HRV',        value: `${Math.round(hrv)}`,         unit: 'ms'  },
+            { label: 'RECOVERY',   value: `${Math.round(recovery)}`,    unit: '%'   },
         ];
 
-        const blockW  = 180;
-        const totalW  = blockW * stats.length;
-        const startX  = W / 2 - totalW / 2 + blockW / 2;
-        const baseY   = H - 72;
+        const blockW = 180;
+        const startX = W / 2 - blockW * (stats.length - 1) / 2;
+        const baseY  = H - 72;
 
         stats.forEach((s, i) => {
             const bx = startX + i * blockW;
             ctx.save();
             ctx.textAlign   = 'center';
-            ctx.globalAlpha = 0.85;
+            ctx.globalAlpha = 0.9;
 
-            ctx.font      = '10px monospace';
-            ctx.fillStyle = '#777';
-            ctx.shadowBlur = 0;
+            ctx.font        = '10px monospace';
+            ctx.fillStyle   = '#777777';
+            ctx.shadowBlur  = 0;
             ctx.fillText(s.label, bx, baseY - 34);
 
             ctx.font        = 'bold 40px monospace';
