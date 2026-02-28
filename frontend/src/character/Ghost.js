@@ -316,7 +316,7 @@ export class Ghost {
             max-width: 420px;
             min-width: 300px;
             pointer-events: all;
-            z-index: 200;
+            z-index: 9999;
             font-family: 'Segoe UI', system-ui, sans-serif;
             font-size: 14px;
             overflow: hidden;
@@ -413,20 +413,20 @@ export class Ghost {
             if (!document.getElementById('vignette-kf')) {
                 const ks = document.createElement('style');
                 ks.id = 'vignette-kf';
-                ks.textContent = `@keyframes vignetteFlash { 0%{opacity:.55} 100%{opacity:1} }`;
+                ks.textContent = `@keyframes vignetteFlash { 0%,100%{opacity:0.5} 50%{opacity:1} }`;
                 document.head.appendChild(ks);
                 this._vignetteStyle = ks;
             }
             const vignette = document.createElement('div');
             vignette.style.cssText = [
                 'position:fixed;top:0;left:0;width:100vw;height:100vh',
-                'pointer-events:none;z-index:199',
-                'background:radial-gradient(ellipse at center,transparent 45%,rgba(255,40,40,0.38) 100%)',
-                'animation:vignetteFlash 1s ease-in-out infinite alternate',
+                'pointer-events:none;z-index:9998',
+                'background:radial-gradient(ellipse at center,transparent 40%,rgba(255,50,50,0.5) 100%)',
+                'animation:vignetteFlash 1.5s ease-in-out infinite',
             ].join(';');
             document.body.appendChild(vignette);
             this._vignette = vignette;
-            if (this._atmosphere) this._atmosphere.triggerShake(520, 5);
+            if (this._atmosphere) this._atmosphere.triggerShake(400, 5);
         }
 
         // Typewriter effect on message
