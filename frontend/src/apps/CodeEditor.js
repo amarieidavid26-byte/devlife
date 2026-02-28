@@ -148,6 +148,10 @@ export class CodeEditorApp {
     replaceContent(newCode) {
         if (!this.editor) return;
         this.editor.setValue(newCode);
+        this.editor.updateOptions({ readOnly: false });
+        setTimeout(() => {
+            if (this.editor) this.editor.focus();
+        }, 200);
 
         // Green flash to confirm the fix was applied
         const flash = document.createElement('div');

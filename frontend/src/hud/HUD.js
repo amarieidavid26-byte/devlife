@@ -38,6 +38,7 @@ export class HUD {
 
         // ECG state
         this._ecgBPM         = 72;
+        this._ecgTargetBPM   = 72;
         this._ecgColor       = STATE_COLORS.RELAXED;
         this._ecgBuffer      = new Float32Array(ECG_W).fill(0.5);
         this._ecgMsSinceBeat = 0;
@@ -107,12 +108,16 @@ export class HUD {
     _ecgTick(deltaMs) {
         const buf = this._ecgBuffer;
 
+        // Smooth BPM transition — lerp toward target so state changes don't cause chaos
+        this._ecgBPM += (this._ecgTargetBPM - this._ecgBPM) * 0.05;
+
         // Scroll the buffer one sample to the left
         buf.copyWithin(0, 1);
 
-        // Advance beat accumulator
-        this._ecgMsSinceBeat += deltaMs;
-        const beatInterval = 60000 / Math.max(30, Math.min(220, this._ecgBPM));
+        // Advance beat accumulator — clamp deltaMs to prevent runaway after tab switch
+        const clampedDelta = Math.min(deltaMs, 50);
+        this._ecgMsSinceBeat += clampedDelta;
+        const beatInterval = 60000 / Math.max(30, Math.min(150, this._ecgBPM));
 
         if (this._ecgBeatIndex < 0 && this._ecgMsSinceBeat >= beatInterval) {
             this._ecgMsSinceBeat -= beatInterval;
@@ -196,7 +201,7 @@ export class HUD {
     update(data) {
         this._data = { ...this._data, ...data };
         if (data.heartRate && data.heartRate !== '—') {
-            this._ecgBPM = parseFloat(data.heartRate) || 72;
+            this._ecgTargetBPM = parseFloat(data.heartRate) || 72;
         }
         if (data.state && STATE_COLORS[data.state]) {
             this._ecgColor = STATE_COLORS[data.state];
