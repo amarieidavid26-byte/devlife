@@ -8,8 +8,13 @@
 
 import httpx
 import time
+import json 
+import os 
 
 class BiometricEngine:
+    TOKENS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+        ".whoop_tokens.json")
+
     def __init__ (self, client_id = None, client_secret = None):
         self.client_id = client_id
         self.client_secret = client_secret
@@ -25,6 +30,10 @@ class BiometricEngine:
         # token refresh
         self.token_expiry = 0
         self.refresh_token = None
+        self._sleep_error_logged = False
+        self.live_heart_rate = 0
+        self.live_hr_timestamp = 0
+        self._load_tokens()
 
     # oauth2 urls
     AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth"
@@ -39,7 +48,8 @@ class BiometricEngine:
             "client_id": self.client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": "read:recovery read:cycles read:sleep read:workout read:body_measurement"
+            "scope": "read:recovery read:cycles read:sleep read:workout read:body_measurement",
+            "state": "devlife_whoop_auth_2026"
         }
         query = "&".join(f"{k}={v}" for k, v in params.items())
         return f"{self.AUTH_URL}?{query}"
@@ -117,31 +127,37 @@ class BiometricEngine:
         try:
             recovery_resp = httpx.get(f"{self.API_BASE}/recovery", headers=headers, params={"limit": 1})
             if recovery_resp.status_code == 401:
-                print("[biometric_engine] Token expired — need to re-authenticate")
+                print("[bio] Token expired — need to re-authenticate")
                 self.access_token = None
                 return None
             if recovery_resp.status_code < 200 or recovery_resp.status_code >= 300:
-                print(f"[biometric_engine] Recovery API error: HTTP {recovery_resp.status_code}")
+                print(f"[bio] Recovery API error: HTTP {recovery_resp.status_code}")
                 return None
             recovery_data = recovery_resp.json()
+
             cycle_resp = httpx.get(f"{self.API_BASE}/cycle", headers=headers, params={"limit": 1})
             if cycle_resp.status_code == 401:
-                print("[biometric_engine] Token expired — need to re-authenticate")
+                print("[bio] Token expired — need to re-authenticate")
                 self.access_token = None
                 return None
             if cycle_resp.status_code < 200 or cycle_resp.status_code >= 300:
-                print(f"[biometric_engine] Cycle API error: HTTP {cycle_resp.status_code}")
+                print(f"[bio] Cycle API error: HTTP {cycle_resp.status_code}")
                 return None
             cycle_data = cycle_resp.json()
-            sleep_resp = httpx.get(f"{self.API_BASE}/sleep", headers=headers, params={"limit": 1})
-            if sleep_resp.status_code == 401:
-                print("[biometric_engine] Token expired — need to re-authenticate")
-                self.access_token = None
-                return None
-            if sleep_resp.status_code < 200 or sleep_resp.status_code >= 300:
-                print(f"[biometric_engine] Sleep API error: HTTP {sleep_resp.status_code}")
-                return None
-            sleep_data = sleep_resp.json()
+
+            sleep_data = None
+            try:
+                sleep_resp = httpx.get(f"{self.API_BASE}/activity/sleep", headers=headers, params={"limit": 1})
+                if sleep_resp.status_code == 200:
+                    sleep_data = sleep_resp.json()
+                    self._sleep_error_logged = False
+                elif not self._sleep_error_logged:
+                    print(f"[bio] Sleep API returned HTTP {sleep_resp.status_code} — skipping sleep data")
+                    self._sleep_error_logged = True
+            except Exception as e:
+                if not self._sleep_error_logged:
+                    print(f"[bio] Sleep API failed: {e} — skipping sleep data")
+                    self._sleep_error_logged = True
 
             recovery_records = recovery_data.get("records", [])
             recovery_scored = (len(recovery_records) > 0 and recovery_records[0].get("score_state") == "SCORED")
@@ -149,14 +165,18 @@ class BiometricEngine:
             cycle_records = cycle_data.get("records", [])
             cycle_scored = (len(cycle_records) > 0 and cycle_records[0].get("score_state") == "SCORED")
             cycle_score = cycle_records[0].get("score", {}) if cycle_scored else {}
-            sleep_records = sleep_data.get("records", [])
-            sleep_scored = (len(sleep_records) > 0 and sleep_records[0].get("score_state") == "SCORED")
-            sleep_score = sleep_records[0].get("score", {}) if sleep_scored else {}
+
+            sleep_scored = False
+            sleep_score = {}
+            if sleep_data:
+                sleep_records = sleep_data.get("records", [])
+                sleep_scored = (len(sleep_records) > 0 and sleep_records[0].get("score_state") == "SCORED")
+                sleep_score = sleep_records[0].get("score", {}) if sleep_scored else {}
 
             self.current_data = {
                 "recovery": recovery_score.get("recovery_score", 50),
                 "strain": cycle_score.get("strain", 8.0),
-                "sleepPerformance": recovery_score.get("sleep_performance_percentage", 75) / 100 if sleep_scored else 0.75,
+                "sleepPerformance": recovery_score.get("sleep_performance_percentage", 75) / 100 if recovery_scored else 0.75,
                 "heartRate": recovery_score.get("resting_heart_rate", 65),
                 "hrv": recovery_score.get("hrv_rmssd_milli", 50),
                 "spo2": recovery_score.get("spo2_percentage", 97.0),
@@ -165,9 +185,12 @@ class BiometricEngine:
             hrv_value = self.current_data.get("hrv")
             if hrv_value:
                 self.update_baseline(hrv_value)
+
+            src = "whoop+sleep" if sleep_scored else "whoop"
+            print(f"[bio] source={src} | rec={self.current_data['recovery']} strain={self.current_data['strain']} hr={self.current_data['heartRate']} hrv={self.current_data['hrv']}")
             return self.current_data
         except Exception as e:
-            print(f"[biometric_engine] WHOOP API error: {e}")
+            print(f"[bio] WHOOP API error: {e}")
             return None
 
     def classify(self, data=None):
@@ -190,18 +213,33 @@ class BiometricEngine:
             estimated_stress = 1.2
         else:
             estimated_stress = 0.5
-        if recovery < 40 or sleep < 0.7:
-            new_state = "FATIGUED"
-        elif estimated_stress >= 2.0 or strain > 16:
-            new_state = "STRESSED"
-        elif estimated_stress <= 0.9 and strain < 6 and recovery > 80:
-            new_state = "RELAXED"
-        elif 0.9 < estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
-            new_state = "DEEP_FOCUS"
-        elif strain > 12 and recovery < 60:
-            new_state = "WIRED"
-        else:
-            new_state = "RELAXED"
+        live_hr = self.live_heart_rate if (time.time() - self.live_hr_timestamp < 5) else 0
+        if live_hr > 0:
+            if live_hr > 100:
+                new_state = "STRESSED"
+                estimated_stress = 2.5
+            elif live_hr > 95:
+                new_state = "WIRED"
+                estimated_stress = 1.9
+            elif live_hr > 75: 
+                new_state = "DEEP_FOCUS"
+                estimated_stress = 1.2
+            elif live_hr >= 60: 
+                new_state = "RELAXED"
+                estimated_stress = 0.5
+            else:
+                live_hr = 0
+        if live_hr == 0:
+            if recovery < 40 or sleep < 0.7:
+                new_state = "FATIGUED"
+            elif estimated_stress >= 2.0 or strain > 16:
+                new_state = "STRESSED"
+            elif strain > 12 and recovery < 60:
+                new_state = "WIRED"
+            elif 0.9 > estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
+                new_state = "RELAXED"
+            else:
+                new_state = "RELAXED"
         self.current_state = new_state
         self.estimated_stress = estimated_stress
         if old_state != new_state and self.on_state_change_callback:
@@ -258,5 +296,34 @@ class BiometricEngine:
         result["hrv_baseline"] = self.hrv_baseline
         return result
 
+    def _save_tokens(self):
+        try:
+            with open(self.TOKENS_FILE, "w") as f:
+                json.dump({
+                    "access_token": self.access_token,
+                    "refresh_token": self.refresh_token,
+                    "expires_at": self.token_expiry
+                }, f)
+        except Exception as e:
+            print(f"[whoop] Failed to save tokesns: {e}")
+
+    def _load_tokens(self):
+        try: 
+            if not os.path.exists(self.TOKENS_FILE):
+                return
+            with open(self.TOKENS_FILE, "r") as f:
+                data = json.load(f)
+            expires_at = data.get("expires_at", 0)
+            if time.time() < expires_at - 60:
+                self.access_token = data.get("access_token")
+                self.refresh_token = data.get("refresh_token")
+                self.token_expiry = expires_at
+                print("[whoop] Loaded saved tokens, auto connected")
+            elif data.get("refresh_token"): 
+                self.refresh_token = data.get("refresh_token")
+                print("[whoop] saved token expired, attempting to refresh")
+                self.refresh_access_token()
+        except Exception as e:
+            print(f"[whoop] failed to load tokens: {e}")
     def on_state_change(self, callback):
         self.on_state_change_callback = callback

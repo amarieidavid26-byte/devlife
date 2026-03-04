@@ -2,15 +2,17 @@ import asyncio
 import json 
 import time
 import threading
+import random
 from contextlib import asynccontextmanager
+
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles 
-from fastapi.responses import JSONResponse 
+from fastapi.responses import JSONResponse, RedirectResponse 
 
 from config import (
     CLAUDE_API_KEY, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET,
-    USE_MOCK_BIOMETRICS, HOST, PORT,
+    HOST, PORT,
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH
 )
 if GAME_MODE: 
@@ -48,7 +50,13 @@ content_lock = threading.Lock()
 last_analyzed_hashes = {}          # {app_type: hash} — skip re-analysis of identical content
 intervention_cooldown_until = 0    # timestamp — skip ALL analysis during cooldown
 last_intervention_hash = None      # hash of content that triggered the last intervention
-suppressed_hashes = {}             # {hash: expiry_timestamp} — suppressed for 10s after user responds
+suppressed_hashes = {}        # {hash: expiry_timestamp} — suppressed for 10s after user responds
+mock_override_until = 0
+sleep_mode_active = False
+sleep_low_hr_count = 0
+ble_disconnected = False 
+ble_disconnected_timer = None
+last_coding_activity = 0
 main_event_loop: asyncio.AbstractEventLoop = None
 
 # electron broadcast 
@@ -74,6 +82,7 @@ def broadcast_sync (message: dict):
 def build_biometric_msg(data, state):
     return {
         "type": "biometric_update", 
+        "source": "ble" if ble_active else source,
         "heartRate": round(data.get("heartRate", 0)),
         "recovery": round(data.get("recovery", 0)),
         "strain": round(data.get("strain", 0), 1),
@@ -89,7 +98,7 @@ def build_biometric_msg(data, state):
 def on_state_change(old_state, new_state): 
     """notification in the fronend when the user's state changes"""
     # investigating why did the user's state changed 
-    data = mock.get_data() if USE_MOCK_BIOMETRICS else bio.current_data or {}
+    data = mock.get_data() if (not bio.access_token or time.time() < mock_override_until) else bio.current_data or {}
     reason = "Biometric data changed"
     if data.get("strain", 0) > 16:
         reason = "Strain over 16"
@@ -112,27 +121,98 @@ def on_state_change(old_state, new_state):
 
 bio.on_state_change(on_state_change)
 
+_sim_hr = 67.0
+_SIM_HR_RANGES = {
+    "RELAXED": (62, 72),
+    "DEEP_FOCUS": (65, 78),
+    "STRESSED": (85, 100),
+    "FATIGUED": (55, 65),
+    "WIRED": (80, 95)
+}
+
+def _simulate_hr(state):
+    global _sim_hr
+    lo, hi = _SIM_HR_RANGES.get(state, (62, 72))
+    mid = (lo + hi) / 2
+    _sim_hr += (mid - sim_hr) * 0.15 + random.uniform(-3, 3)
+    _sim_hr = max(lo, min(hi, _sim_hr))
+    return round(_sim_hr)
+
+def _on_ble_disconnect_timeout():
+    global sleep_mode_active
+    if ble_disconnected and not sleep_mode_active:
+        sleep_mode_active = True 
+        broadcast_sync({"type": "sleep_mode", "active": True})
+        print("[bio] sleep mode on, ble disconnected for 10s")
+
+def _check_sleep_mode(data):
+    global sleep_mode_active, sleep_low_hr_count
+
+    if ble_disconnected:
+        return
+
+    ble_fresh = bio.live_heart_rate >= 0 and (time.time() - bio.live_hr_timestamp < 10)
+    if not ble_fresh:
+        if sleep_mode_active:
+            sleep_mode_active = False
+            sleep_low_hr_count = 0
+            broadcast_sync({"type": "sleep_mode", "active": False})
+            print("[bio] Sleep mode OFF — no BLE data")
+        return
+
+    hr = bio.live_heart_rate
+    if hr < 50:
+        sleep_low_hr_count += 1
+        if sleep_low_hr_count >= 5 and not sleep_mode_active:
+            sleep_mode_active = True
+            broadcast_sync({"type": "sleep_mode", "active": True})
+            print(f"[bio] Sleep mode ON — low HR={hr} for {sleep_low_hr_count} cycles")
+    else: 
+        if sleep_mode_active: 
+            sleep_mode_active = False
+            broadcast_sync({"type": "sleep_mode", "active": False})
+            print(f"[bio] sleep mode off, HR={hr}")
+
 # loop for biometric polling
 
 def biometric_loop():
-    """
-    polls biometric data every 5 seconds. 
-    in real mode, it fetches from the user's whoop
-    in mock mode from MockBiometrics
-    """
+    global last_coding_activity
     while ghost_running:
-        if USE_MOCK_BIOMETRICS:
+        is whoop = False 
+        if time.time() < mock_override_until:
             data = mock.get_data()
-        else: 
+        elif bio.access_token:
             data = bio.fetch_data()
+            if data is None:
+                data = mock.get_data()
+            else:
+                is_whoop = True 
+        else: 
+            data = mock.get_data()
         
         if data: 
+            ble_fresh = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
+            if ble_fresh: 
+                data["heartRate"] = bio.live_heart_rate
+            elif is_whoop: 
+                pre_state = bio.classify(data)
+                data["heartRate"] = _simulate_hr(pre_state)
             state = bio.classify(data)
 
-            # sending biometric update to electron front end 
-            biometric_msg = build_biometric_msg(data, state)
+            if is_whoop:
+                src = "ble" if ble_fresh else "whoop"
+                print(f"[bio] WHOOP state classified: {state} (rec={data.get('recovery')}, strain={data.get('strain')}, hrv={data.get('hrv')}, hr={data.get('heartRate')}, src={src})")
+
+            biometric_msg = build_biometric_msg(data,state)
             broadcast_sync(biometric_msg)
+
+        _check_sleep_mode(data) 
+        if last_coding_activity > 0 and time.time() - last_coding_activity > 60:
+            last_coding_activity = time.time()
+            broadcast_sync({"type": "plant_update", "delta": -2})
+
         time.sleep(5)
+
 
 # main ghost loooooop
 
@@ -211,7 +291,7 @@ def ghost_loop():
                         last_intervention_hash = content_hash
                         # clear analyzed hashes so same content can re-trigger after cooldown
                         last_analyzed_hashes.clear()
-                        bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
+                        bio_data = mock.get_data() if (not bio.access_token or time.time() < mock_override_until) else (bio.current_data or {})
                         intervention["biometric"] = build_biometric_msg(bio_data, state)
                         intervention["app_type"] = app_type
                         broadcast_sync(intervention)
@@ -219,6 +299,10 @@ def ghost_loop():
                         if len(intervention_history) > 50:
                             intervention_history.pop(0)
                         print(f"[ghost] ({state}/{app_type}) {intervention['message'][:80]}...")
+                        plant_delta = -25 if intervention.get("priority") == "critical" else -15
+                        broadcast_sync({"type": "plant_update", "delta": plant_delta})
+                    else: 
+                        broadcast_sync({"type": "plant_update", "delta": 10})
 
             else:
                 screenshots = capture.get_buffer()
@@ -245,13 +329,13 @@ def ghost_loop():
 
                 # truthiness 
                 if intervention:
-                    bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
+                    bio_data = mock.get_data() if (not bio.access_token or time.time() < mock_override_until) else (bio.current_data or {})
                     intervention["biometric"] = build_biometric_msg(bio_data, state)
                     broadcast_sync(intervention)
                     intervention_history.append(intervention)
                     if len(intervention_history) > 50:
                         intervention_history.pop(0)
-                    print(f"[ghost] ({state}) {intervention['message'][:80]}...")
+                    print(f"[ghost] ({state}) {intervention['message'][:80]}...")   
 
         except Exception as e:
             print(f"[ghost_loop] Error: {e}")
@@ -281,7 +365,7 @@ async def lifespan(app: FastAPI):
     print(f"[ghost] Ghost loop started")
     print(f"[ghost] Server running on http://{HOST}:{PORT}")
     yield
-    
+
     #shutdown
     ghost_running = False
     if not GAME_MODE: 
@@ -311,7 +395,7 @@ async def status():
     -ghost brain stats
     -session stats from tracker
     """
-    bio_data = mock.get_data() if USE_MOCK_BIOMETRICS else (bio.current_data or {})
+    bio_data = mock.get_data() if (not bio.access_token or time.time() < mock_override_until) else (bio.current_data or {})
 
     return {
         "biometric_state": bio.current_state, 
@@ -321,7 +405,8 @@ async def status():
         "interventions_accepted": brain.accepted_count,
         "interventions_ignored": brain.ignored_count,
         "session_stats": tracker.get_session_stats(),
-        "mock_mode": USE_MOCK_BIOMETRICS,
+        "mock_mode": not bio.access_token or time.time() < mock_override_until,
+        "whoop_connected": bio.access_token is not None,
         "estimated_stress": bio.estimated_stress,
         "hrv_baseline": bio.hrv_baseline,
         "hrv_current": bio_data.get("hrv", 0),
@@ -331,10 +416,6 @@ async def status():
 
 @app.post("/api/biometric/mock")
 async def set_mock_state (body:dict):
-    """
-    manually set the biometric state from 1 to 5 
-    usign for testing each Ghost personality determined
-    """
     state_num = body.get ("state")
     if state_num not in [1, 2, 3, 4, 5]:
         return JSONResponse(
@@ -371,7 +452,6 @@ async def get_history():
 # game mode endpoints 
 @app.get("/api/game/apps")
 async def get_game_apps():
-    #returns the available in game apps typer and room object mappings
     return {
         "game_mode": GAME_MODE,
         "apps": {
@@ -382,6 +462,23 @@ async def get_game_apps():
             "chat": {"room_object": "phone", "label": "Chat"}
         }
     }
+
+@app.get("/api/whoop/auth")
+async def whoop_auth():
+    redirect_uri = "http://localhost:8000/api/whoop/callback"
+    auth_url = bio.get_auth_url(redirect_uri)
+    return RedirectResponse(url=auth_url)
+
+@app.get("/api/whoop/callback")
+async def whoop_callback(code: str = None, error: str = None):
+    if error or not code: 
+        return JSONResponse({"error": error or "No code received"}, status_code=400)
+        redirect_uri = "http://localhost:8000/api/whoop/callback"
+        success = bio.exchange_token(code, redirect_uri)
+        if success: 
+            return RedirectResponse(url="http://localhost:5173")
+
+
 
 # websocket endpoint
 @app.websocket("/ws")
@@ -477,3 +574,4 @@ async def websocket_endpoint(ws: WebSocket):
 if __name__ == "__main__": 
     import uvicorn
     uvicorn.run(app, host = HOST, port = PORT)
+
