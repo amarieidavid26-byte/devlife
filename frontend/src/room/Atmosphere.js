@@ -116,6 +116,7 @@ export class Atmosphere {
         this._overlay.endFill();
     }
 
+    // TODO: this is kinda janky on resize
     update(delta) {
         if (this._lerpT < 1) {
             this._lerpT = Math.min(1, this._lerpT + delta * 0.008);

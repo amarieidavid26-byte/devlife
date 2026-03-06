@@ -38,7 +38,7 @@ export class Furniture extends EventEmitter {
         this._addChair(5, 4);
     }
 
-    // ─── DESK + COMPUTER ────────────────────────────────────────────────────────
+    // these offsets took forever to get right
     _addDesk(gx, gy) {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();

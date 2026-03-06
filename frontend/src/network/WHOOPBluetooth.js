@@ -9,6 +9,8 @@ export class WHOOPBluetooth {
         this._reconnecting = false; 
     }
 
+    // web bluetooth API - only works in chrome lol
+    // tried navigator.bluetooth.getDevices() first but it didnt work
     async connect() {
         try {
             this.device = await navigator.bluetooth.requestDevice({
@@ -61,6 +63,7 @@ export class WHOOPBluetooth {
         this._notifyListeners(this.currentBPM, true);
     }
 
+    // HACK: duped from connect()
     async _tryReconnect() {
         if (this._reconnecting || !this.device) return;
         this._reconnecting = true;

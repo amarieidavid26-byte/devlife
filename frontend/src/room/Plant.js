@@ -67,6 +67,7 @@ export class Plant {
     }
 
     _draw() {
+        // console.log('plant stage:', this._stage)
         const g = this._plantGfx;
         const h = this._displayHealth;
         this._lastDrawnHealth = h;

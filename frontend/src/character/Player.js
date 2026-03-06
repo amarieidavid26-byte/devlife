@@ -55,7 +55,7 @@ export class Player {
 
     _buildSprite() {
         const container = new PIXI.Container();
-        const OL_C = 0x0d0d1a;
+        const OL_C = 0x0d0d1a; // HACK: same color defined 3 times
 
         this._legLeft  = new PIXI.Graphics();
         this._legRight = new PIXI.Graphics();

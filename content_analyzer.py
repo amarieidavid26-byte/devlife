@@ -16,19 +16,10 @@ RISKY_COMMAND_PATTERNS = [
     (r'rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+|.*-rf\s+)', 'Destructive file deletion (rm -rf)'),
     (r'git\s+push\s+.*--force', 'Force push — can overwrite remote history'),
     (r'git\s+push\s+-f\b', 'Force push — can overwrite remote history'),
-    (r'git\s+reset\s+--hard', 'Hard reset — discards all uncommitted changes'),
     (r'DROP\s+(TABLE|DATABASE|INDEX)', 'Database destructive command'),
-    (r'DELETE\s+FROM\s+\w+\s*;?\s*$', 'DELETE without WHERE clause — drops all rows'),
-    (r'TRUNCATE\s+TABLE', 'Table truncation — irrecoverable data loss'),
     (r'chmod\s+777\b', 'Overly permissive file permissions'),
     (r'sudo\s+rm\b', 'Elevated destructive command'),
-    (r':\s*\)\s*\{\s*:\s*\|', 'Fork bomb detected'),
-    (r'mkfs\b', 'Filesystem format command'),
-    (r'dd\s+if=', 'Raw disk write — potential data destruction'),
-    (r'npm\s+publish', 'Publishing package — verify version and contents first'),
-    (r'deploy\s+(prod|production|main|master)', 'Production deployment'),
-    (r'kubectl\s+delete', 'Kubernetes resource deletion'),
-    (r'docker\s+system\s+prune\s+-a', 'Docker full prune — removes all unused data'),
+    # TODO: add more patterns
 ]
 
 class ContentAnalyzer:
@@ -103,86 +94,14 @@ Signs of risky terminal actions:
 - DROP TABLE or database destructive commands
 - chmod 777 on sensitive directories""",
 
-        "browser": """You are Ghost, an AI assistant observing web browsing.
-Analyze this browser content and respond with ONLY a JSON object:
-{
-    "app": "browser",
-    "activity": "what the user is researching/reading",
-    "stuck_probability": 0.0 to 1.0,
-    "stuck_reason": "why they might be stuck or null",
-    "mistake_detected": false,
-    "mistake_description": null,
-    "help_opportunity": "what Ghost could help with or null",
-    "risky_action": false,
-    "risky_description": null,
-    "suggested_intervention": {
-        "type": "suggestion | encouragement",
-        "message": "concise Ghost message (2-3 sentences max)",
-        "priority": "low | medium",
-        "code_suggestion": null
-    },
-    "context_summary": "one-line summary of what user is researching"
-}
+        "browser": """You are Ghost analyzing browser content. Respond with JSON:
+{"app":"browser","activity":"string","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":null,"help_opportunity":"string|null","risky_action":false,"risky_description":null,"suggested_intervention":{"type":"suggestion|encouragement","message":"2-3 sentences","priority":"low|medium","code_suggestion":null},"context_summary":"one-line summary"}""",
 
-Signs of being stuck while browsing:
-- Searching the same error message repeatedly with different phrasing
-- Opening many Stack Overflow pages on the same topic
-- Bouncing between docs pages without settling""",
+        "notes": """You are Ghost analyzing notes/planning content. Respond with JSON:
+{"app":"notes","activity":"string","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":null,"help_opportunity":"string|null","risky_action":false,"risky_description":null,"suggested_intervention":{"type":"suggestion|encouragement","message":"2-3 sentences","priority":"low|medium","code_suggestion":null},"context_summary":"one-line summary"}""",
 
-        "notes": """You are Ghost, an AI assistant helping with planning and organization.
-Analyze these notes and respond with ONLY a JSON object:
-{
-    "app": "notes",
-    "activity": "what the user is planning/organizing",
-    "stuck_probability": 0.0 to 1.0,
-    "stuck_reason": "why they might be stuck or null",
-    "mistake_detected": false,
-    "mistake_description": null,
-    "help_opportunity": "how Ghost could help organize/prioritize or null",
-    "risky_action": false,
-    "risky_description": null,
-    "suggested_intervention": {
-        "type": "suggestion | encouragement",
-        "message": "concise Ghost message (2-3 sentences max)",
-        "priority": "low | medium",
-        "code_suggestion": null
-    },
-    "context_summary": "one-line summary of planning session"
-}
-
-Signs of being stuck while planning:
-- Notes are scattered with no clear structure
-- Many items marked with '?' or 'idk' or 'maybe'
-- Contradictory TODOs or circular reasoning
-- Empty sections that should have content""",
-
-        "chat": """You are Ghost, an AI assistant monitoring a chat conversation.
-Analyze this conversation and respond with ONLY a JSON object:
-{
-    "app": "chat",
-    "activity": "what the conversation is about",
-    "stuck_probability": 0.0 to 1.0,
-    "stuck_reason": "why the conversation might be going badly or null",
-    "mistake_detected": true/false,
-    "mistake_description": "describe the communication issue or null",
-    "help_opportunity": "how Ghost could help or null",
-    "risky_action": false,
-    "risky_description": null,
-    "suggested_intervention": {
-        "type": "suggestion | warning | encouragement",
-        "message": "concise Ghost message (2-3 sentences max)",
-        "priority": "low | medium | high",
-        "code_suggestion": null
-    },
-    "context_summary": "one-line summary of conversation"
-}
-
-Signs of communication issues:
-- Escalating tone (ALL CAPS, exclamation marks, sarcasm)
-- Defensive or aggressive phrasing
-- Circular arguments (same point repeated)
-- Passive-aggressive messages
-- Responding while clearly frustrated"""
+        "chat": """You are Ghost analyzing a chat conversation. Respond with JSON:
+{"app":"chat","activity":"string","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":"string|null","help_opportunity":"string|null","risky_action":false,"risky_description":null,"suggested_intervention":{"type":"suggestion|warning|encouragement","message":"2-3 sentences","priority":"low|medium|high","code_suggestion":null},"context_summary":"one-line summary"}"""
     }
 
     def __init__(self, api_key):

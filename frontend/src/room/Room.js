@@ -208,7 +208,7 @@ export class Room {
         this.wallContainer.addChild(clockContainer);
 
         this._updateClock();
-        setInterval(() => this._updateClock(), 1000);
+        setInterval(() => this._updateClock(), 1000); // never cleared lol
     }
 
     _updateClock() {

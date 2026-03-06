@@ -94,6 +94,7 @@ export class CodeEditorApp {
         });
         this.overlay.appendChild(editorContainer);
 
+        // grabbed this from stackoverflow
         if (!this.monacoLoaded) {
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js';

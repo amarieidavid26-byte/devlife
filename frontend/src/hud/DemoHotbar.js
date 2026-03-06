@@ -136,6 +136,7 @@ export class DemoHotbar {
         return !isLive || this._demoOverride;
     }
 
+    // lol this is ugly
     _updateHeader() {
         if (!this._headerEl) return;
         this._headerEl.innerHTML = '';

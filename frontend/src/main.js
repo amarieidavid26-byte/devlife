@@ -353,6 +353,11 @@ splash.innerHTML = `
 `;
 document.body.appendChild(splash);
 
+// check if backend is alive
+fetch('http://localhost:8000/health').then(r => r.json()).then(d => {
+    console.log('[main] backend health:', d.status);
+}).catch(() => {});
+
 // After 1.5s swap sub-text to "Connected", then fade out
 setTimeout(() => {
     const sub = document.getElementById('splash-sub');
@@ -363,4 +368,5 @@ setTimeout(() => {
     setTimeout(() => { splash.remove(); splashStyle.remove(); }, 820);
 }, 2200);
 
+// console.log("here")
 console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');

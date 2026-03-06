@@ -106,7 +106,7 @@ class BiometricEngine:
             print(f"[biometric_engine] Token refresh failed: {e}")
         return False
 
-    def ensure_token_valid(self):
+    def _check_token(self):
         if self.access_token and time.time() >= self.token_expiry - 60:
             print("[biometric_engine] Token expiring soon, refreshing...")
             return self.refresh_access_token()
@@ -122,7 +122,7 @@ class BiometricEngine:
     def fetch_data(self):
         if not self.access_token:
             return None
-        self.ensure_token_valid()
+        self._check_token()
         headers = {"Authorization": f"Bearer {self.access_token}"}
         try:
             recovery_resp = httpx.get(f"{self.API_BASE}/recovery", headers=headers, params={"limit": 1})
@@ -214,6 +214,7 @@ class BiometricEngine:
         else:
             estimated_stress = 0.5
         live_hr = self.live_heart_rate if (time.time() - self.live_hr_timestamp < 5) else 0
+        # print("DEBUG hr", live_hr)
         if live_hr > 0:
             if live_hr > 100:
                 new_state = "STRESSED"

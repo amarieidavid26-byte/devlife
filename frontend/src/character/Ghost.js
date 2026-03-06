@@ -284,6 +284,7 @@ export class Ghost {
         this.container.y = this._y;
     }
 
+    // TODO: refactor this massive method lol
     showSpeechBubble(data) {
         this.dismissBubble(false);
         this._currentData = data;

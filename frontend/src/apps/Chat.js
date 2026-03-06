@@ -51,6 +51,7 @@ export class ChatApp {
         });
     }
 
+    // this is so much boilerplate lmao
     open() {
         if (this.isOpen) return;
 
@@ -70,23 +71,10 @@ export class ChatApp {
         );
 
         const sidebar = document.createElement('div');
-        Object.assign(sidebar.style, {
-            width: '240px',
-            background: '#0a0a0a',
-            borderRight: '1px solid #2d2d2d',
-            display: 'flex',
-            flexDirection: 'column',
-            flexShrink: '0'
-        });
+        sidebar.style.cssText = 'width:240px;background:#0a0a0a;border-right:1px solid #2d2d2d;display:flex;flex-direction:column;flex-shrink:0';
 
         const sidebarHeader = document.createElement('div');
-        Object.assign(sidebarHeader.style, {
-            padding: '16px',
-            fontSize: '16px',
-            fontWeight: '600',
-            color: '#fff',
-            borderBottom: '1px solid #2d2d2d'
-        });
+        sidebarHeader.style.cssText = 'padding:16px;font-size:16px;font-weight:600;color:#fff;border-bottom:1px solid #2d2d2d';
         sidebarHeader.textContent = 'Messages';
         sidebar.appendChild(sidebarHeader);
 
@@ -151,12 +139,7 @@ export class ChatApp {
         this.overlay.appendChild(sidebar);
 
         const panel = document.createElement('div');
-        Object.assign(panel.style, {
-            flex: '1',
-            display: 'flex',
-            flexDirection: 'column',
-            minWidth: '0'
-        });
+        panel.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0';
 
         const header = document.createElement('div');
         Object.assign(header.style, {
@@ -222,16 +205,7 @@ export class ChatApp {
         this.inputEl = document.createElement('input');
         this.inputEl.type = 'text';
         this.inputEl.placeholder = 'Type a message...';
-        Object.assign(this.inputEl.style, {
-            flex: '1',
-            background: '#2d2d2d',
-            border: 'none',
-            borderRadius: '20px',
-            padding: '8px 16px',
-            color: '#fff',
-            outline: 'none',
-            fontSize: '14px'
-        });
+        this.inputEl.style.cssText = 'flex:1;background:#2d2d2d;border:none;border-radius:20px;padding:8px 16px;color:#fff;outline:none;font-size:14px';
 
         const sendBtn = document.createElement('button');
         Object.assign(sendBtn.style, {
@@ -290,6 +264,7 @@ export class ChatApp {
 
     sendMessage(text) {
         if (text.trim() === '') return;
+        // console.log('msg sent:', text)
         this.messages[this.currentContact].push({
             sender: 'You',
             text: text,
@@ -300,7 +275,8 @@ export class ChatApp {
         this.socket.sendContentUpdate(this.appType, this.getAllMessagesText(), {});
         this.scrollToBottom();
 
-        const delay = 2000 + Math.random() * 2000;
+        // const typingDelay = 1500; // felt too slow
+        var delay = 2000 + Math.random() * 2000;
         this.replyTimer = setTimeout(() => this.addAutoReply(), delay);
     }
 

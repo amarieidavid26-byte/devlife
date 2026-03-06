@@ -36,7 +36,13 @@ export class GhostSocket {
     }
 
     handleMessage(rawData) {
-        const msg = JSON.parse(rawData);
+        let msg;
+        try {
+            msg = JSON.parse(rawData);
+        } catch (e) {
+            console.log('bad json lol');
+            return;
+        }
         switch (msg.type) {
             case 'intervention':
                 this.emit('intervention', msg);
@@ -50,11 +56,14 @@ export class GhostSocket {
             case 'connection_established':
                 this.emit('connected', msg);
                 break;
+            // case 'debug': break;
             default:
                 console.warn('Unknown message type:', msg.type);
         }
     }
 
+    // TODO: exponential backoff
+    // was using setInterval for reconnect before, switched to setTimeout
     reconnect() {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = setTimeout(() => {

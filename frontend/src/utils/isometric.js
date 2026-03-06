@@ -1,3 +1,4 @@
+// 2:1 isometric ratio, grabbed from a tutorial
 export const TILE_WIDTH = 64;
 export const TILE_HEIGHT = 32;
 

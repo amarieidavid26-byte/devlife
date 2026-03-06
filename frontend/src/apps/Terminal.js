@@ -1,3 +1,4 @@
+// lol this is so hacky
 const FAKE_RESPONSES = {
     'help': 'Available commands: ls, cd, cat, pwd, npm, git, python3, clear, exit',
     'ls': 'node_modules/  src/  public/  package.json  vite.config.js  README.md  .gitignore',
