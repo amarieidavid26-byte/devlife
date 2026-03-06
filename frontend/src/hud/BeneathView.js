@@ -1,5 +1,3 @@
-// "Beneath the Surface" — TAB overlay that reveals the invisible biometric layer
-
 const STATE_COLORS = {
     DEEP_FOCUS: '#8000ff',
     STRESSED:   '#ff5050',
@@ -54,7 +52,6 @@ export class BeneathView {
     }
 
     show() {
-        // Cancel any orphaned loop from a previous show() call
         if (this._animFrame) { cancelAnimationFrame(this._animFrame); this._animFrame = null; }
         this._visible   = true;
         this._particles = [];
@@ -90,25 +87,21 @@ export class BeneathView {
         const gx  = this._ghostPos.x;
         const gy  = this._ghostPos.y;
 
-        // Hard reset canvas state so nothing leaks between frames
         ctx.globalAlpha     = 1;
         ctx.globalCompositeOperation = 'source-over';
         ctx.shadowBlur      = 0;
         ctx.shadowColor     = 'transparent';
         ctx.clearRect(0, 0, W, H);
 
-        // ── 1. Dark translucent overlay ────────────────────────────────────────
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.fillRect(0, 0, W, H);
 
-        // ── 2. Scanline grid (X-ray / thermal feel) ────────────────────────────
         ctx.save();
         ctx.globalAlpha = 0.03;
         ctx.fillStyle   = col;
         for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
         ctx.restore();
 
-        // ── 3. Pulsing heartbeat rings around player ───────────────────────────
         const bpm          = parseFloat(this._data.heartRate) || 72;
         const beatInterval = 60 / bpm;
         const beatPhase    = (t % beatInterval) / beatInterval;
@@ -129,7 +122,6 @@ export class BeneathView {
             ctx.restore();
         }
 
-        // Inner steady glow ring
         const innerScale = 0.88 + Math.sin(t * (bpm / 60) * Math.PI * 2) * 0.12;
         ctx.save();
         ctx.strokeStyle = col;
@@ -142,7 +134,6 @@ export class BeneathView {
         ctx.stroke();
         ctx.restore();
 
-        // ── 4. Particle streams (veins) player → ghost ─────────────────────────
         if (ts - this._lastParticleSpawn > 160) {
             this._lastParticleSpawn = ts;
             const angle  = Math.atan2(gy - py, gx - px);
@@ -174,8 +165,6 @@ export class BeneathView {
             ctx.restore();
         }
 
-        // ── 5. Animated biometric labels near player (always visible) ─────────
-        // Each metric gently sways using sine — no spawn/fade, always on-screen
         const hrv      = parseFloat(this._data.hrv)      || 0;
         const recovery = parseFloat(this._data.recovery)  || 0;
         const metrics  = [
@@ -200,7 +189,6 @@ export class BeneathView {
             ctx.restore();
         });
 
-        // ── 6. State label above player ────────────────────────────────────────
         ctx.save();
         ctx.font        = 'bold 12px monospace';
         ctx.fillStyle   = col;
@@ -211,7 +199,6 @@ export class BeneathView {
         ctx.fillText(this._data.state, px, py - 90);
         ctx.restore();
 
-        // ── 7. Title at top center ─────────────────────────────────────────────
         ctx.save();
         ctx.font        = 'bold 20px "Segoe UI", monospace';
         ctx.fillStyle   = col;
@@ -230,7 +217,6 @@ export class BeneathView {
         ctx.fillText('what ghost sees — press TAB to hide', W / 2, 72);
         ctx.restore();
 
-        // ── 8. Large biometric readout (bottom center) ────────────────────────
         const stats = [
             { label: 'HEART RATE', value: `${Math.round(bpm)}`,        unit: 'bpm' },
             { label: 'HRV',        value: `${Math.round(hrv)}`,         unit: 'ms'  },

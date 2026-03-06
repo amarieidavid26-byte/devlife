@@ -1,4 +1,3 @@
-// Biometric HUD overlay — top-right corner, HTML-based for easy styling
 
 const STATE_COLORS = {
     DEEP_FOCUS: '#8000ff',
@@ -8,17 +7,16 @@ const STATE_COLORS = {
     WIRED:      '#0096ff',
 };
 
-// P-QRS-T waveform shape (0..1, where 0.5 = baseline, lower = spike upward)
 const BEAT_SHAPE = [
     0.5, 0.5, 0.5, 0.5,
-    0.44, 0.38, 0.38, 0.44,       // P-wave
-    0.5, 0.5,                      // PQ interval
-    0.58,                          // Q dip
-    0.14, 0.07, 0.14,              // R spike (tall)
-    0.64, 0.58,                    // S dip
-    0.5, 0.5, 0.5,                 // ST segment
-    0.40, 0.33, 0.30, 0.33, 0.40, // T wave
-    0.5, 0.5, 0.5, 0.5,           // return to baseline
+    0.44, 0.38, 0.38, 0.44,
+    0.5, 0.5,
+    0.58,
+    0.14, 0.07, 0.14,
+    0.64, 0.58,
+    0.5, 0.5, 0.5,
+    0.40, 0.33, 0.30, 0.33, 0.40,
+    0.5, 0.5, 0.5, 0.5,
 ];
 
 const ECG_W   = 220;
@@ -36,14 +34,15 @@ export class HUD {
             estimated_stress: 0,
         };
 
-        // ECG state
         this._ecgBPM         = 72;
         this._ecgTargetBPM   = 72;
         this._ecgColor       = STATE_COLORS.RELAXED;
         this._ecgBuffer      = new Float32Array(ECG_W).fill(0.5);
         this._ecgMsSinceBeat = 0;
-        this._ecgBeatIndex   = -1;  // -1 = idle, ≥0 = index into BEAT_SHAPE
+        this._ecgBeatIndex   = -1;
         this._ecgLastTs      = null;
+
+        this._sleepMode = false;
 
         this._el = this._createEl();
         document.body.appendChild(this._el);
@@ -75,7 +74,6 @@ export class HUD {
             line-height: 1.7;
         `;
 
-        // ECG canvas sits flush at the top
         this._ecgCanvas = document.createElement('canvas');
         const dpr = window.devicePixelRatio || 1;
         this._ecgCanvas.width  = ECG_W * dpr;
@@ -86,7 +84,6 @@ export class HUD {
         this._ecgDpr = dpr;
         el.appendChild(this._ecgCanvas);
 
-        // Text area below canvas
         this._textEl = document.createElement('div');
         this._textEl.style.cssText = 'padding:10px 16px 12px;';
         el.appendChild(this._textEl);
@@ -108,13 +105,10 @@ export class HUD {
     _ecgTick(deltaMs) {
         const buf = this._ecgBuffer;
 
-        // Smooth BPM transition — lerp toward target so state changes don't cause chaos
         this._ecgBPM += (this._ecgTargetBPM - this._ecgBPM) * 0.05;
 
-        // Scroll the buffer one sample to the left
         buf.copyWithin(0, 1);
 
-        // Advance beat accumulator — clamp deltaMs to prevent runaway after tab switch
         const clampedDelta = Math.min(deltaMs, 50);
         this._ecgMsSinceBeat += clampedDelta;
         const beatInterval = 60000 / Math.max(30, Math.min(150, this._ecgBPM));
@@ -124,9 +118,13 @@ export class HUD {
             this._ecgBeatIndex = 0;
         }
 
-        // Write next beat sample or baseline to the rightmost slot
-        if (this._ecgBeatIndex >= 0 && this._ecgBeatIndex < BEAT_SHAPE.length) {
+        if (this._sleepMode) {
+            if (!this._sleepPhase) this._sleepPhase = 0;
+            this._sleepPhase += clampedDelta * 0.0008;
+            buf[ECG_W - 1] = 0.5 + Math.sin(this._sleepPhase) * 0.06;
+        } else if (this._ecgBeatIndex >= 0 && this._ecgBeatIndex < BEAT_SHAPE.length) {
             buf[ECG_W - 1] = BEAT_SHAPE[this._ecgBeatIndex++];
+            this._sleepPhase = 0;
         } else {
             buf[ECG_W - 1] = 0.5;
             if (this._ecgBeatIndex >= BEAT_SHAPE.length) this._ecgBeatIndex = -1;
@@ -144,11 +142,9 @@ export class HUD {
 
         ctx.clearRect(0, 0, W, H);
 
-        // Dark background
         ctx.fillStyle = 'rgba(0,0,0,0.45)';
         ctx.fillRect(0, 0, W, H);
 
-        // Faint grid
         ctx.strokeStyle = 'rgba(255,255,255,0.05)';
         ctx.lineWidth = 1;
         for (let x = 44; x < W; x += 44) {
@@ -156,7 +152,6 @@ export class HUD {
         }
         ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
 
-        // Trailing glow pass (wider, more transparent)
         ctx.save();
         ctx.shadowBlur  = 0;
         ctx.strokeStyle = col;
@@ -171,7 +166,6 @@ export class HUD {
         ctx.stroke();
         ctx.restore();
 
-        // Main ECG line
         ctx.save();
         ctx.shadowBlur  = 7;
         ctx.shadowColor = col;
@@ -186,7 +180,6 @@ export class HUD {
         }
         ctx.stroke();
 
-        // Leading dot
         const lastY = buf[W - 1] * (H - 10) + 5;
         ctx.shadowBlur  = 12;
         ctx.shadowColor = col;
@@ -214,9 +207,22 @@ export class HUD {
         this._render();
     }
 
+    setVisible(visible) {
+        this._el.style.display = visible ? '' : 'none';
+    }
+
+    setSleepMode(active) {
+        this._sleepMode = active;
+        if (active) {
+            this._ecgColor = '#4444aa';
+        }
+        this._render();
+    }
+
     _render() {
         const d          = this._data;
-        const stateColor = STATE_COLORS[d.state] || '#888888';
+        const stateColor = this._sleepMode ? '#4444aa' : (STATE_COLORS[d.state] || '#888888');
+        const stateLabel = this._sleepMode ? '😴 SLEEP MODE' : d.state;
 
         const rec    = parseFloat(d.recovery);
         const recDot = isNaN(rec) ? '⚫' : rec >= 66 ? '🟢' : rec >= 33 ? '🟡' : '🔴';
@@ -247,7 +253,7 @@ export class HUD {
                 <span>HRV: <strong>${hrvFmt}</strong></span>
             </div>
             <div style="margin:6px 0 4px">
-                State: <strong style="color:${stateColor}">${d.state}</strong>
+                State: <strong style="color:${stateColor}">${stateLabel}</strong>
             </div>
             <div style="font-size:11px;color:#888;margin-bottom:4px">
                 Stress ${stress.toFixed(1)}/3.0

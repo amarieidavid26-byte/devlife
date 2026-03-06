@@ -1,6 +1,4 @@
 import * as PIXI from 'pixi.js';
-
-// State → color configs
 const STATE_CONFIG = {
     DEEP_FOCUS: { color: 0x8000ff, r: 128, g: 0,   b: 255, particleSpeed: 0.3, particleCount: 18, alpha: 0.10 },
     STRESSED:   { color: 0xff5050, r: 255, g: 80,  b: 80,  particleSpeed: 2.0, particleCount: 40, alpha: 0.14 },
@@ -19,26 +17,21 @@ export class Atmosphere {
         this._currentState = DEFAULT_STATE;
         this._targetState  = DEFAULT_STATE;
 
-        // Tinted overlay
         this._overlay = new PIXI.Graphics();
         this.container.addChild(this._overlay);
 
-        // Particles container
         this._particleContainer = new PIXI.Container();
         this.container.addChild(this._particleContainer);
 
         this._particles = [];
-        this._lerpT = 1; // 0 = start of transition, 1 = complete
+        this._lerpT = 1;
 
-        // Current interpolated RGB
         const cfg = STATE_CONFIG[DEFAULT_STATE];
         this._curR = cfg.r; this._curG = cfg.g; this._curB = cfg.b;
         this._curAlpha = cfg.alpha;
 
-        // Screen shake state
         this._shake = null;
 
-        // Flash overlay for state transitions
         this._flashAlpha = 0;
         this._flashColor = 0xffffff;
         this._flashOverlay = new PIXI.Graphics();
@@ -54,7 +47,6 @@ export class Atmosphere {
         this._targetState = stateName;
         if (this._lerpT >= 1) {
             this._lerpT = 0;
-            // Brief color flash on state change
             this._flashAlpha = 0.22;
             this._flashColor = STATE_CONFIG[stateName].color;
         }
@@ -125,7 +117,6 @@ export class Atmosphere {
     }
 
     update(delta) {
-        // Lerp color transition
         if (this._lerpT < 1) {
             this._lerpT = Math.min(1, this._lerpT + delta * 0.008);
 
@@ -144,7 +135,6 @@ export class Atmosphere {
             }
         }
 
-        // Flash overlay decay (state-change punch flash)
         if (this._flashAlpha > 0) {
             this._flashAlpha = Math.max(0, this._flashAlpha - 0.018 * delta);
             this._flashOverlay.clear();
@@ -155,7 +145,6 @@ export class Atmosphere {
             }
         }
 
-        // Update particles
         const cfg = STATE_CONFIG[this._currentState];
         const targetCount = cfg.particleCount;
 
@@ -166,7 +155,6 @@ export class Atmosphere {
         for (let i = this._particles.length - 1; i >= 0; i--) {
             const p = this._particles[i];
 
-            // Wired state: jitter
             if (this._currentState === 'WIRED') {
                 p.vx += (Math.random() - 0.5) * 0.4;
                 p.vy += (Math.random() - 0.5) * 0.2;
@@ -177,7 +165,6 @@ export class Atmosphere {
             p.y += p.vy * delta;
             p.life += delta;
 
-            // Fade in/out
             const lifePct = p.life / p.maxLife;
             p.gfx.alpha = lifePct < 0.1
                 ? lifePct / 0.1
@@ -188,14 +175,12 @@ export class Atmosphere {
             p.gfx.x = p.x;
             p.gfx.y = p.y;
 
-            // Recycle dead or out-of-bounds particles
             if (p.life >= p.maxLife || p.y < -20 || p.x < -20 || p.x > window.innerWidth + 20) {
                 p.gfx.destroy();
                 this._particles.splice(i, 1);
             }
         }
 
-        // Trim excess particles
         while (this._particles.length > targetCount + 10) {
             const p = this._particles.shift();
             p.gfx.destroy();

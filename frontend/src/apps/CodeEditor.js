@@ -1,6 +1,3 @@
-// DevLife — Code Editor App (Monaco Editor overlay)
-// Player sits at desk_computer → this opens.
-
 const STARTER_CODE = `# Ghost Demo — Bug Detection
 # Try introducing a bug and watch Ghost help you!
 
@@ -50,7 +47,6 @@ export class CodeEditorApp {
             this.overlay.addEventListener(evt, e => e.stopPropagation())
         );
 
-        // Top bar
         const topBar = document.createElement('div');
         Object.assign(topBar.style, {
             height: '40px',
@@ -91,7 +87,6 @@ export class CodeEditorApp {
         topBar.appendChild(closeBtn);
         this.overlay.appendChild(topBar);
 
-        // Editor container
         const editorContainer = document.createElement('div');
         Object.assign(editorContainer.style, {
             flex: '1',
@@ -99,7 +94,6 @@ export class CodeEditorApp {
         });
         this.overlay.appendChild(editorContainer);
 
-        // Load Monaco
         if (!this.monacoLoaded) {
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js';
@@ -142,7 +136,6 @@ export class CodeEditorApp {
             });
         });
 
-        // Auto-focus so the user can type immediately without clicking
         this.editor.focus();
     }
 
@@ -154,7 +147,6 @@ export class CodeEditorApp {
             if (this.editor) this.editor.focus();
         }, 200);
 
-        // Green flash to confirm the fix was applied
         const flash = document.createElement('div');
         Object.assign(flash.style, {
             position: 'absolute',

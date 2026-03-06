@@ -1,6 +1,3 @@
-// DevLife — Notes App (planning board overlay)
-// Player walks to whiteboard → this opens.
-
 const DEFAULT_NOTES = `# DevLife — Sprint Planning
 
 ## Current Tasks
@@ -55,7 +52,6 @@ export class NotesApp {
             this.overlay.addEventListener(evt, e => e.stopPropagation())
         );
 
-        // Top bar
         const topBar = document.createElement('div');
         Object.assign(topBar.style, {
             height: '44px',
@@ -72,7 +68,6 @@ export class NotesApp {
         Object.assign(title.style, { color: '#e6edf3', fontSize: '14px', fontWeight: '600' });
         title.textContent = 'Notes — Planning Board';
 
-        // Toolbar
         const toolbar = document.createElement('div');
         Object.assign(toolbar.style, { display: 'flex', gap: '4px' });
 
@@ -125,7 +120,6 @@ export class NotesApp {
         topBar.appendChild(closeBtn);
         this.overlay.appendChild(topBar);
 
-        // Textarea
         this.textarea = document.createElement('textarea');
         Object.assign(this.textarea.style, {
             flex: '1',

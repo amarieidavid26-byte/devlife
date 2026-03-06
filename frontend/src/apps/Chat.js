@@ -1,6 +1,3 @@
-// DevLife — Chat App (messaging overlay)
-// Player walks to phone → this opens.
-
 const STARTER_MESSAGES = {
     Team: [
         { sender: 'David', text: 'Backend deployed, Ghost is alive \u{1F916}', time: '10:30 AM', isMe: false },
@@ -49,7 +46,6 @@ export class ChatApp {
         this.headerNameEl = null;
         this.replyTimer = null;
 
-        // Deep copy starter messages
         this.contacts.forEach(c => {
             this.messages[c] = (STARTER_MESSAGES[c] || []).map(m => ({ ...m }));
         });
@@ -73,7 +69,6 @@ export class ChatApp {
             this.overlay.addEventListener(evt, e => e.stopPropagation())
         );
 
-        // Left sidebar
         const sidebar = document.createElement('div');
         Object.assign(sidebar.style, {
             width: '240px',
@@ -155,7 +150,6 @@ export class ChatApp {
         sidebar.appendChild(this.contactListEl);
         this.overlay.appendChild(sidebar);
 
-        // Right panel
         const panel = document.createElement('div');
         Object.assign(panel.style, {
             flex: '1',
@@ -164,7 +158,6 @@ export class ChatApp {
             minWidth: '0'
         });
 
-        // Header
         const header = document.createElement('div');
         Object.assign(header.style, {
             height: '52px',
@@ -205,7 +198,6 @@ export class ChatApp {
         header.appendChild(closeBtn);
         panel.appendChild(header);
 
-        // Messages area
         this.messagesEl = document.createElement('div');
         Object.assign(this.messagesEl.style, {
             flex: '1',
@@ -217,7 +209,6 @@ export class ChatApp {
         });
         panel.appendChild(this.messagesEl);
 
-        // Input bar
         const inputBar = document.createElement('div');
         Object.assign(inputBar.style, {
             background: '#0a0a0a',
@@ -309,7 +300,6 @@ export class ChatApp {
         this.socket.sendContentUpdate(this.appType, this.getAllMessagesText(), {});
         this.scrollToBottom();
 
-        // Schedule auto-reply
         const delay = 2000 + Math.random() * 2000;
         this.replyTimer = setTimeout(() => this.addAutoReply(), delay);
     }

@@ -11,7 +11,7 @@ const STATE_FLOWER_COLORS = {
 function getStage(health) {
     if (health <= 15) return 'dead';
     if (health <= 30) return 'withering';
-    if (health <= 50) return 'seedling'; // dumb word
+    if (health <= 50) return 'seedling';
     if (health <= 70) return 'sprout';
     if (health <= 85) return 'growing';
     return 'blooming';

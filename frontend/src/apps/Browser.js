@@ -1,6 +1,3 @@
-// DevLife — Browser App (real iframe-based browser overlay)
-// Player walks to second_monitor → this opens.
-
 const BOOKMARKS = {
     'Wikipedia': 'https://en.m.wikipedia.org',
     'W3Schools': 'https://www.w3schools.com',
@@ -80,12 +77,10 @@ export class BrowserApp {
             this.overlay.addEventListener(evt, e => e.stopPropagation())
         );
 
-        // Top chrome
         const chrome = document.createElement('div');
         chrome.style.background = '#2d2d2d';
         chrome.style.flexShrink = '0';
 
-        // Row 1: nav + address bar + close
         const row1 = document.createElement('div');
         Object.assign(row1.style, {
             height: '40px',
@@ -109,7 +104,6 @@ export class BrowserApp {
             justifyContent: 'center'
         };
 
-        // Back button
         this.backBtn = document.createElement('button');
         Object.assign(this.backBtn.style, navBtnStyle);
         this.backBtn.textContent = '\u2190';
@@ -125,7 +119,6 @@ export class BrowserApp {
         });
         row1.appendChild(this.backBtn);
 
-        // Forward button
         this.forwardBtn = document.createElement('button');
         Object.assign(this.forwardBtn.style, navBtnStyle);
         this.forwardBtn.textContent = '\u2192';
@@ -139,7 +132,6 @@ export class BrowserApp {
         });
         row1.appendChild(this.forwardBtn);
 
-        // Refresh button
         this.refreshBtn = document.createElement('button');
         Object.assign(this.refreshBtn.style, navBtnStyle);
         this.refreshBtn.textContent = '\u21BB';
@@ -152,7 +144,6 @@ export class BrowserApp {
         });
         row1.appendChild(this.refreshBtn);
 
-        // Address bar
         this.addressBar = document.createElement('input');
         this.addressBar.placeholder = 'Search or enter URL...';
         Object.assign(this.addressBar.style, {
@@ -184,7 +175,6 @@ export class BrowserApp {
         });
         row1.appendChild(this.addressBar);
 
-        // Close button
         const closeBtn = document.createElement('button');
         Object.assign(closeBtn.style, {
             background: 'transparent',
@@ -203,7 +193,6 @@ export class BrowserApp {
 
         chrome.appendChild(row1);
 
-        // Row 2: Bookmarks bar
         const row2 = document.createElement('div');
         Object.assign(row2.style, {
             height: '32px',
@@ -235,7 +224,6 @@ export class BrowserApp {
         chrome.appendChild(row2);
         this.overlay.appendChild(chrome);
 
-        // Content wrapper (holds both home page and iframe)
         const contentWrapper = document.createElement('div');
         Object.assign(contentWrapper.style, {
             flex: '1',
@@ -243,7 +231,6 @@ export class BrowserApp {
             overflow: 'hidden'
         });
 
-        // Home page div
         this.homeDiv = document.createElement('div');
         Object.assign(this.homeDiv.style, {
             width: '100%',
@@ -276,7 +263,6 @@ export class BrowserApp {
         });
         contentWrapper.appendChild(this.homeDiv);
 
-        // Iframe for real sites
         this.iframe = document.createElement('iframe');
         Object.assign(this.iframe.style, {
             width: '100%',
@@ -296,15 +282,12 @@ export class BrowserApp {
                 if (iframeUrl && iframeUrl !== 'about:blank') {
                     this.addressBar.value = iframeUrl;
                 }
-                // Check if the page actually loaded content
                 const doc = this.iframe.contentDocument;
                 if (doc && doc.body && doc.body.innerHTML.length < 10) {
                     this.showBlockedMessage(this.addressBar.value);
                 }
             } catch (e) {
-                // Cross-origin: can't access contentDocument = site loaded but blocks reading
-                // This is actually SUCCESS (site rendered in iframe but is cross-origin)
-                // Only show blocked message if we detect a known blocking pattern
+                
             }
         });
         this.iframe.addEventListener('error', () => {
@@ -314,7 +297,6 @@ export class BrowserApp {
         });
         contentWrapper.appendChild(this.iframe);
 
-        // Blocked message overlay (hidden by default)
         this.blockedDiv = document.createElement('div');
         Object.assign(this.blockedDiv.style, {
             width: '100%',
@@ -354,7 +336,6 @@ export class BrowserApp {
     }
 
     navigate(url) {
-        // Truncate forward history when navigating to a new page
         if (!this._navigatingFromHistory) {
             this._history = this._history.slice(0, this._historyIndex + 1);
             this._history.push(url);
@@ -373,7 +354,6 @@ export class BrowserApp {
         this.iframe.src = url;
         this.socket.sendContentUpdate(this.appType, url + '\nBrowsing: ' + url, { url: url });
 
-        // Timeout: if iframe hasn't loaded in 8s, site probably blocks embedding
         clearTimeout(this.loadTimeout);
         this.loadTimeout = setTimeout(() => {
             if (!this.iframe) return;
@@ -383,7 +363,7 @@ export class BrowserApp {
                     this.showBlockedMessage(url);
                 }
             } catch (e) {
-                // Cross-origin = site actually loaded, just can't read it — that's OK
+                
             }
         }, 8000);
     }

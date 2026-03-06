@@ -1,6 +1,3 @@
-// DevLife — Ghost WebSocket Client
-// The ONLY networking code in the entire frontend.
-
 export class GhostSocket {
     constructor(url = 'ws://localhost:8000/ws') {
         this.url = url;
@@ -82,7 +79,6 @@ export class GhostSocket {
     }
 
     sendContentUpdate(appType, content, metadata = {}) {
-        // Skip if content hasn't changed since last send for this app
         if (this.lastSentContent[appType] === content) return;
 
         clearTimeout(this.contentTimer);

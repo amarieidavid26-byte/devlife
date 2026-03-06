@@ -1,6 +1,3 @@
-// DevLife — Terminal App (fake shell UI)
-// Player walks to desk_terminal → this opens.
-
 const FAKE_RESPONSES = {
     'help': 'Available commands: ls, cd, cat, pwd, npm, git, python3, clear, exit',
     'ls': 'node_modules/  src/  public/  package.json  vite.config.js  README.md  .gitignore',
@@ -59,7 +56,6 @@ export class TerminalApp {
             this.overlay.addEventListener(evt, e => e.stopPropagation())
         );
 
-        // Top bar
         const topBar = document.createElement('div');
         Object.assign(topBar.style, {
             height: '36px',
@@ -94,7 +90,6 @@ export class TerminalApp {
         topBar.appendChild(closeBtn);
         this.overlay.appendChild(topBar);
 
-        // Output area
         this.outputEl = document.createElement('div');
         Object.assign(this.outputEl.style, {
             flex: '1',
@@ -108,7 +103,6 @@ export class TerminalApp {
         this.outputEl.innerHTML = '<span style="color:#00ff00">DevLife Terminal v1.0\nType \'help\' for available commands.\n\n</span>';
         this.overlay.appendChild(this.outputEl);
 
-        // Input line
         const inputLine = document.createElement('div');
         Object.assign(inputLine.style, {
             background: '#111',
@@ -175,10 +169,8 @@ export class TerminalApp {
         inputLine.appendChild(this.inputEl);
         this.overlay.appendChild(inputLine);
 
-        // Delayed focus — DOM may not be painted yet on the synchronous call
         setTimeout(() => { this.inputEl.focus(); }, 150);
 
-        // Clicking anywhere in the terminal re-focuses the input
         this.overlay.addEventListener('click', () => {
             if (this.inputEl) this.inputEl.focus();
         });
