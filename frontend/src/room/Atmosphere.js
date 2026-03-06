@@ -70,28 +70,18 @@ export class Atmosphere {
         this.setState(to);
     }
 
+    setSleepMode(active) {
+        this._sleepMode = active;
+        this._sleepLerp = active;
+    }
+
     // particle colors look weird on some monitors
     _initParticles() {
         const cfg = STATE_CONFIG[this._currentState];
         this._particles = [];
         this._particleContainer.removeChildren();
-
         for (let i = 0; i < 50; i++) {
-            // inline spawn for init — slightly different from _spawnParticle
-            const g = new PIXI.Graphics();
-            const size = 1.5 + Math.random() * 2.5;
-            g.beginFill(cfg.color, 0.5 + Math.random() * 0.3);
-            g.drawCircle(0, 0, size);
-            g.endFill();
-            g.x = Math.random() * window.innerWidth;
-            g.y = Math.random() * window.innerHeight;
-            this._particleContainer.addChild(g);
-            this._particles.push({
-                gfx: g, x: g.x, y: g.y,
-                vx: (Math.random() - 0.5) * cfg.particleSpeed,
-                vy: -(0.2 + Math.random() * cfg.particleSpeed),
-                life: Math.random() * 200, maxLife: 200 + Math.random() * 400, size,
-            });
+            this._spawnParticle(cfg, true);
         }
     }
 
@@ -133,15 +123,55 @@ export class Atmosphere {
 
     // TODO: this is kinda janky on resize
     update(delta) {
+        if (this._sleepMode !== undefined) {
+            const target = this._sleepMode ? 1 : 0;
+            const speed = 0.006 * delta;
+            if (this._sleepLerp < target) this._sleepLerp = Math.min(target, this._sleepLerp + speed);
+            else if (this._sleepLerp > target) this._sleepLerp = Math.max(target, this._sleepLerp - speed * 2);
+
+            if (this._sleepLerp > 0.01) {
+                if (!this._sleepOverlay) {
+                    this._sleepOverlay = new PIXI.Graphics();
+                    this.container.addChild(this._sleepOverlay);
+                }
+                this._sleepOverlay.clear();
+                this._sleepOverlay.beginFill(0x050510, 0.55 * this._sleepLerp);
+                this._sleepOverlay.drawRect(0, 0, window.innerWidth, window.innerHeight);
+                this._sleepOverlay.endFill();
+
+                if (!this._sleepStars) this._sleepStars = [];
+                while (this._sleepStars.length < 30) {
+                    const star = new PIXI.Graphics();
+                    const sz = 0.8 + Math.random() * 1.5;
+                    star.beginFill(0xffffff, 0.4 + Math.random() * 0.4);
+                    star.drawCircle(0, 0, sz);
+                    star.endFill();
+                    star.x = Math.random() * window.innerWidth;
+                    star.y = Math.random() * window.innerHeight * 0.6;
+                    star.alpha = 0;
+                    this.container.addChild(star);
+                    this._sleepStars.push({ gfx: star, phase: Math.random() * Math.PI * 2, speed: 0.3 + Math.random() * 0.7 });
+                }
+                for (const s of this._sleepStars) {
+                    s.phase += 0.02 * s.speed * delta;
+                    s.gfx.alpha = (0.3 + Math.sin(s.phase) * 0.3) * this._sleepLerp;
+                }
+            } else if (this._sleepStars) {
+                for (const s of this._sleepStars) s.gfx.destroy();
+                this._sleepStars = null;
+                if (this._sleepOverlay) { this._sleepOverlay.clear(); }
+            }
+        }
+
         if (this._lerpT < 1) {
             this._lerpT = Math.min(1, this._lerpT + delta * 0.008);
 
             const fromCfg = STATE_CONFIG[this._currentState] || STATE_CONFIG[DEFAULT_STATE];
-            const toCfg = STATE_CONFIG[this._targetState] || STATE_CONFIG[DEFAULT_STATE];
+            const toCfg   = STATE_CONFIG[this._targetState]  || STATE_CONFIG[DEFAULT_STATE];
 
-            this._curR = fromCfg.r + (toCfg.r - fromCfg.r) * this._lerpT;
-            this._curG = fromCfg.g + (toCfg.g - fromCfg.g) * this._lerpT;
-            this._curB = fromCfg.b + (toCfg.b - fromCfg.b) * this._lerpT;
+            this._curR     = fromCfg.r     + (toCfg.r     - fromCfg.r)     * this._lerpT;
+            this._curG     = fromCfg.g     + (toCfg.g     - fromCfg.g)     * this._lerpT;
+            this._curB     = fromCfg.b     + (toCfg.b     - fromCfg.b)     * this._lerpT;
             this._curAlpha = fromCfg.alpha + (toCfg.alpha - fromCfg.alpha) * this._lerpT;
 
             this._redrawOverlay();
