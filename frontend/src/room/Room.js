@@ -67,12 +67,13 @@ export class Room {
         }
     }
 
+    // wall drawing is confusing af
     _drawWalls() {
-        const wallH  = 120; // wall height in pixels
+        const wallH  = 120; // 120px walls (actually its 130 idk)
         const baseH  = 5;   // baseboard strip height
         const railY  = wallH * 0.30; // chair-rail height from floor
 
-        // ── LEFT wall (gx = 0, gy = 0..GRID_SIZE-1) ──────────────────────────
+        // left wall
         for (let gy = 0; gy < GRID_SIZE; gy++) {
             const { x, y } = this.gridToScreen(0, gy);
             const panel = new PIXI.Graphics();
@@ -108,7 +109,7 @@ export class Room {
             this.wallContainer.addChild(panel);
         }
 
-        // ── RIGHT wall (gy = 0, gx = 0..GRID_SIZE-1) ─────────────────────────
+        // right wall
         for (let gx = 0; gx < GRID_SIZE; gx++) {
             const { x, y } = this.gridToScreen(gx, 0);
             const panel = new PIXI.Graphics();
@@ -139,7 +140,7 @@ export class Room {
             this.wallContainer.addChild(panel);
         }
 
-        // ── Corner cap at (0,0) ───────────────────────────────────────────────
+        // corner
         const { x: cx, y: cy } = this.gridToScreen(0, 0);
         const corner = new PIXI.Graphics();
         corner.lineStyle(2, COL.wallEdge, 0.9);
@@ -157,7 +158,7 @@ export class Room {
         const cx = wx + TILE_WIDTH  / 4;              // horizontal centre of face
         const cy = wy + TILE_HEIGHT / 4 - wallH * 0.62; // 62% up the wall
 
-        // ── LED panel (dark bezel) ────────────────────────────────────────────
+        // LED panel
         const screen = new PIXI.Graphics();
         screen.beginFill(0x050d18);
         screen.drawRoundedRect(-38, -14, 76, 28, 5);
@@ -180,7 +181,7 @@ export class Room {
         }
         screen.endFill();
 
-        // ── Time text ─────────────────────────────────────────────────────────
+        // time text
         this._clockText = new PIXI.Text('00:00', {
             fontFamily:         'monospace',
             fontSize:           16,
@@ -196,7 +197,7 @@ export class Room {
         this._clockText.anchor.set(0.5, 0.5);
         this._clockText.y = 1;
 
-        // ── Container with skew to lie on the angled wall face ────────────────
+        // skew to match wall angle
         const clockContainer = new PIXI.Container();
         clockContainer.addChild(screen);
         clockContainer.addChild(this._clockText);

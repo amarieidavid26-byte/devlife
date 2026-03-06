@@ -8,12 +8,12 @@ const STATE_COLORS = {
 
 export class BeneathView {
     constructor() {
-        this._visible   = false;
-        this._data      = { heartRate: '—', hrv: '—', recovery: '—', state: 'RELAXED' };
-        this._playerPos = { x: window.innerWidth / 2,       y: window.innerHeight / 2 };
-        this._ghostPos  = { x: window.innerWidth / 2 + 120, y: window.innerHeight / 2 - 40 };
+        this._visible = false;
+        this._data = { heartRate: '—', hrv: '—', recovery: '—', state: 'RELAXED' };
+        this._playerPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        this._ghostPos = { x: window.innerWidth / 2 + 120, y: window.innerHeight / 2 - 40 };
         this._animFrame = null;
-        this._startTs   = 0;
+        this._startTs = 0;
         this._particles = [];
         this._lastParticleSpawn = 0;
 
@@ -33,7 +33,7 @@ export class BeneathView {
     }
 
     _resize() {
-        this._canvas.width  = window.innerWidth;
+        this._canvas.width = window.innerWidth;
         this._canvas.height = window.innerHeight;
     }
 
@@ -43,7 +43,7 @@ export class BeneathView {
 
     setPositions(playerScreen, ghostScreen) {
         this._playerPos = playerScreen;
-        this._ghostPos  = ghostScreen;
+        this._ghostPos = ghostScreen;
     }
 
     toggle() {
@@ -53,13 +53,15 @@ export class BeneathView {
 
     show() {
         if (this._animFrame) { cancelAnimationFrame(this._animFrame); this._animFrame = null; }
-        this._visible   = true;
+        this._visible = true;
         this._particles = [];
         this._lastParticleSpawn = 0;
         this._canvas.style.display = 'block';
         this._startTs = performance.now();
+        // tried requestAnimationFrame here but it was choppy
         const tick = (ts) => {
             if (!this._visible) return;
+            // console.log('beneath update', this._data.state)
             try { this._draw(ts); } catch (e) { console.warn('[BeneathView]', e); }
             this._animFrame = requestAnimationFrame(tick);
         };
@@ -76,18 +78,19 @@ export class BeneathView {
         return STATE_COLORS[this._data.state] || '#ffffff';
     }
 
+    // TODO: this flickers sometimes on safari
     _draw(ts) {
         const ctx = this._ctx;
-        const W   = this._canvas.width;
-        const H   = this._canvas.height;
+        const W = this._canvas.width;
+        const H = this._canvas.height;
         const col = this._col();
-        const t   = (ts - this._startTs) / 1000;
-        const px  = this._playerPos.x;
-        const py  = this._playerPos.y;
-        const gx  = this._ghostPos.x;
-        const gy  = this._ghostPos.y;
+        const t = (ts - this._startTs) / 1000;
+        const px = this._playerPos.x;
+        const py = this._playerPos.y;
+        const gx = this._ghostPos.x;
+        const gy = this._ghostPos.y;
 
-        ctx.globalAlpha     = 1;
+        ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = 'source-over';
         ctx.shadowBlur      = 0;
         ctx.shadowColor     = 'transparent';

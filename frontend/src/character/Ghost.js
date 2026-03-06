@@ -29,11 +29,11 @@ export class Ghost {
 
         this._tx = 300;
         this._ty = 300;
-        this._x  = 300;
-        this._y  = 300;
+        this._x = 300;
+        this._y = 300;
 
-        this._prevX     = 300;
-        this._prevY     = 300;
+        this._prevX = 300;
+        this._prevY = 300;
         this._leanAngle = 0;
 
         this._shadow = new PIXI.Graphics();
@@ -278,7 +278,7 @@ export class Ghost {
 
         const t = (bob + 5) / 10;
         this._shadow.scale.x = 0.85 + t * 0.3;
-        this._shadow.alpha  = 0.12 + t * 0.12;
+        this._shadow.alpha = 0.12 + t * 0.12;
 
         this.container.x = this._x;
         this.container.y = this._y;
@@ -293,15 +293,15 @@ export class Ghost {
         this._rushTimer = 60;
 
         const isCritical = data.priority === 'critical';
-        const glowColor  = STATE_GLOW_CSS[data.state] || 'rgba(255,255,255,0.1)';
+        const glowColor = STATE_GLOW_CSS[data.state] || 'rgba(255,255,255,0.1)';
         const borderColor = isCritical ? '#ff5050' : 'rgba(255,255,255,0.1)';
-        const boxShadow   = isCritical
+        const boxShadow = isCritical
             ? '0 8px 32px rgba(0,0,0,0.6), 0 0 30px rgba(255,80,80,0.6)'
             : `0 8px 32px rgba(0,0,0,0.4), 0 0 20px ${glowColor}`;
 
-        const bpm      = data.biometric?.heartRate ?? '—';
-        const recovery = data.biometric?.recovery   ?? '—';
-        const recDot   = recovery >= 66 ? '🟢' : recovery >= 33 ? '🟡' : '🔴';
+        const bpm = data.biometric?.heartRate ?? '—';
+        const recovery = data.biometric?.recovery ?? '—';
+        const recDot = recovery >= 66 ? '🟢' : recovery >= 33 ? '🟡' : '🔴';
 
         const buttons = (data.buttons || ['Not Now']).map(label => `
             <button class="ghost-btn" data-label="${label}">${label}</button>
@@ -322,10 +322,7 @@ export class Ghost {
             border: 1px solid ${borderColor};
             box-shadow: ${boxShadow};
             color: #e0e0e0;
-            max-width: 420px;
-            min-width: 300px;
             pointer-events: all;
-            z-index: 9999;
             font-family: 'Segoe UI', system-ui, sans-serif;
             font-size: 14px;
             overflow: hidden;
@@ -333,14 +330,17 @@ export class Ghost {
             opacity: 0;
             transition: transform 300ms ease-out, opacity 300ms ease-out;
         `;
+        el.style.maxWidth = '420px';
+        el.style.minWidth = '300px';
+        el.style.zIndex = '9999';
 
         if (isCritical) {
-            el.style.top  = '50%';
+            el.style.top = '50%';
             el.style.left = '50%';
             el.style.transform = 'translate(-50%, -60%) scale(0.95)';
             el.style.transition = 'transform 300ms ease-out, opacity 300ms ease-out';
         } else {
-            el.style.right  = '24px';
+            el.style.right = '24px';
             el.style.bottom = '120px';
         }
 

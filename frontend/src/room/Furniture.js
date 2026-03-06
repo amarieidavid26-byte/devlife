@@ -17,11 +17,11 @@ export class Furniture extends EventEmitter {
 
         // Animation state
         this._animTick = 0;
-        this._deskScanLine  = null;
-        this._termCursor    = null;
-        this._coffeeContainer   = null;
-        this._coffeeSpawnAccum  = 0;
-        this._steamParticles    = [];
+        this._deskScanLine = null;
+        this._termCursor = null;
+        this._coffeeContainer = null;
+        this._coffeeSpawnAccum = 0;
+        this._steamParticles = [];
 
         this._buildRoom();
     }
@@ -108,7 +108,6 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'desk_computer', true, 'code');
     }
 
-    // ─── TERMINAL ───────────────────────────────────────────────────────────────
     _addTerminal(gx, gy) {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
@@ -140,7 +139,6 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'desk_terminal', true, 'terminal');
     }
 
-    // ─── SECOND MONITOR ─────────────────────────────────────────────────────────
     _addSecondMonitor(gx, gy) {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
@@ -171,7 +169,6 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'second_monitor', true, 'browser');
     }
 
-    // ─── WHITEBOARD ─────────────────────────────────────────────────────────────
     _addWhiteboard(gx, gy) {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
@@ -197,11 +194,9 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'whiteboard', true, 'notes');
     }
 
-    // ─── PHONE ──────────────────────────────────────────────────────────────────
+    // phone is tiny, no need for a container wrapper
     _addPhone(gx, gy) {
-        const c = new PIXI.Container();
         const g = new PIXI.Graphics();
-
         g.beginFill(0x111122);
         g.drawRoundedRect(-8, -18, 16, 28, 3);
         g.endFill();
@@ -213,12 +208,9 @@ export class Furniture extends EventEmitter {
         g.endFill();
         g.lineStyle(1, 0x334466);
         g.drawCircle(0, 10, 3);
-
-        c.addChild(g);
-        this._placeItem(c, gx, gy, 'phone', true, 'chat');
+        this._placeItem(g, gx, gy, 'phone', true, 'chat');
     }
 
-    // ─── COFFEE MACHINE ─────────────────────────────────────────────────────────
     _addCoffeeMachine(gx, gy) {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
@@ -257,7 +249,6 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'coffee_machine', true, null);
     }
 
-    // ─── PLANT ──────────────────────────────────────────────────────────────────
     _addPlant(gx, gy) {
         const c = new PIXI.Container();
         this._plantGraphics = new PIXI.Graphics();
@@ -325,7 +316,6 @@ export class Furniture extends EventEmitter {
         if (this.acceptedInterventions === 7) this.growPlant();
     }
 
-    // ─── SPEAKER ────────────────────────────────────────────────────────────────
     _addSpeaker(gx, gy) {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
@@ -347,7 +337,6 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'speaker', true, null);
     }
 
-    // ─── CHAIR ──────────────────────────────────────────────────────────────────
     _addChair(gx, gy) {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
@@ -374,7 +363,6 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'chair', false, null);
     }
 
-    // ─── PLACEMENT HELPER ───────────────────────────────────────────────────────
     _placeItem(container, gx, gy, name, interactive, appType) {
         const { x, y } = this.room.getTileCenter(gx, gy);
         container.x = x;
@@ -390,7 +378,6 @@ export class Furniture extends EventEmitter {
         this._items.push({ name, container, gridX: gx, gridY: gy, interactive, appType });
     }
 
-    // ─── C2: FURNITURE COLLISION ─────────────────────────────────────────────────
     // Returns true if a world position (in grid units) is blocked by furniture
     isBlocked(gx, gy) {
         return this._items.some(item => {
@@ -400,7 +387,6 @@ export class Furniture extends EventEmitter {
         });
     }
 
-    // ─── C1: ATTACH TO WORLD CONTAINER (for z-sorting) ──────────────────────────
     attachToWorld(worldContainer) {
         this._items.forEach(item => {
             item.container.parent?.removeChild(item.container);
@@ -408,7 +394,6 @@ export class Furniture extends EventEmitter {
         });
     }
 
-    // ─── V3: COFFEE STEAM ────────────────────────────────────────────────────────
     _spawnSteam() {
         if (!this._coffeeContainer) return;
         const g = new PIXI.Graphics();
@@ -429,29 +414,28 @@ export class Furniture extends EventEmitter {
         this._steamParticles.push(p);
     }
 
-    // ─── MAIN UPDATE LOOP ────────────────────────────────────────────────────────
     update(delta) {
         this._animTick += delta;
 
-        // V2: Desk monitor scan line scrolls down the screen
+        // scan line scrolls down the screen
         if (this._deskScanLine) {
             this._deskScanLine.y += 0.5 * delta;
             if (this._deskScanLine.y > -20) this._deskScanLine.y = -43;
         }
 
-        // V2: Terminal cursor blink (~30-frame period)
+        // cursor blink
         if (this._termCursor) {
             this._termCursor.visible = Math.floor(this._animTick / 30) % 2 === 0;
         }
 
-        // V3: Coffee steam spawn
+        // steam
         this._coffeeSpawnAccum += delta;
         if (this._coffeeSpawnAccum > 18 + Math.random() * 10) {
             this._spawnSteam();
             this._coffeeSpawnAccum = 0;
         }
 
-        // V3: Update steam particles
+        // update steam particles
         for (let i = this._steamParticles.length - 1; i >= 0; i--) {
             const p = this._steamParticles[i];
             p.x   += p.vx * delta;
@@ -468,7 +452,6 @@ export class Furniture extends EventEmitter {
         }
     }
 
-    // ─── V6: ANIMATED RING HIGHLIGHT ─────────────────────────────────────────────
     updateHighlights(playerGX, playerGY) {
         const INTERACT_RADIUS = 2;
         const pulse = 0.35 + Math.sin(Date.now() / 280) * 0.35; // 0..0.7
@@ -501,7 +484,7 @@ export class Furniture extends EventEmitter {
         }
     }
 
-    // ─── State-reactive monitor ───────────────────────────────────────────────────
+    // monitor content changes per state
     _drawMonitorContent(g, state) {
         g.clear();
         const S = {

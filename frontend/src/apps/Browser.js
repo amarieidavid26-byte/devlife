@@ -53,6 +53,7 @@ export class BrowserApp {
         this.refreshBtn = null;
         this.blockedDiv = null;
         this.loadTimeout = null;
+        // back/forward history is overkill for a demo lol
         this._history = [];
         this._historyIndex = -1;
         this._navigatingFromHistory = false;
@@ -376,7 +377,7 @@ export class BrowserApp {
             <div>
                 <div style="font-size:48px;margin-bottom:16px">🚫</div>
                 <h2 style="font-size:20px;margin-bottom:8px">This site blocks embedding</h2>
-                <p style="color:#666;margin-bottom:24px;font-size:14px">${url.replace(/</g, '&lt;')}</p>
+                <p style="color:#666;margin-bottom:24px;font-size:14px">${url.replace(/</g, '&lt;')}</p><!-- security thing idk if needed -->
                 <a href="${url.replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer"
                    style="display:inline-block;background:#0096FF;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
                     Open in new tab

@@ -19,8 +19,8 @@ const BEAT_SHAPE = [
     0.5, 0.5, 0.5, 0.5,
 ];
 
-const ECG_W   = 220;
-const ECG_H   = 50;
+const ECG_W = 220;
+const ECG_H = 50;
 
 export class HUD {
     constructor() {
@@ -34,13 +34,13 @@ export class HUD {
             estimated_stress: 0,
         };
 
-        this._ecgBPM         = 72;
-        this._ecgTargetBPM   = 72;
-        this._ecgColor       = STATE_COLORS.RELAXED;
-        this._ecgBuffer      = new Float32Array(ECG_W).fill(0.5);
+        this._ecgBPM = 72; // 72 = avg resting hr, looked this up on google
+        this._ecgTargetBPM = 72;
+        this._ecgColor = STATE_COLORS.RELAXED;
+        this._ecgBuffer = new Float32Array(ECG_W).fill(0.5);
         this._ecgMsSinceBeat = 0;
-        this._ecgBeatIndex   = -1;
-        this._ecgLastTs      = null;
+        this._ecgBeatIndex = -1;
+        this._ecgLastTs = null;
 
         this._sleepMode = false;
 
@@ -76,7 +76,7 @@ export class HUD {
 
         this._ecgCanvas = document.createElement('canvas');
         const dpr = window.devicePixelRatio || 1;
-        this._ecgCanvas.width  = ECG_W * dpr;
+        this._ecgCanvas.width = ECG_W * dpr;
         this._ecgCanvas.height = ECG_H * dpr;
         this._ecgCanvas.style.cssText = `display:block;width:${ECG_W}px;height:${ECG_H}px;`;
         this._ecgCtx = this._ecgCanvas.getContext('2d');
@@ -133,12 +133,13 @@ export class HUD {
         this._drawEcg();
     }
 
+    // console.log('ecg tick')
     _drawEcg() {
-        const ctx  = this._ecgCtx;
-        const W    = ECG_W;
-        const H    = ECG_H;
-        const col  = this._ecgColor;
-        const buf  = this._ecgBuffer;
+        const ctx = this._ecgCtx;
+        const W = ECG_W;
+        const H = ECG_H;
+        const col = this._ecgColor;
+        const buf = this._ecgBuffer;
 
         ctx.clearRect(0, 0, W, H);
 
@@ -219,6 +220,7 @@ export class HUD {
         this._render();
     }
 
+    // TODO: make this responsive
     _render() {
         const d          = this._data;
         const stateColor = this._sleepMode ? '#4444aa' : (STATE_COLORS[d.state] || '#888888');
