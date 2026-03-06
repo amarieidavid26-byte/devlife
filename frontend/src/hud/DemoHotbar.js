@@ -1,4 +1,3 @@
-// Demo hotbar — bottom-left, shows 1-5 state keys with active glow
 
 const STATES = [
     { key: 1, label: 'FOCUS',   emoji: '🟣', color: '#8000ff', id: 'DEEP_FOCUS' },
@@ -12,6 +11,11 @@ export class DemoHotbar {
     constructor() {
         this._active  = null;
         this._keyEls  = {};
+        this._source  = 'mock';
+        this._bleConnected = false;
+        this._demoOverride = false;
+        this._headerEl = null;
+        this._rowEl    = null;
         this._el      = this._build();
         document.body.appendChild(this._el);
     }
@@ -73,12 +77,15 @@ export class DemoHotbar {
             font-size: 9px; letter-spacing: 0.14em;
             color: rgba(255,255,255,0.3); text-align: center;
             margin-bottom: 8px; font-family: monospace;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
         `;
-        header.textContent = 'DEMO STATES · NO SENSOR';
+        this._headerEl = header;
+        this._updateHeader();
         el.appendChild(header);
 
         const row = document.createElement('div');
         row.style.cssText = 'display:flex;gap:6px;';
+        this._rowEl = row;
 
         STATES.forEach(s => {
             const box = document.createElement('div');
@@ -89,7 +96,7 @@ export class DemoHotbar {
                 <span class="dh-name">${s.label}</span>
             `;
             box.addEventListener('click', () => {
-                this.setActive(s.id);          // instant visual feedback
+                this.setActive(s.id);
                 if (this._onClick) this._onClick(s.key);
             });
             this._keyEls[s.id] = { el: box, color: s.color };
@@ -102,10 +109,102 @@ export class DemoHotbar {
 
     setClickHandler(fn) { this._onClick = fn; }
 
+    setSource(source) {
+        if (this._source === source) return;
+        this._source = source;
+        if (source === 'ble') this._bleConnected = true;
+        if (this._rowEl) {
+            const isLive = source === 'whoop' || source === 'ble';
+            this._rowEl.style.display = (isLive && !this._demoOverride) ? 'none' : 'flex';
+        }
+        this._updateHeader();
+    }
+
+    setBLEConnected(connected) {
+        if (this._bleConnected === connected) return;
+        this._bleConnected = connected;
+        if (this._rowEl) {
+            const isLive = this._source === 'whoop' || this._source === 'ble' || connected;
+            this._rowEl.style.display = (isLive && !this._demoOverride) ? 'none' : 'flex';
+        }
+        this._updateHeader();
+    }
+
+    
+    get manualEnabled() {
+        const isLive = this._source === 'whoop' || this._source === 'ble' || this._bleConnected;
+        return !isLive || this._demoOverride;
+    }
+
+    _updateHeader() {
+        if (!this._headerEl) return;
+        this._headerEl.innerHTML = '';
+        const isLive = this._bleConnected || this._source === 'whoop' || this._source === 'ble';
+
+        if (isLive && !this._demoOverride) {
+            const dot = document.createElement('span');
+            dot.textContent = '\u2764\uFE0F';
+            dot.style.cssText = 'animation:_hotbarPulse 1s ease-in-out infinite;';
+            this._headerEl.appendChild(dot);
+            const txt = document.createElement('span');
+            txt.textContent = this._bleConnected ? ' WHOOP LIVE' : ' WHOOP API';
+            txt.style.color = '#00c864';
+            this._headerEl.appendChild(txt);
+            const toggle = document.createElement('span');
+            toggle.textContent = 'Demo Mode';
+            toggle.style.cssText = `
+                color: rgba(255,255,255,0.25); cursor: pointer; font-size: 7px;
+                border: 1px solid rgba(255,255,255,0.1); border-radius: 3px;
+                padding: 1px 4px; margin-left: 2px;
+            `;
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._demoOverride = true;
+                if (this._rowEl) this._rowEl.style.display = 'flex';
+                this._updateHeader();
+            });
+            this._headerEl.appendChild(toggle);
+        } else if (isLive && this._demoOverride) {
+            const txt = document.createElement('span');
+            txt.textContent = 'DEMO OVERRIDE';
+            txt.style.color = '#ffa000';
+            this._headerEl.appendChild(txt);
+            const toggle = document.createElement('span');
+            toggle.textContent = 'Back to Live';
+            toggle.style.cssText = `
+                color: #00c864; cursor: pointer; font-size: 7px;
+                border: 1px solid rgba(0,200,100,0.3); border-radius: 3px;
+                padding: 1px 4px; margin-left: 2px;
+            `;
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._demoOverride = false;
+                if (this._rowEl) this._rowEl.style.display = 'none';
+                this._updateHeader();
+            });
+            this._headerEl.appendChild(toggle);
+        } else {
+            const txt = document.createElement('span');
+            txt.textContent = 'DEMO STATES \xB7 NO SENSOR';
+            this._headerEl.appendChild(txt);
+            const btn = document.createElement('span');
+            btn.textContent = '\uD83D\uDD17 PAIR WHOOP';
+            btn.style.cssText = `
+                color: #0096ff; cursor: pointer; font-size: 8px;
+                border: 1px solid rgba(0,150,255,0.3); border-radius: 4px;
+                padding: 1px 5px; letter-spacing: 0.05em;
+            `;
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (window.connectWHOOP) window.connectWHOOP();
+            });
+            this._headerEl.appendChild(btn);
+        }
+    }
+
     setActive(stateName) {
         if (this._active === stateName) return;
 
-        // Clear previous
         if (this._active && this._keyEls[this._active]) {
             const prev = this._keyEls[this._active].el;
             prev.classList.remove('dh-active');
@@ -116,7 +215,6 @@ export class DemoHotbar {
 
         this._active = stateName;
 
-        // Highlight new
         if (stateName && this._keyEls[stateName]) {
             const { el, color } = this._keyEls[stateName];
             el.classList.add('dh-active');
