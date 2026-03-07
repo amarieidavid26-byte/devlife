@@ -22,7 +22,7 @@ export class WHOOPBluetooth {
                 optionalServices: ['heart_rate']
             });
 
-            this.device.addEventListener('gattservedisconnected', () => {
+            this.device.addEventListener('gattserverdisconnected', () => {
                 console.log('[whoop-ble] - disconnected');
                 this.connected = false;
                 this._notifyListeners(0, false);

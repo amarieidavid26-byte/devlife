@@ -72,7 +72,7 @@ export class Atmosphere {
 
     setSleepMode(active) {
         this._sleepMode = active;
-        this._sleepLerp = active;
+        this._sleepLerp = active ? 0 : 1;
     }
 
     // particle colors look weird on some monitors

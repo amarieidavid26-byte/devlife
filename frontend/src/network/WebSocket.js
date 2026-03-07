@@ -56,6 +56,12 @@ export class GhostSocket {
             case 'connection_established':
                 this.emit('connected', msg);
                 break;
+            case 'sleep_mode':
+                this.emit('sleep_mode', msg);
+                break;
+            case 'plant_update':
+                this.emit('plant_update', msg);
+                break;
             // case 'debug': break;
             default:
                 console.warn('Unknown message type:', msg.type);
