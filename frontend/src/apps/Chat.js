@@ -1,3 +1,4 @@
+
 const STARTER_MESSAGES = {
     Team: [
         { sender: 'David', text: 'Backend deployed, Ghost is alive \u{1F916}', time: '10:30 AM', isMe: false },
@@ -11,8 +12,8 @@ const STARTER_MESSAGES = {
     Matei: [
         { sender: 'Matei', text: 'Working on the isometric room, looking sick \u{1F3A8}', time: '11:00 AM', isMe: false }
     ],
-    Mentor: [
-        { sender: 'Mentor', text: 'How is the WHOOP integration going? Remember the demo is everything.', time: '8:00 AM', isMe: false }
+    Manager: [
+        { sender: 'Manager', text: 'How is the WHOOP integration going? Remember the demo is everything.', time: '8:00 AM', isMe: false }
     ]
 };
 
@@ -20,10 +21,11 @@ const AUTO_REPLIES = {
     Team: ['Got it, working on it now \u{1F44D}', 'Standup at 3pm don\'t forget', 'PR looks good, merging', 'Anyone else getting a 500 on the API?', 'Nice fix! Ship it \u{1F680}'],
     David: ['Backend is running, try reconnecting', 'Check the WebSocket \u2014 I pushed a fix', 'Ghost brain is working, test with mock state 2', 'Let me know when you\'re ready to integrate'],
     Matei: ['Room rendering is done \u{1F3A8}', 'Working on Ghost sprite now', 'The atmosphere transitions look sick', 'Can you test the furniture interactions?'],
-    Mentor: ['How\'s the biometric integration going?', 'Remember to handle edge cases', 'The demo flow looks great, practice the timing', 'Ship it, don\'t gold-plate it']
+    Manager: ['How\'s the biometric integration going?', 'Remember to handle edge cases', 'The demo flow looks great, practice the timing', 'Ship it, don\'t gold-plate it']
 };
 
 function formatTime(date) {
+    // 12hr format cause military time is weird
     let hours = date.getHours();
     const minutes = date.getMinutes().toString().padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -38,22 +40,36 @@ export class ChatApp {
         this.isOpen = false;
         this.overlay = null;
         this.messages = {};
-        this.currentContact = 'Team';
-        this.contacts = ['Team', 'David', 'Matei', 'Mentor'];
+        this.currentContact = 'Manager';
+        this.contacts = ['Manager', 'Team', 'David', 'Matei'];
         this.inputEl = null;
         this.messagesEl = null;
         this.contactListEl = null;
         this.headerNameEl = null;
         this.replyTimer = null;
+        this.unread = {};
+        this.onNewMessage = null;
 
         this.contacts.forEach(c => {
             this.messages[c] = (STARTER_MESSAGES[c] || []).map(m => ({ ...m }));
+            this.unread[c] = 0;
         });
     }
 
-    // this is so much boilerplate lmao
     open() {
         if (this.isOpen) return;
+
+        if (!document.getElementById('chat-typing-styles')) {
+            const style = document.createElement('style');
+            style.id = 'chat-typing-styles';
+            style.textContent = `
+                @keyframes typing-bounce {
+                    0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+                    30% { transform: translateY(-5px); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
 
         this.overlay = document.createElement('div');
         this.overlay.id = 'chat-overlay';
@@ -66,15 +82,26 @@ export class ChatApp {
             pointerEvents: 'auto'
         });
         document.getElementById('app-overlay-root').appendChild(this.overlay);
-        ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>
-            this.overlay.addEventListener(evt, e => e.stopPropagation())
-        );
+        // stop clicks from hitting the game underneath
+        this.overlay.addEventListener('click', e => e.stopPropagation());
+        this.overlay.addEventListener('pointerdown', e => e.stopPropagation());
 
         const sidebar = document.createElement('div');
-        sidebar.style.cssText = 'width:240px;background:#0a0a0a;border-right:1px solid #2d2d2d;display:flex;flex-direction:column;flex-shrink:0';
+        Object.assign(sidebar.style, {
+            width: '240px',
+            background: '#0a0a0a',
+            borderRight: '1px solid #2d2d2d',
+            display: 'flex',
+            flexDirection: 'column',
+            flexShrink: '0'
+        });
 
         const sidebarHeader = document.createElement('div');
-        sidebarHeader.style.cssText = 'padding:16px;font-size:16px;font-weight:600;color:#fff;border-bottom:1px solid #2d2d2d';
+        sidebarHeader.style.padding = '16px';
+        sidebarHeader.style.fontSize = '16px';
+        sidebarHeader.style.fontWeight = '600';
+        sidebarHeader.style.color = '#fff';
+        sidebarHeader.style.borderBottom = '1px solid #2d2d2d';
         sidebarHeader.textContent = 'Messages';
         sidebar.appendChild(sidebarHeader);
 
@@ -129,17 +156,40 @@ export class ChatApp {
             const msgs = this.messages[name];
             preview.textContent = msgs.length > 0 ? msgs[msgs.length - 1].text : '';
 
+            const badge = document.createElement('span');
+            badge.dataset.badge = name;
+            Object.assign(badge.style, {
+                marginLeft: 'auto',
+                background: '#ff3333',
+                color: '#fff',
+                fontSize: '11px',
+                fontWeight: '700',
+                borderRadius: '10px',
+                padding: '1px 6px',
+                minWidth: '18px',
+                textAlign: 'center',
+                display: this.unread[name] > 0 ? 'inline-block' : 'none',
+                flexShrink: '0'
+            });
+            badge.textContent = this.unread[name] || '';
+
             info.appendChild(nameEl);
             info.appendChild(preview);
             row.appendChild(dot);
             row.appendChild(info);
+            row.appendChild(badge);
             this.contactListEl.appendChild(row);
         });
         sidebar.appendChild(this.contactListEl);
         this.overlay.appendChild(sidebar);
 
         const panel = document.createElement('div');
-        panel.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0';
+        Object.assign(panel.style, {
+            flex: '1',
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: '0'
+        });
 
         const header = document.createElement('div');
         Object.assign(header.style, {
@@ -155,10 +205,14 @@ export class ChatApp {
 
         const headerLeft = document.createElement('div');
         this.headerNameEl = document.createElement('span');
-        Object.assign(this.headerNameEl.style, { fontWeight: '600', color: '#fff', fontSize: '15px' });
+        this.headerNameEl.style.fontWeight = '600';
+        this.headerNameEl.style.color = '#fff';
+        this.headerNameEl.style.fontSize = '15px';
         this.headerNameEl.textContent = this.currentContact;
         const onlineEl = document.createElement('span');
-        Object.assign(onlineEl.style, { color: '#00C864', fontSize: '12px', marginLeft: '8px' });
+        onlineEl.style.color = '#00C864';
+        onlineEl.style.fontSize = '12px';
+        onlineEl.style.marginLeft = '8px';
         onlineEl.textContent = 'Online';
         headerLeft.appendChild(this.headerNameEl);
         headerLeft.appendChild(onlineEl);
@@ -205,7 +259,16 @@ export class ChatApp {
         this.inputEl = document.createElement('input');
         this.inputEl.type = 'text';
         this.inputEl.placeholder = 'Type a message...';
-        this.inputEl.style.cssText = 'flex:1;background:#2d2d2d;border:none;border-radius:20px;padding:8px 16px;color:#fff;outline:none;font-size:14px';
+        Object.assign(this.inputEl.style, {
+            flex: '1',
+            background: '#2d2d2d',
+            border: 'none',
+            borderRadius: '20px',
+            padding: '8px 16px',
+            color: '#fff',
+            outline: 'none',
+            fontSize: '14px'
+        });
 
         const sendBtn = document.createElement('button');
         Object.assign(sendBtn.style, {
@@ -249,6 +312,8 @@ export class ChatApp {
     switchContact(name) {
         this.currentContact = name;
         this.headerNameEl.textContent = name;
+        this.unread[name] = 0;
+        this._updateBadge(name);
         this.renderMessages();
         this.updateContactStyles();
     }
@@ -264,7 +329,6 @@ export class ChatApp {
 
     sendMessage(text) {
         if (text.trim() === '') return;
-        // console.log('msg sent:', text)
         this.messages[this.currentContact].push({
             sender: 'You',
             text: text,
@@ -273,25 +337,110 @@ export class ChatApp {
         });
         this.renderMessages();
         this.socket.sendContentUpdate(this.appType, this.getAllMessagesText(), {});
+        this._showTyping();
         this.scrollToBottom();
 
-        // const typingDelay = 1500; // felt too slow
-        var delay = 2000 + Math.random() * 2000;
-        this.replyTimer = setTimeout(() => this.addAutoReply(), delay);
+        const contactSnapshot = this.currentContact;
+        const delay = 2000 + Math.random() * 2000;
+        this.replyTimer = setTimeout(() => this.addAutoReply(contactSnapshot), delay);
     }
 
-    addAutoReply() {
-        const replies = AUTO_REPLIES[this.currentContact] || AUTO_REPLIES['Team'];
+    addAutoReply(contact) {
+        this._hideTyping();
+        const replies = AUTO_REPLIES[contact] || AUTO_REPLIES['Team'];
         const reply = replies[Math.floor(Math.random() * replies.length)];
-        this.messages[this.currentContact].push({
-            sender: this.currentContact,
+        this.messages[contact].push({
+            sender: contact,
             text: reply,
             time: formatTime(new Date()),
             isMe: false
         });
-        this.renderMessages();
-        this.scrollToBottom();
-        this.updatePreview(this.currentContact);
+        if (contact === this.currentContact) {
+            this.renderMessages();
+            this.scrollToBottom();
+        } else {
+            this.unread[contact] = (this.unread[contact] || 0) + 1;
+            this._updateBadge(contact);
+        }
+        if (!this.isOpen && this.onNewMessage) this.onNewMessage();
+        this.updatePreview(contact);
+    }
+
+    receiveMessage(contact, text) {
+        this.messages[contact].push({
+            sender: contact,
+            text,
+            time: formatTime(new Date()),
+            isMe: false
+        });
+        if (this.isOpen && contact === this.currentContact) {
+            this.renderMessages();
+            this.scrollToBottom();
+        } else {
+            this.unread[contact] = (this.unread[contact] || 0) + 1;
+            if (this.isOpen) this._updateBadge(contact);
+        }
+        if (!this.isOpen && this.onNewMessage) this.onNewMessage();
+        this.updatePreview(contact);
+    }
+
+    _updateBadge(contact) {
+        if (!this.contactListEl) return;
+        const badge = this.contactListEl.querySelector(`[data-badge="${contact}"]`);
+        if (!badge) return;
+        const count = this.unread[contact] || 0;
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+
+    _showTyping() {
+        this._hideTyping();
+        const wrapper = document.createElement('div');
+        wrapper.id = 'chat-typing-indicator';
+        Object.assign(wrapper.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start'
+        });
+
+        const senderEl = document.createElement('div');
+        Object.assign(senderEl.style, { color: '#888', fontSize: '11px', marginBottom: '2px', marginLeft: '4px' });
+        senderEl.textContent = this.currentContact;
+
+        const bubble = document.createElement('div');
+        Object.assign(bubble.style, {
+            background: '#2d2d3d',
+            borderRadius: '16px 16px 16px 4px',
+            padding: '10px 16px',
+            display: 'flex',
+            gap: '5px',
+            alignItems: 'center'
+        });
+
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('span');
+            Object.assign(dot.style, {
+                width: '7px',
+                height: '7px',
+                background: '#888',
+                borderRadius: '50%',
+                display: 'inline-block',
+                animation: `typing-bounce 1.2s ease-in-out ${i * 0.2}s infinite`
+            });
+            bubble.appendChild(dot);
+        }
+
+        wrapper.appendChild(senderEl);
+        wrapper.appendChild(bubble);
+        if (this.messagesEl) {
+            this.messagesEl.appendChild(wrapper);
+            this.scrollToBottom();
+        }
+    }
+
+    _hideTyping() {
+        const el = document.getElementById('chat-typing-indicator');
+        if (el) el.remove();
     }
 
     updatePreview(contact) {
@@ -308,7 +457,7 @@ export class ChatApp {
 
     renderMessages() {
         if (!this.messagesEl) return;
-        this.messagesEl.innerHTML = '';
+        this.messagesEl.innerHTML = ''; // prob should use removeChild but whatever
         const msgs = this.messages[this.currentContact] || [];
         msgs.forEach(msg => {
             const wrapper = document.createElement('div');
@@ -339,7 +488,11 @@ export class ChatApp {
             bubble.textContent = msg.text;
 
             const timeEl = document.createElement('div');
-            Object.assign(timeEl.style, { color: '#666', fontSize: '10px', marginTop: '2px', marginLeft: '4px', marginRight: '4px' });
+            timeEl.style.color = '#666';
+            timeEl.style.fontSize = '10px';
+            timeEl.style.marginTop = '2px';
+            timeEl.style.marginLeft = '4px';
+            timeEl.style.marginRight = '4px';
             timeEl.textContent = msg.time;
 
             wrapper.appendChild(bubble);
@@ -355,6 +508,7 @@ export class ChatApp {
         }
     }
 
+    // just dumps everything, formatting doesnt matter much
     getAllMessagesText() {
         let text = '';
         this.contacts.forEach(contact => {

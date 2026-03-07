@@ -1,3 +1,4 @@
+
 const DEFAULT_NOTES = `# DevLife — Sprint Planning
 
 ## Current Tasks
@@ -10,7 +11,7 @@ const DEFAULT_NOTES = `# DevLife — Sprint Planning
 - Backend: FastAPI on port 8000
 - Frontend: Vite + PixiJS on port 5173
 - Ghost AI: Claude API + WHOOP biometrics
-- WebSocket: ws://localhost:8000/ws
+- WebSocket: ws:
 
 ## Ideas
 - Particle effects when Ghost speaks
@@ -31,6 +32,8 @@ export class NotesApp {
         this.isOpen = false;
         this.overlay = null;
         this.textarea = null;
+        this._snapshotTasks = new Set();
+        this.onTaskAdded = null;
     }
 
     open() {
@@ -48,9 +51,9 @@ export class NotesApp {
             pointerEvents: 'auto'
         });
         document.getElementById('app-overlay-root').appendChild(this.overlay);
-        ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>
-            this.overlay.addEventListener(evt, e => e.stopPropagation())
-        );
+        // stop clicks from hitting the game underneath
+        this.overlay.addEventListener('click', e => e.stopPropagation());
+        this.overlay.addEventListener('pointerdown', e => e.stopPropagation());
 
         const topBar = document.createElement('div');
         Object.assign(topBar.style, {
@@ -65,7 +68,9 @@ export class NotesApp {
         });
 
         const title = document.createElement('span');
-        Object.assign(title.style, { color: '#e6edf3', fontSize: '14px', fontWeight: '600' });
+        title.style.color = '#e6edf3';
+        title.style.fontSize = '14px';
+        title.style.fontWeight = '600';
         title.textContent = 'Notes — Planning Board';
 
         const toolbar = document.createElement('div');
@@ -81,25 +86,62 @@ export class NotesApp {
             cursor: 'pointer'
         };
 
-        const buttons = [
-            { label: 'H1', action: () => this.insertAtLineStart('# ') },
-            { label: 'H2', action: () => this.insertAtLineStart('## ') },
-            { label: 'B', action: () => this.wrapSelection('**') },
-            { label: 'I', action: () => this.wrapSelection('*') },
-            { label: '\u2022 List', action: () => this.insertAtLineStart('- ') },
-            { label: '1. List', action: () => this.insertAtLineStart('1. ') },
-            { label: '---', action: () => this.insertAtCursor('\n---\n') }
-        ];
+        const h1Btn = document.createElement('button');
+        Object.assign(h1Btn.style, toolbarBtnStyle);
+        h1Btn.textContent = 'H1';
+        h1Btn.addEventListener('click', () => this.insertAtLineStart('# '));
+        h1Btn.addEventListener('mouseenter', () => { h1Btn.style.background = '#30363d'; });
+        h1Btn.addEventListener('mouseleave', () => { h1Btn.style.background = '#21262d'; });
+        toolbar.appendChild(h1Btn);
 
-        buttons.forEach(({ label, action }) => {
-            const btn = document.createElement('button');
-            Object.assign(btn.style, toolbarBtnStyle);
-            btn.textContent = label;
-            btn.addEventListener('mouseenter', () => { btn.style.background = '#30363d'; });
-            btn.addEventListener('mouseleave', () => { btn.style.background = '#21262d'; });
-            btn.addEventListener('click', action);
-            toolbar.appendChild(btn);
-        });
+        const h2Btn = document.createElement('button');
+        Object.assign(h2Btn.style, toolbarBtnStyle);
+        h2Btn.textContent = 'H2';
+        h2Btn.addEventListener('click', () => this.insertAtLineStart('## '));
+        h2Btn.addEventListener('mouseenter', () => { h2Btn.style.background = '#30363d'; });
+        h2Btn.addEventListener('mouseleave', () => { h2Btn.style.background = '#21262d'; });
+        toolbar.appendChild(h2Btn);
+
+        const boldBtn = document.createElement('button');
+        Object.assign(boldBtn.style, toolbarBtnStyle);
+        boldBtn.textContent = 'B';
+        boldBtn.addEventListener('click', () => this.wrapSelection('**'));
+        boldBtn.addEventListener('mouseenter', () => { boldBtn.style.background = '#30363d'; });
+        boldBtn.addEventListener('mouseleave', () => { boldBtn.style.background = '#21262d'; });
+        toolbar.appendChild(boldBtn);
+
+        // dont really need all these but looks nice
+        const italicBtn = document.createElement('button');
+        Object.assign(italicBtn.style, toolbarBtnStyle);
+        italicBtn.textContent = 'I';
+        italicBtn.addEventListener('click', () => this.wrapSelection('*'));
+        italicBtn.addEventListener('mouseenter', () => { italicBtn.style.background = '#30363d'; });
+        italicBtn.addEventListener('mouseleave', () => { italicBtn.style.background = '#21262d'; });
+        toolbar.appendChild(italicBtn);
+
+        const listBtn = document.createElement('button');
+        Object.assign(listBtn.style, toolbarBtnStyle);
+        listBtn.textContent = '\u2022 List';
+        listBtn.addEventListener('click', () => this.insertAtLineStart('- '));
+        listBtn.addEventListener('mouseenter', () => { listBtn.style.background = '#30363d'; });
+        listBtn.addEventListener('mouseleave', () => { listBtn.style.background = '#21262d'; });
+        toolbar.appendChild(listBtn);
+
+        const olBtn = document.createElement('button');
+        Object.assign(olBtn.style, toolbarBtnStyle);
+        olBtn.textContent = '1. List';
+        olBtn.addEventListener('click', () => this.insertAtLineStart('1. '));
+        olBtn.addEventListener('mouseenter', () => { olBtn.style.background = '#30363d'; });
+        olBtn.addEventListener('mouseleave', () => { olBtn.style.background = '#21262d'; });
+        toolbar.appendChild(olBtn);
+
+        const hrBtn = document.createElement('button');
+        Object.assign(hrBtn.style, toolbarBtnStyle);
+        hrBtn.textContent = '---';
+        hrBtn.addEventListener('click', () => this.insertAtCursor('\n---\n'));
+        hrBtn.addEventListener('mouseenter', () => { hrBtn.style.background = '#30363d'; });
+        hrBtn.addEventListener('mouseleave', () => { hrBtn.style.background = '#21262d'; });
+        toolbar.appendChild(hrBtn);
 
         const closeBtn = document.createElement('button');
         Object.assign(closeBtn.style, {
@@ -111,7 +153,7 @@ export class NotesApp {
             padding: '4px 8px'
         });
         closeBtn.textContent = 'ESC to close';
-        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
+        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#e6edf3'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
         closeBtn.addEventListener('click', () => this.close());
 
@@ -137,6 +179,7 @@ export class NotesApp {
 
         const saved = localStorage.getItem('devlife-notes');
         this.textarea.value = saved || DEFAULT_NOTES;
+        this._snapshotTasks = new Set(this._extractTasks(this.textarea.value));
 
         this.textarea.addEventListener('input', () => {
             this.socket.sendContentUpdate(this.appType, this.textarea.value, {});
@@ -163,7 +206,7 @@ export class NotesApp {
         const end = this.textarea.selectionEnd;
         const val = this.textarea.value;
         if (start === end) {
-            const placeholder = wrapper === '**' ? 'bold' : 'italic';
+            const placeholder = wrapper === '**' ? 'bold' : 'italic'; // only 2 options so this works
             const insert = wrapper + placeholder + wrapper;
             this.textarea.value = val.slice(0, start) + insert + val.slice(end);
             this.textarea.selectionStart = start + wrapper.length;
@@ -186,9 +229,18 @@ export class NotesApp {
         this.textarea.focus();
     }
 
+    _extractTasks(text) {
+        return text.split('\n')
+            .filter(line => /^- \[ \] .+/.test(line.trim()))
+            .map(line => line.trim().replace(/^- \[ \] /, ''));
+    }
+
     close() {
         if (!this.isOpen) return;
         if (this.textarea) {
+            const newTasks = this._extractTasks(this.textarea.value)
+                .filter(t => !this._snapshotTasks.has(t));
+            if (newTasks.length > 0 && this.onTaskAdded) this.onTaskAdded(newTasks);
             localStorage.setItem('devlife-notes', this.textarea.value);
         }
         if (this.overlay) {
