@@ -27,4 +27,7 @@ every dev has pushed garbage code when they were tired. i wanted to build someth
 - **biometrics**: whoop api (dev one which token refreshes after 1h) and chrome bluetooth for the live bpm because the api doesnt transmit it
 - **other**: vite and node for dev server
 
+we have bad bunny playin on the in-game speaker so enjoy the puerto rican music while coding high on caffeine!
 
+## yt demo 
+https://youtu.be/g5IB-aBAqK4
