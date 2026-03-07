@@ -21,10 +21,10 @@ every dev has pushed garbage code when they were tired. i wanted to build someth
 
 ## tech stack
 
-for **fronted** i used: vanilla js, pixi js for the isometric room and canvas for ecg
-for **backend**: python, fastapi and websockets 
-**ai**:  claude api (for the best performance), claude vision api for the screen analysis
-**biometrics**: whoop api (dev one which token refreshes after 1h) and chrome bluetooth for the live bpm because the api doesnt transmit it
-**other**: vite and node for dev server
+- for **fronted** i used: vanilla js, pixi js for the isometric room and canvas for ecg
+- for **backend**: python, fastapi and websockets 
+- **ai**:  claude api (for the best performance), claude vision api for the screen analysis
+- **biometrics**: whoop api (dev one which token refreshes after 1h) and chrome bluetooth for the live bpm because the api doesnt transmit it
+- **other**: vite and node for dev server
 
 
