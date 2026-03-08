@@ -41,7 +41,7 @@ window.addEventListener('resize', () => {
     }
 });
 
-const socket = new GhostSocket('ws://localhost:8000/ws');
+const socket = new GhostSocket(window.location.hostname === 'localhost' ? 'ws://localhost:8000/ws' : 'wss://devlife-production.up.railway.app/ws');
 
 const room = new Room(pixiApp.stage);
 const furniture = new Furniture(pixiApp.stage, room);
@@ -349,7 +349,7 @@ splash.innerHTML = `
 document.body.appendChild(splash);
 
 // check if backend is alive
-fetch('http://localhost:8000/health').then(r => r.json()).then(d => {
+fetch(window.location.hostname === 'localhost' ? 'http://localhost:8000/health' : 'https://devlife-production.up.railway.app/health').then(r => r.json()).then(d => {
     console.log('[main] backend health:', d.status);
 }).catch(() => {});
 

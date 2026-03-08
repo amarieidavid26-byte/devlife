@@ -1,5 +1,5 @@
 export class GhostSocket {
-    constructor(url = 'ws://localhost:8000/ws') {
+    constructor(url = (window.location.hostname === 'localhost' ? 'ws://localhost:8000/ws' : 'wss://devlife-production.up.railway.app/ws')) {
         this.url = url;
         this.ws = null;
         this.listeners = new Map();

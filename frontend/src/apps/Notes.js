@@ -251,3 +251,4 @@ export class NotesApp {
         this.isOpen = false;
     }
 }
+
