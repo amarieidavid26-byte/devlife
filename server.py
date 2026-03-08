@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from config import (
     CLAUDE_API_KEY, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET,
     HOST, PORT,
-    GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH
+    GAME_MODE, USE_MOCK_BIOMETRICS, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH
 )
 if GAME_MODE: 
     from content_analyzer import ContentAnalyzer
