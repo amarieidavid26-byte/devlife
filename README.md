@@ -2,7 +2,7 @@
 
 ## what even is this
 
-so i built a game where an AI ghost watches you code. sounds weird right? but heres the thing. the ghost is connected to your actual body through a WHOOP wearable. it reads your heart rate, your recovery, your stress levels. in real time.
+so i built a game where an AI ghost watches you code. sounds weird right? but heres the thing. the ghost is connected to your actual body through a WHOOP wearable. it reads your heart rate, your recovery, your stress levels. in real time. and yeah, feels nice.
 
 when youre relaxed and writing clean code, ghost chills. maybe drops a suggestion here and there. but when youre exhausted at 2am trying to force push to production? ghost literally blocks you. i call it the Fatigue Firewall.
 
