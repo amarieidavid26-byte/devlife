@@ -41,10 +41,10 @@ export class Player {
         this._zzzParticles = [];
 
         this._shadow = new PIXI.Graphics();
-        this._shadow.beginFill(0x000000, 0.12);
+        this._shadow.beginFill(0x3C2A1A, 0.10);
         this._shadow.drawEllipse(0, 0, 22, 9);
         this._shadow.endFill();
-        this._shadow.beginFill(0x000000, 0.2);
+        this._shadow.beginFill(0x3C2A1A, 0.15);
         this._shadow.drawEllipse(0, 0, 16, 7);
         this._shadow.endFill();
         this._shadow.y = 20;
@@ -59,7 +59,7 @@ export class Player {
 
     _buildSprite() {
         const container = new PIXI.Container();
-        const OL = 0x0a0a14;
+        const OL = 0x3C2A1A;
 
         this._legLeft  = new PIXI.Graphics();
         this._legRight = new PIXI.Graphics();
@@ -75,25 +75,25 @@ export class Player {
         container.addChild(bodyOL);
 
         const body = new PIXI.Graphics();
-        body.beginFill(0x4a6fa5);
+        body.beginFill(0x6AADCF);
         body.drawRoundedRect(-12, -28, 24, 28, 5);
         body.endFill();
-        body.beginFill(0x3a5588);
+        body.beginFill(0x5A9DBF);
         body.drawEllipse(0, -28, 8, 4.5);
         body.endFill();
         body.lineStyle(1, OL, 0.45);
-        body.beginFill(0x3a5588);
+        body.beginFill(0x5A9DBF);
         body.drawRoundedRect(-8, -14, 16, 10, 3);
         body.endFill();
         // center seam
-        body.lineStyle(1, 0x1e3060, 0.5);
+        body.lineStyle(1, 0x4A8DA8, 0.5);
         body.moveTo(0, -28); body.lineTo(0, -4);
         // collar V-shape
-        body.lineStyle(1.2, 0x3a5080, 0.7);
+        body.lineStyle(1.2, 0x5A9DBF, 0.7);
         body.moveTo(-5, -28); body.lineTo(0, -23);
         body.moveTo( 5, -28); body.lineTo(0, -23);
         // chest pocket
-        body.lineStyle(0.8, 0x5a82b8, 0.35);
+        body.lineStyle(0.8, 0x8AC5DF, 0.35);
         body.drawRoundedRect(3, -22, 6, 5, 1);
         container.addChild(body);
         this._bodyGfx = body;
@@ -106,7 +106,7 @@ export class Player {
 
         // shadow under head onto body
         const neckShadow = new PIXI.Graphics();
-        neckShadow.beginFill(0x000000, 0.08);
+        neckShadow.beginFill(0x3C2A1A, 0.08);
         neckShadow.drawEllipse(0, -27, 10, 3);
         neckShadow.endFill();
         container.addChild(neckShadow);
@@ -119,7 +119,7 @@ export class Player {
         container.addChild(headOL);
 
         const head = new PIXI.Graphics();
-        head.beginFill(0xf8c9a0);
+        head.beginFill(0xFFDDB8);
         head.drawEllipse(0, -38, 13, 14);
         head.endFill();
         // eyes
@@ -127,7 +127,7 @@ export class Player {
         head.drawCircle(-4,   -39.5, 3.5);
         head.drawCircle( 4,   -39.5, 3.5);
         head.endFill();
-        head.beginFill(0x1a1440);
+        head.beginFill(0x3C2A1A);
         head.drawCircle(-3.5, -39.5, 2.0);
         head.drawCircle( 4.5, -39.5, 2.0);
         head.endFill();
@@ -136,16 +136,16 @@ export class Player {
         head.drawCircle( 5.2, -40.5, 0.85);
         head.endFill();
         // eyebrows
-        head.lineStyle(1.2, 0x2c1800, 0.7);
+        head.lineStyle(1.2, 0x6B3A1A, 0.7);
         head.moveTo(-6.5, -43.5); head.lineTo(-2, -42.5);
         head.moveTo( 2,   -42.5); head.lineTo( 6.5, -43.5);
         // mouth (subtle smile — control points below endpoints for upward curve)
-        head.lineStyle(1.5, 0xb8885a, 0.82);
+        head.lineStyle(1.5, 0xD4A070, 0.82);
         head.moveTo(-3, -32);
         head.bezierCurveTo(-1, -29.5, 1, -29.5, 3, -32);
         // nose
         head.lineStyle(0);
-        head.beginFill(0xd4a070, 0.45);
+        head.beginFill(0xE8B88A, 0.45);
         head.drawCircle(0, -35.5, 1.3);
         head.endFill();
         container.addChild(head);
@@ -155,10 +155,10 @@ export class Player {
         hair.beginFill(OL);
         hair.drawEllipse(0, -52, 14, 6);
         hair.endFill();
-        hair.beginFill(0x2c1800);
+        hair.beginFill(0x6B3A1A);
         hair.drawEllipse(0, -52, 13, 5);
         hair.endFill();
-        hair.beginFill(0x2c1800);
+        hair.beginFill(0x6B3A1A);
         hair.drawRect(-13, -52, 26, 8);
         hair.drawEllipse(-12, -47, 4, 5);
         hair.drawEllipse( 12, -47, 4, 5);
@@ -171,35 +171,35 @@ export class Player {
     _drawLegs(walkPhase) {
         const lOff =  Math.sin(walkPhase) * 5;
         const rOff = -Math.sin(walkPhase) * 5;
-        const OL_C = 0x0a0a14;
+        const OL_C = 0x3C2A1A;
 
         this._legLeft.clear();
         this._legLeft.lineStyle(1.5, OL_C, 0.85);
-        this._legLeft.beginFill(0x2a4a7f);
+        this._legLeft.beginFill(0x4A6A50);
         this._legLeft.drawRoundedRect(-8, -2 + lOff, 7, 15, 2.5);
         this._legLeft.endFill();
 
         this._legRight.clear();
         this._legRight.lineStyle(1.5, OL_C, 0.85);
-        this._legRight.beginFill(0x2a4a7f);
+        this._legRight.beginFill(0x4A6A50);
         this._legRight.drawRoundedRect(1, -2 + rOff, 7, 15, 2.5);
         this._legRight.endFill();
 
         this._legLeft.lineStyle(1.2, OL_C, 0.8);
-        this._legLeft.beginFill(0xf0f0f8);
+        this._legLeft.beginFill(0xF5F0E8);
         this._legLeft.drawRoundedRect(-9.5, 13 + lOff, 10, 6, 2.5);
         this._legLeft.endFill();
         this._legLeft.lineStyle(0);
-        this._legLeft.beginFill(0xe94560);
+        this._legLeft.beginFill(0xC85A4A);
         this._legLeft.drawRect(-9, 16.5 + lOff, 9, 1.5);
         this._legLeft.endFill();
 
         this._legRight.lineStyle(1.2, OL_C, 0.8);
-        this._legRight.beginFill(0xf0f0f8);
+        this._legRight.beginFill(0xF5F0E8);
         this._legRight.drawRoundedRect(0, 13 + rOff, 10, 6, 2.5);
         this._legRight.endFill();
         this._legRight.lineStyle(0);
-        this._legRight.beginFill(0xe94560);
+        this._legRight.beginFill(0xC85A4A);
         this._legRight.drawRect(1, 16.5 + rOff, 9, 1.5);
         this._legRight.endFill();
     }
@@ -207,25 +207,25 @@ export class Player {
     _drawArms(walkPhase) {
         const lOff =  Math.sin(walkPhase + Math.PI) * 4;
         const rOff = -Math.sin(walkPhase + Math.PI) * 4;
-        const OL_C = 0x0a0a14;
+        const OL_C = 0x3C2A1A;
 
         this._armLeft.clear();
         this._armLeft.lineStyle(1.5, OL_C, 0.85);
-        this._armLeft.beginFill(0x4a6fa5);
+        this._armLeft.beginFill(0x6AADCF);
         this._armLeft.drawRoundedRect(-19, -26 + lOff, 8, 16, 3);
         this._armLeft.endFill();
         this._armLeft.lineStyle(1, OL_C, 0.65);
-        this._armLeft.beginFill(0xf8c9a0);
+        this._armLeft.beginFill(0xFFDDB8);
         this._armLeft.drawEllipse(-15, -10 + lOff, 4.5, 3.5);
         this._armLeft.endFill();
 
         this._armRight.clear();
         this._armRight.lineStyle(1.5, OL_C, 0.85);
-        this._armRight.beginFill(0x4a6fa5);
+        this._armRight.beginFill(0x6AADCF);
         this._armRight.drawRoundedRect(11, -26 + rOff, 8, 16, 3);
         this._armRight.endFill();
         this._armRight.lineStyle(1, OL_C, 0.65);
-        this._armRight.beginFill(0xf8c9a0);
+        this._armRight.beginFill(0xFFDDB8);
         this._armRight.drawEllipse(15, -10 + rOff, 4.5, 3.5);
         this._armRight.endFill();
     }

@@ -1,10 +1,10 @@
 import * as PIXI from 'pixi.js';
 const STATE_CONFIG = {
-    DEEP_FOCUS: { color: 0x8000ff, r: 128, g: 0,   b: 255, particleSpeed: 0.3, particleCount: 18, alpha: 0.10 },
-    STRESSED:   { color: 0xff5050, r: 255, g: 80,  b: 80,  particleSpeed: 2.0, particleCount: 40, alpha: 0.14 },
-    FATIGUED:   { color: 0xffa000, r: 255, g: 160, b: 0,   particleSpeed: 0.2, particleCount: 12, alpha: 0.12 },
-    RELAXED:    { color: 0x00c864, r: 0,   g: 200, b: 100, particleSpeed: 0.5, particleCount: 22, alpha: 0.08 },
-    WIRED:      { color: 0x0096ff, r: 0,   g: 150, b: 255, particleSpeed: 3.0, particleCount: 35, alpha: 0.13 },
+    DEEP_FOCUS: { color: 0x9B6AFF, r: 155, g: 106, b: 255, particleSpeed: 0.3, particleCount: 18, alpha: 0.10 },
+    STRESSED:   { color: 0xFF7A6A, r: 255, g: 122, b: 106, particleSpeed: 2.0, particleCount: 40, alpha: 0.14 },
+    FATIGUED:   { color: 0xFFB84A, r: 255, g: 184, b: 74,  particleSpeed: 0.2, particleCount: 12, alpha: 0.12 },
+    RELAXED:    { color: 0x6AD89A, r: 106, g: 216, b: 154, particleSpeed: 0.5, particleCount: 22, alpha: 0.08 },
+    WIRED:      { color: 0x6AB8FF, r: 106, g: 184, b: 255, particleSpeed: 3.0, particleCount: 35, alpha: 0.13 },
 };
 
 const DEFAULT_STATE = 'RELAXED';
@@ -63,7 +63,7 @@ export class Atmosphere {
         for (let i = 0; i < 10; i++) {
             const g = new PIXI.Graphics();
             const alpha = 0.03 + Math.random() * 0.04;
-            g.beginFill(0xffffff, alpha);
+            g.beginFill(0xFFE4B5, alpha);
             g.drawCircle(0, 0, 1.5);
             g.endFill();
             g.x = Math.random() * window.innerWidth;

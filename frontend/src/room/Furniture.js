@@ -55,39 +55,39 @@ export class Furniture extends EventEmitter {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
 
-        // Desk shadow (grounding)
-        g.beginFill(0x000000, 0.15);
+        // Desk shadow (warm, not cold black)
+        g.beginFill(0x3C2A1A, 0.12);
         g.drawRect(-35, -9, 80, 40);
         g.endFill();
 
-        g.beginFill(0x0f3460);
+        g.beginFill(0xA0845C);
         g.drawRect(-40, -12, 80, 40);
         g.endFill();
-        g.beginFill(0x0a2540);
+        g.beginFill(0x8B7348);
         g.drawRect(-35, 28, 10, 28);
         g.drawRect(25, 28, 10, 28);
         g.endFill();
-        g.lineStyle(1, 0x1e4a80, 0.8);
+        g.lineStyle(1, 0xBFA072, 0.8);
         g.drawRect(-40, -12, 80, 40);
         // Top edge highlight
-        g.lineStyle(1, 0x1a4a80, 1);
+        g.lineStyle(1, 0xBFA072, 1);
         g.moveTo(-40, -12);
         g.lineTo(40, -12);
 
         // Monitor frame
         g.lineStyle(0);
-        g.beginFill(0x0d0d1a);
+        g.beginFill(0xE8E0D4);
         g.drawRect(-20, -46, 40, 30);
         g.endFill();
         // Bezel border
-        g.lineStyle(2, 0x222230, 1);
+        g.lineStyle(2, 0xE8E0D4, 1);
         g.drawRect(-20, -46, 40, 30);
         g.lineStyle(0);
-        g.beginFill(0x1a1a3e);
+        g.beginFill(0xE8E0D4);
         g.drawRect(-18, -44, 36, 26);
         g.endFill();
         // Screen content
-        g.beginFill(0x0a1520);
+        g.beginFill(0x1E2D3D);
         g.drawRect(-16, -43, 32, 23);
         g.endFill();
         // Scanline effect
@@ -105,19 +105,19 @@ export class Furniture extends EventEmitter {
         }
         // Power LED on bottom bezel
         g.lineStyle(0);
-        g.beginFill(0x00ff00, 0.5);
+        g.beginFill(0x50D890, 0.5);
         g.drawCircle(0, -17, 1);
         g.endFill();
         // Monitor stand
-        g.beginFill(0x0a2040);
+        g.beginFill(0xC8C0B4);
         g.drawRect(-4, -16, 8, 6);
         g.endFill();
         // Keyboard
-        g.beginFill(0x15152a);
+        g.beginFill(0xE8E0D4);
         g.drawRoundedRect(-18, 10, 30, 10, 2);
         g.endFill();
         // Key dots (3x2 grid)
-        g.beginFill(0x1a1a35);
+        g.beginFill(0xD4CCC0);
         for (let kx = 0; kx < 3; kx++) {
             for (let ky = 0; ky < 2; ky++) {
                 g.drawRect(-14 + kx * 9, 12 + ky * 4, 6, 2);
@@ -125,7 +125,7 @@ export class Furniture extends EventEmitter {
         }
         g.endFill();
         // Mouse
-        g.beginFill(0x15152a);
+        g.beginFill(0xE8E0D4);
         g.drawEllipse(18, 15, 3, 5);
         g.endFill();
 
@@ -145,9 +145,9 @@ export class Furniture extends EventEmitter {
         this._monitorUnderglow.endFill();
         c.addChild(this._monitorUnderglow);
 
-        // LED strip along desk back edge (flashes ROG red periodically)
+        // LED strip along desk back edge (warm amber by default)
         this._deskLedStrip = new PIXI.Graphics();
-        this._deskLedStrip.beginFill(0x00c864, 0.15);
+        this._deskLedStrip.beginFill(0xE8A04C, 0.2);
         this._deskLedStrip.drawRect(-38, -12, 76, 2);
         this._deskLedStrip.endFill();
         c.addChild(this._deskLedStrip);
@@ -173,13 +173,13 @@ export class Furniture extends EventEmitter {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
 
-        g.beginFill(0x0c2540);
+        g.beginFill(0xC8C0B4);
         g.drawRect(-20, 0, 40, 16);
         g.endFill();
-        g.beginFill(0x050505);
+        g.beginFill(0xE8E0D4);
         g.drawRect(-18, -34, 36, 36);
         g.endFill();
-        g.beginFill(0x001800);
+        g.beginFill(0x1E2D3D);
         g.drawRect(-16, -32, 32, 32);
         g.endFill();
         // Static text lines
@@ -204,17 +204,17 @@ export class Furniture extends EventEmitter {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
 
-        g.beginFill(0x0a0a18);
+        g.beginFill(0xE8E0D4);
         g.drawRect(-30, -50, 60, 40);
         g.endFill();
         // Bezel border
-        g.lineStyle(2, 0x222230, 1);
+        g.lineStyle(2, 0xD4CCC0, 1);
         g.drawRect(-30, -50, 60, 40);
         g.lineStyle(0);
-        g.beginFill(0x0d1a2e);
+        g.beginFill(0xE8E0D4);
         g.drawRect(-27, -47, 54, 34);
         g.endFill();
-        g.beginFill(0x0a1830);
+        g.beginFill(0x1E2D3D);
         g.drawRect(-25, -45, 50, 30);
         g.endFill();
         // Scanline effect
@@ -224,18 +224,18 @@ export class Furniture extends EventEmitter {
         }
         g.endFill();
         // Browser tabs
-        g.beginFill(0x1a3050);
+        g.beginFill(0x2A3A4A);
         g.drawRect(-25, -45, 16, 6);
         g.endFill();
-        g.beginFill(0x0f2040);
+        g.beginFill(0x1E2D3D);
         g.drawRect(-8, -45, 16, 6);
         g.endFill();
         // Power LED on bottom bezel
-        g.beginFill(0x00ff00, 0.5);
+        g.beginFill(0x50D890, 0.5);
         g.drawCircle(0, -11, 1);
         g.endFill();
         // Stand
-        g.beginFill(0x0a1a30);
+        g.beginFill(0xC8C0B4);
         g.drawRect(-4, -10, 8, 12);
         g.endFill();
         g.drawRect(-10, 2, 20, 4);
@@ -248,10 +248,10 @@ export class Furniture extends EventEmitter {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
 
-        g.beginFill(0x1a1a30);
+        g.beginFill(0xA0845C);
         g.drawRect(-35, -65, 70, 58);
         g.endFill();
-        g.beginFill(0xc8c8d0);
+        g.beginFill(0xF5F0E8);
         g.drawRect(-32, -62, 64, 52);
         g.endFill();
         // Brainstorm lines in state colors
@@ -277,7 +277,7 @@ export class Furniture extends EventEmitter {
         g.drawRect(18, -38, 6, 6);
         g.endFill();
         g.lineStyle(0);
-        g.beginFill(0x0a1020);
+        g.beginFill(0xA0845C);
         g.drawRect(-32, -10, 64, 6);
         g.endFill();
 
@@ -288,16 +288,16 @@ export class Furniture extends EventEmitter {
     // phone is tiny, no need for a container wrapper
     _addPhone(gx, gy) {
         const g = new PIXI.Graphics();
-        g.beginFill(0x111122);
+        g.beginFill(0xE8E0D4);
         g.drawRoundedRect(-8, -18, 16, 28, 3);
         g.endFill();
-        g.beginFill(0x1a2a4a);
+        g.beginFill(0x1E2D3D);
         g.drawRoundedRect(-6, -16, 12, 22, 2);
         g.endFill();
         g.beginFill(0xff5050);
         g.drawCircle(4, -14, 3);
         g.endFill();
-        g.lineStyle(1, 0x334466);
+        g.lineStyle(1, 0xC8C0B4);
         g.drawCircle(0, 10, 3);
         this._placeItem(g, gx, gy, 'phone', true, 'chat');
     }
@@ -306,13 +306,13 @@ export class Furniture extends EventEmitter {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
 
-        g.beginFill(0x1a1a2a);
+        g.beginFill(0xD4C5A9);
         g.drawRoundedRect(-16, -40, 32, 52, 4);
         g.endFill();
-        g.beginFill(0x111118);
+        g.beginFill(0xC4B599);
         g.drawRoundedRect(-13, -38, 26, 20, 3);
         g.endFill();
-        g.beginFill(0x0a1a30, 0.9);
+        g.beginFill(0xC85A4A, 0.9);
         g.drawRoundedRect(-10, -52, 20, 16, 3);
         g.endFill();
         // Cup
@@ -323,7 +323,7 @@ export class Furniture extends EventEmitter {
         g.drawRect(-5, 10, 10, 10);
         g.endFill();
         // LED
-        g.beginFill(0x00cc44);
+        g.beginFill(0xC85A4A);
         g.drawCircle(0, -10, 4);
         g.endFill();
 
@@ -331,7 +331,7 @@ export class Furniture extends EventEmitter {
 
         // Warm LED glow on the floor beneath
         const coffeeGlow = new PIXI.Graphics();
-        coffeeGlow.beginFill(0x44cc66, 0.06);
+        coffeeGlow.beginFill(0xC85A4A, 0.06);
         coffeeGlow.drawEllipse(0, 22, 40, 14);
         coffeeGlow.endFill();
         c.addChildAt(coffeeGlow, 0);
@@ -350,38 +350,38 @@ export class Furniture extends EventEmitter {
 
     _drawPlantStage(g, stage) {
         g.clear();
-        g.beginFill(0x8b4513);
+        g.beginFill(0xC87A4A);
         g.drawRect(-10, 10, 20, 16);
         g.endFill();
-        g.beginFill(0x6b3010);
+        g.beginFill(0xB06A3A);
         g.moveTo(-10, 10); g.lineTo(10, 10); g.lineTo(12, 26); g.lineTo(-12, 26); g.closePath();
         g.endFill();
-        g.beginFill(0x2a1a0a);
+        g.beginFill(0x6B4A2A);
         g.drawEllipse(0, 10, 10, 4);
         g.endFill();
 
         if (stage === 0) {
-            g.beginFill(0x2a6a20);
+            g.beginFill(0x4A8A3C);
             g.drawRect(-1, 0, 2, 12);
             g.endFill();
-            g.beginFill(0x3a9a30);
+            g.beginFill(0x5BA05C);
             g.drawEllipse(-4, 0, 5, 4);
             g.drawEllipse(4, 0, 5, 4);
             g.endFill();
         } else if (stage === 1) {
-            g.beginFill(0x1a5a15);
+            g.beginFill(0x4A8A3C);
             g.drawRect(-1, -20, 2, 32);
             g.endFill();
-            g.beginFill(0x2a8a20);
+            g.beginFill(0x5BA05C);
             g.drawEllipse(-10, -10, 10, 7);
             g.drawEllipse(10, -15, 10, 7);
             g.drawEllipse(-6, -22, 8, 6);
             g.endFill();
         } else {
-            g.beginFill(0x1a5a15);
+            g.beginFill(0x4A8A3C);
             g.drawRect(-1, -40, 2, 52);
             g.endFill();
-            g.beginFill(0x2da520);
+            g.beginFill(0x5BA05C);
             g.drawEllipse(0, -35, 18, 14);
             g.drawEllipse(-15, -20, 14, 10);
             g.drawEllipse(15, -22, 14, 10);
@@ -411,13 +411,13 @@ export class Furniture extends EventEmitter {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
 
-        g.beginFill(0x111118);
+        g.beginFill(0x5C4E3C);
         g.drawRoundedRect(-10, -24, 20, 36, 3);
         g.endFill();
-        g.beginFill(0x2a2a3a);
+        g.beginFill(0x4A3E30);
         g.drawCircle(0, -8, 8);
         g.endFill();
-        g.beginFill(0x111118);
+        g.beginFill(0x3A3228);
         g.drawCircle(0, -8, 4);
         g.endFill();
 
@@ -425,7 +425,7 @@ export class Furniture extends EventEmitter {
 
         // Pulsing power LED
         this._speakerLED = new PIXI.Graphics();
-        this._speakerLED.beginFill(0x0066ff);
+        this._speakerLED.beginFill(0x50D890);
         this._speakerLED.drawCircle(0, 8, 2);
         this._speakerLED.endFill();
         c.addChild(this._speakerLED);
@@ -438,36 +438,36 @@ export class Furniture extends EventEmitter {
         const g = new PIXI.Graphics();
 
         // Seat
-        g.beginFill(0x1a1a30);
+        g.beginFill(0x4A7A8C);
         g.drawRect(-16, -6, 32, 20);
         g.endFill();
         // Chair back
-        g.beginFill(0x222238);
+        g.beginFill(0x4A7A8C);
         g.drawRect(-14, -28, 28, 24);
         g.endFill();
-        // Red accent stripe down center (gaming chair style)
-        g.lineStyle(1, 0xe94560, 0.6);
+        // Amber accent stripe down center (gaming chair style)
+        g.lineStyle(1, 0xE8A04C, 0.6);
         g.moveTo(0, -26); g.lineTo(0, -6);
         // Horizontal support line
-        g.lineStyle(1, 0x3a3a5a, 0.8);
+        g.lineStyle(1, 0x3A6A7C, 0.8);
         g.moveTo(-12, -16); g.lineTo(12, -16);
         // Headrest
         g.lineStyle(0);
-        g.beginFill(0x2a2a42);
+        g.beginFill(0x5A8A9C);
         g.drawRoundedRect(-10, -34, 20, 8, 2);
         g.endFill();
         // Armrests
-        g.beginFill(0x1a1a30);
+        g.beginFill(0x3A6A7C);
         g.drawRect(-20, -10, 6, 4);
         g.drawRect(14, -10, 6, 4);
         g.endFill();
         // Legs
-        g.beginFill(0x0a0a18);
+        g.beginFill(0x3A6A7C);
         g.drawRect(-14, 14, 6, 16);
         g.drawRect(8, 14, 6, 16);
         g.endFill();
         // Wheels
-        g.beginFill(0x333345);
+        g.beginFill(0x5A8A9C);
         g.drawCircle(-11, 30, 4);
         g.drawCircle(11, 30, 4);
         g.endFill();
@@ -486,17 +486,17 @@ export class Furniture extends EventEmitter {
         const doorH = 60;
         const slant = (16 / 32) * doorW; // TILE_HEIGHT/TILE_WIDTH ratio for wall angle
 
-        // Door frame (slightly lighter border)
-        g.lineStyle(2, 0x1a4a80, 0.9);
+        // Door frame (warm wood)
+        g.lineStyle(2, 0xA0845C, 0.9);
         g.moveTo(0, 0);
         g.lineTo(-doorW / 2, slant / 2);
         g.lineTo(-doorW / 2, slant / 2 - doorH);
         g.lineTo(0, -doorH);
         g.closePath();
 
-        // Door fill (darker than wall)
+        // Door fill (dark wood)
         g.lineStyle(0);
-        g.beginFill(0x0a2540);
+        g.beginFill(0x6B5B3E);
         g.moveTo(0, 0);
         g.lineTo(-doorW / 2, slant / 2);
         g.lineTo(-doorW / 2, slant / 2 - doorH);
@@ -505,7 +505,7 @@ export class Furniture extends EventEmitter {
         g.endFill();
 
         // Inner panel detail
-        g.lineStyle(1, 0x0e3058, 0.5);
+        g.lineStyle(1, 0x8B7348, 0.5);
         g.moveTo(-2, -4);
         g.lineTo(-doorW / 2 + 3, slant / 2 - 4 + 1.5);
         g.lineTo(-doorW / 2 + 3, slant / 2 - doorH + 6 + 1.5);
@@ -514,9 +514,9 @@ export class Furniture extends EventEmitter {
 
         c.addChild(g);
 
-        // Door handle (amber/gold circle) — on the right side of the door face
+        // Door handle (warm amber/gold circle) — on the right side of the door face
         this._doorHandleGlow = new PIXI.Graphics();
-        this._doorHandleGlow.beginFill(0xffa040);
+        this._doorHandleGlow.beginFill(0xE8A04C);
         this._doorHandleGlow.drawCircle(-4, -doorH / 2 + 4, 3);
         this._doorHandleGlow.endFill();
         this._doorHandleGlow.alpha = 0.5;
@@ -554,7 +554,7 @@ export class Furniture extends EventEmitter {
     _setLedStripColor(color) {
         if (!this._deskLedStrip) return;
         this._deskLedStrip.clear();
-        this._deskLedStrip.beginFill(color, 0.15);
+        this._deskLedStrip.beginFill(color, 0.2);
         this._deskLedStrip.drawRect(-38, -12, 76, 2);
         this._deskLedStrip.endFill();
     }
@@ -652,7 +652,7 @@ export class Furniture extends EventEmitter {
                 } else if (this._ledFlashing && this._ledFlashTimer >= 30) {
                     this._ledFlashing = false;
                     this._ledFlashTimer = 0;
-                    this._setLedStripColor(0x00c864);
+                    this._setLedStripColor(0xE8A04C);
                 }
             } else {
                 this._ledFlashTimer = 0;
@@ -716,7 +716,7 @@ export class Furniture extends EventEmitter {
             DEEP_FOCUS: { bg: 0x000820, line: 0x4488ff, alpha: 0.55, rows: 6 },
             STRESSED:   { bg: 0x1a0000, line: 0xff4444, alpha: 0.5,  rows: 4 },
             FATIGUED:   { bg: 0x0a0800, line: 0x886622, alpha: 0.3,  rows: 3 },
-            RELAXED:    { bg: 0x0a1520, line: 0x00ff41, alpha: 0.4,  rows: 5 },
+            RELAXED:    { bg: 0x1E2D3D, line: 0x00ff41, alpha: 0.4,  rows: 5 },
             WIRED:      { bg: 0x00061a, line: 0x00ccff, alpha: 0.6,  rows: 7 },
         };
         const cfg = S[state] || S.RELAXED;

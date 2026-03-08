@@ -1,10 +1,10 @@
 
 const STATE_COLORS = {
-    DEEP_FOCUS: '#8000ff',
-    STRESSED:   '#ff5050',
-    FATIGUED:   '#ffa000',
-    RELAXED:    '#00c864',
-    WIRED:      '#0096ff',
+    DEEP_FOCUS: '#9B6AFF',
+    STRESSED:   '#FF7A6A',
+    FATIGUED:   '#FFB84A',
+    RELAXED:    '#6AD89A',
+    WIRED:      '#6AB8FF',
 };
 
 const BEAT_SHAPE = [
@@ -83,15 +83,15 @@ export class HUD {
             top: 16px;
             right: 16px;
             width: 220px;
-            background: rgba(10,10,25,0.80);
+            background: rgba(42,36,28,0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,228,181,0.12);
             border-radius: 12px;
             overflow: hidden;
             font-family: 'Segoe UI', monospace, sans-serif;
             font-size: 13px;
-            color: #cccccc;
+            color: #F5F0E8;
             z-index: 150;
             pointer-events: none;
             box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -109,7 +109,7 @@ export class HUD {
         el.appendChild(this._ecgCanvas);
 
         const divider = document.createElement('div');
-        divider.style.cssText = 'height:1px;background:rgba(255,255,255,0.1);';
+        divider.style.cssText = 'height:1px;background:rgba(255,228,181,0.1);';
         el.appendChild(divider);
 
         this._textEl = document.createElement('div');
@@ -272,14 +272,14 @@ export class HUD {
 
         const stress         = parseFloat(d.estimated_stress) || 0;
         const stressBarWidth = Math.min(100, (stress / 3) * 100);
-        const stressBarColor = stress < 1 ? '#00c864' : stress < 2 ? '#ffa000' : '#ff5050';
+        const stressBarColor = stress < 1 ? '#6AD89A' : stress < 2 ? '#FFB84A' : '#FF7A6A';
 
         const strainFmt = d.strain    !== '—' ? parseFloat(d.strain).toFixed(1)  : '—';
         const hrvFmt    = d.hrv       !== '—' ? `${Math.round(d.hrv)}ms`         : '—';
         const bpmFmt    = d.heartRate !== '—' ? `${Math.round(d.heartRate)}`     : '—';
 
         const connDot = this._connected
-            ? '<span class="live-dot" style="color:#00c864;font-size:10px;letter-spacing:0.05em">● LIVE</span>'
+            ? '<span class="live-dot" style="color:#6AD89A;font-size:10px;letter-spacing:0.05em">● LIVE</span>'
             : '<span style="color:#444;font-size:10px;letter-spacing:0.05em">● OFFLINE</span>';
 
         this._textEl.innerHTML = `
@@ -297,10 +297,10 @@ export class HUD {
             <div style="margin:6px 0 4px">
                 State: <strong style="color:${stateColor}">${stateLabel}</strong>
             </div>
-            <div style="font-size:11px;color:#888;margin-bottom:4px">
+            <div style="font-size:11px;color:#B8A88C;margin-bottom:4px">
                 Stress ${stress.toFixed(1)}/3.0
             </div>
-            <div style="background:rgba(255,255,255,0.06);border-radius:4px;height:6px;overflow:hidden">
+            <div style="background:rgba(255,228,181,0.08);border-radius:4px;height:6px;overflow:hidden">
                 <div style="
                     width:${stressBarWidth}%;
                     height:100%;

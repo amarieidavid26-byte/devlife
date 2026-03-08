@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 
-const STATE_COLORS = [0x00c864, 0x8000ff, 0xff5050, 0xffa000, 0x0096ff];
+const STATE_COLORS = [0x6AD89A, 0x9B6AFF, 0xFF7A6A, 0xFFB84A, 0x6AB8FF];
 
 // ECG waveform points — P wave, QRS complex, T wave pattern
 function buildECGPoints(width, cy) {
@@ -187,16 +187,16 @@ export class MainMenu {
         const sil = new PIXI.Graphics();
 
         // chair (behind desk, dark shape)
-        sil.beginFill(0x10101e);
+        sil.beginFill(0x1a1510);
         sil.drawRoundedRect(cx - 35, by - 35, 70, 80, 8);
         sil.endFill();
         // chair back
-        sil.beginFill(0x10101e);
+        sil.beginFill(0x1a1510);
         sil.drawRoundedRect(cx - 30, by - 80, 60, 55, 6);
         sil.endFill();
 
         // desk — isometric parallelogram (280px wide)
-        sil.beginFill(0x1a1a35);
+        sil.beginFill(0x2A2015);
         sil.moveTo(cx - 140, by);
         sil.lineTo(cx + 140, by);
         sil.lineTo(cx + 120, by + 44);
@@ -205,13 +205,13 @@ export class MainMenu {
         sil.endFill();
 
         // desk legs
-        sil.beginFill(0x1a1a35);
+        sil.beginFill(0x2A2015);
         sil.drawRect(cx - 130, by + 44, 8, 32);
         sil.drawRect(cx + 100, by + 44, 8, 32);
         sil.endFill();
 
         // monitor light cone hitting desk surface
-        sil.beginFill(0x8000ff, 0.04);
+        sil.beginFill(0x9B6AFF, 0.04);
         sil.moveTo(cx - 50, by - 30);
         sil.lineTo(cx + 50, by - 30);
         sil.lineTo(cx + 90, by);
@@ -220,25 +220,25 @@ export class MainMenu {
         sil.endFill();
 
         // monitor glow (behind monitor)
-        sil.beginFill(0x8000ff, 0.08);
+        sil.beginFill(0x9B6AFF, 0.08);
         sil.drawRect(cx - 55, by - 115, 110, 90);
         sil.endFill();
 
         // monitor (90px wide)
-        sil.beginFill(0x1a1a35);
+        sil.beginFill(0x2A2015);
         sil.drawRect(cx - 45, by - 105, 90, 70);
         sil.endFill();
-        sil.lineStyle(1, 0x8000ff, 0.6);
+        sil.lineStyle(1, 0x9B6AFF, 0.6);
         sil.drawRect(cx - 45, by - 105, 90, 70);
         sil.lineStyle(0);
 
         // screen glow inside monitor
-        sil.beginFill(0x8000ff, 0.2);
+        sil.beginFill(0x9B6AFF, 0.2);
         sil.drawRect(cx - 39, by - 99, 78, 58);
         sil.endFill();
 
         // code lines on screen
-        sil.beginFill(0x00c864, 0.15);
+        sil.beginFill(0x6AD89A, 0.15);
         sil.drawRect(cx - 32, by - 92, 40, 2);
         sil.drawRect(cx - 32, by - 84, 55, 2);
         sil.drawRect(cx - 32, by - 76, 35, 2);
@@ -246,7 +246,7 @@ export class MainMenu {
         sil.endFill();
 
         // monitor stand
-        sil.beginFill(0x1a1a35);
+        sil.beginFill(0x2A2015);
         sil.drawRect(cx - 7, by - 35, 14, 35);
         sil.endFill();
 
@@ -271,7 +271,7 @@ export class MainMenu {
             fontFamily: "'Courier New', monospace",
             fontWeight: 'bold',
             fontSize: 80,
-            fill: 0x00c864,
+            fill: 0x6AD89A,
         });
         this._titleText.anchor.set(0.5);
         this._titleText.x = w / 2;
@@ -283,7 +283,7 @@ export class MainMenu {
             fontFamily: "'Courier New', monospace",
             fontWeight: 'bold',
             fontSize: 80,
-            fill: 0x00c864,
+            fill: 0x6AD89A,
         });
         this._titleGlow.anchor.set(0.5);
         this._titleGlow.x = w / 2;
@@ -304,7 +304,7 @@ export class MainMenu {
         this._subtitleText = new PIXI.Text('The Biometric Developer Simulator', {
             fontFamily: 'monospace',
             fontSize: 20,
-            fill: 0x888888,
+            fill: 0xB8A88C,
         });
         this._subtitleText.anchor.set(0.5);
         this._subtitleText.x = w / 2;
@@ -343,8 +343,8 @@ export class MainMenu {
         this._ghostEyes.scale.set(sc);
         this._ghostContainer.addChild(this._ghostEyes);
 
-        this._drawMenuGhostShape(this._ghostGlowGfx, 0x00c864, 0.15);
-        this._drawMenuGhostShape(this._ghostBodyGfx, 0x00c864, 0.9);
+        this._drawMenuGhostShape(this._ghostGlowGfx, 0x6AD89A, 0.15);
+        this._drawMenuGhostShape(this._ghostBodyGfx, 0x6AD89A, 0.9);
         this._drawMenuGhostEyes(false);
     }
 
@@ -452,7 +452,7 @@ export class MainMenu {
 
         const btnStyle = [
             'background:rgba(10,10,20,0.85)',
-            'border:1px solid rgba(0,200,100,0.2)',
+            'border:1px solid rgba(106,216,154,0.2)',
             'color:#b0b0b0',
             "font:500 15px 'Courier New',monospace",
             'padding:14px 56px',
@@ -468,10 +468,10 @@ export class MainMenu {
         const hoverCSS = document.createElement('style');
         hoverCSS.textContent = `
             #menu-buttons button:hover {
-                border-color: rgba(0,200,100,0.6) !important;
-                color: #00c864 !important;
-                background: rgba(0,200,100,0.06) !important;
-                box-shadow: 0 0 20px rgba(0,200,100,0.1);
+                border-color: rgba(106,216,154,0.6) !important;
+                color: #6AD89A !important;
+                background: rgba(106,216,154,0.06) !important;
+                box-shadow: 0 0 20px rgba(106,216,154,0.1);
             }
         `;
         document.head.appendChild(hoverCSS);
@@ -547,7 +547,7 @@ export class MainMenu {
                 // glow
                 this._ecgGlow.clear();
                 if (pts.length > 1) {
-                    this._ecgGlow.lineStyle(6, 0x00c864, 0.3);
+                    this._ecgGlow.lineStyle(6, 0x6AD89A, 0.3);
                     this._ecgGlow.moveTo(pts[0].x, pts[0].y);
                     for (let i = 1; i < pts.length; i++) this._ecgGlow.lineTo(pts[i].x, pts[i].y);
                 }
@@ -555,7 +555,7 @@ export class MainMenu {
                 // main line
                 this._ecgLine.clear();
                 if (pts.length > 1) {
-                    this._ecgLine.lineStyle(2, 0x00c864, 1.0);
+                    this._ecgLine.lineStyle(2, 0x6AD89A, 1.0);
                     this._ecgLine.moveTo(pts[0].x, pts[0].y);
                     for (let i = 1; i < pts.length; i++) this._ecgLine.lineTo(pts[i].x, pts[i].y);
                 }
@@ -647,7 +647,7 @@ export class MainMenu {
             const radius = eased * 400;
             const alpha = 0.04 * (1 - eased);
             if (alpha > 0.001) {
-                this._pulseGfx.beginFill(0x00c864, alpha);
+                this._pulseGfx.beginFill(0x6AD89A, alpha);
                 this._pulseGfx.drawCircle(w / 2, h / 2, radius);
                 this._pulseGfx.endFill();
             }

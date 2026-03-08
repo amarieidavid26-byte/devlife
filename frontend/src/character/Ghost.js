@@ -1,19 +1,19 @@
 import * as PIXI from 'pixi.js';
 
 const STATE_COLORS = {
-    DEEP_FOCUS: 0x8000ff,
-    STRESSED:   0xff5050,
-    FATIGUED:   0xffa000,
-    RELAXED:    0x00c864,
-    WIRED:      0x0096ff,
+    DEEP_FOCUS: 0x9B6AFF,
+    STRESSED:   0xFF7A6A,
+    FATIGUED:   0xFFB84A,
+    RELAXED:    0x6AD89A,
+    WIRED:      0x6AB8FF,
 };
 
 const STATE_GLOW_CSS = {
-    DEEP_FOCUS: 'rgba(128,0,255,0.3)',
-    STRESSED:   'rgba(255,80,80,0.3)',
-    FATIGUED:   'rgba(255,160,0,0.3)',
-    RELAXED:    'rgba(0,200,100,0.3)',
-    WIRED:      'rgba(0,150,255,0.3)',
+    DEEP_FOCUS: 'rgba(155,106,255,0.3)',
+    STRESSED:   'rgba(255,122,106,0.3)',
+    FATIGUED:   'rgba(255,184,74,0.3)',
+    RELAXED:    'rgba(106,216,154,0.3)',
+    WIRED:      'rgba(106,184,255,0.3)',
 };
 
 const FOLLOW_DIST_TILES = 3.5;
@@ -116,7 +116,7 @@ export class Ghost {
         eyes.drawCircle(-9, -6, 6);
         eyes.drawCircle( 9, -6, 6);
         eyes.endFill();
-        eyes.beginFill(0x1a1a40, 0.95);
+        eyes.beginFill(0x3C2A1A, 0.95);
         eyes.drawCircle(-9, -6, 3.5);
         eyes.drawCircle( 9, -6, 3.5);
         eyes.endFill();
@@ -169,7 +169,7 @@ export class Ghost {
                 g.drawEllipse(-9, -6, 6, 4.5);
                 g.drawEllipse( 9, -6, 6, 4.5);
                 g.endFill();
-                g.beginFill(0x1a1a40, 0.95);
+                g.beginFill(0x3C2A1A, 0.95);
                 g.drawCircle(-9, -5, 3.0);
                 g.drawCircle( 9, -5, 3.0);
                 g.endFill();
@@ -183,7 +183,7 @@ export class Ghost {
                 g.drawEllipse(-9, -5, 6, 3.5);
                 g.drawEllipse( 9, -5, 6, 3.5);
                 g.endFill();
-                g.beginFill(0x1a1a40, 0.95);
+                g.beginFill(0x3C2A1A, 0.95);
                 g.drawEllipse(-9, -4, 3.5, 2.5);
                 g.drawEllipse( 9, -4, 3.5, 2.5);
                 g.endFill();
@@ -199,7 +199,7 @@ export class Ghost {
                 g.drawCircle(-9, -6, 7.5);
                 g.drawCircle( 9, -6, 7.5);
                 g.endFill();
-                g.beginFill(0x1a1a40, 0.98);
+                g.beginFill(0x3C2A1A, 0.98);
                 g.drawCircle(-9, -6, 2.2);
                 g.drawCircle( 9, -6, 2.2);
                 g.endFill();
@@ -214,11 +214,11 @@ export class Ghost {
                 g.drawEllipse(-9, -6, 6, 4);
                 g.drawEllipse( 9, -6, 6, 4);
                 g.endFill();
-                g.beginFill(0x1a1a40, 0.95);
+                g.beginFill(0x3C2A1A, 0.95);
                 g.drawCircle(-9, -6, 3.0);
                 g.drawCircle( 9, -6, 3.0);
                 g.endFill();
-                g.beginFill(0x8000ff, 0.5);
+                g.beginFill(0x9B6AFF, 0.5);
                 g.drawCircle(-7,  -8, 1.2);
                 g.drawCircle(11,  -8, 1.2);
                 g.endFill();
@@ -230,7 +230,7 @@ export class Ghost {
                 g.drawEllipse(-9, -5, 6, 3);
                 g.drawEllipse( 9, -5, 6, 3);
                 g.endFill();
-                g.beginFill(0x1a1a40, 0.95);
+                g.beginFill(0x3C2A1A, 0.95);
                 g.drawEllipse(-9, -4.5, 3.5, 2.2);
                 g.drawEllipse( 9, -4.5, 3.5, 2.2);
                 g.endFill();
@@ -246,7 +246,7 @@ export class Ghost {
                 g.drawCircle(-9, -6, 6);
                 g.drawCircle( 9, -6, 6);
                 g.endFill();
-                g.beginFill(0x1a1a40, 0.95);
+                g.beginFill(0x3C2A1A, 0.95);
                 g.drawCircle(-9, -6, 3.5);
                 g.drawCircle( 9, -6, 3.5);
                 g.endFill();
