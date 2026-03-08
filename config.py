@@ -30,7 +30,7 @@ STRESS_FIREWALL_THRESHOLD = 2.0
 
 # server settings
 HOST = "0.0.0.0"
-PORT = 8000
+PORT = int(os.environ.get("PORT", 8000))
 
 # mode settings 
 USE_MOCK_BIOMETRICS = True       # false when we are using real WHOOP metrics not this BS
