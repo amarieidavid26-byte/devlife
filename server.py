@@ -18,7 +18,7 @@ from config import (
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH
 )
 
-PORT = int(os.environ.get("PORT", _CONFIG_PORT))
+PORT = 8000
 if GAME_MODE: 
     from content_analyzer import ContentAnalyzer
 else: 
@@ -515,7 +515,13 @@ async def websocket_endpoint(ws: WebSocket):
     try:
         # listen for the messages coming from the frontend
         while True:
-            data = await ws.receive_json()
+            raw = await ws.receive_text()
+            try:
+                data = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if not isinstance(data, dict):
+                continue
 
             # handle the user feedback from the Ghost interventions
             if data.get("type") == "feedback":

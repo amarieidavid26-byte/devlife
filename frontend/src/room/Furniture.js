@@ -87,7 +87,7 @@ export class Furniture extends EventEmitter {
         g.drawRect(-18, -44, 36, 26);
         g.endFill();
         // Screen content
-        g.beginFill(0x001a0d);
+        g.beginFill(0x0a1520);
         g.drawRect(-16, -43, 32, 23);
         g.endFill();
         // Scanline effect
@@ -251,7 +251,7 @@ export class Furniture extends EventEmitter {
         g.beginFill(0x1a1a30);
         g.drawRect(-35, -65, 70, 58);
         g.endFill();
-        g.beginFill(0xeeeef5);
+        g.beginFill(0xc8c8d0);
         g.drawRect(-32, -62, 64, 52);
         g.endFill();
         // Brainstorm lines in state colors
@@ -263,7 +263,7 @@ export class Furniture extends EventEmitter {
         g.moveTo(-26, -34); g.lineTo(5, -34);
         g.lineStyle(2, 0x0096ff, 0.2);
         g.moveTo(-26, -28); g.lineTo(12, -28);
-        g.lineStyle(2, 0xcc3333, 0.7);
+        g.lineStyle(1.5, 0xcc3333, 0.35);
         g.drawRect(-10, -44, 20, 16);
         // Sticky notes
         g.lineStyle(0);
@@ -716,7 +716,7 @@ export class Furniture extends EventEmitter {
             DEEP_FOCUS: { bg: 0x000820, line: 0x4488ff, alpha: 0.55, rows: 6 },
             STRESSED:   { bg: 0x1a0000, line: 0xff4444, alpha: 0.5,  rows: 4 },
             FATIGUED:   { bg: 0x0a0800, line: 0x886622, alpha: 0.3,  rows: 3 },
-            RELAXED:    { bg: 0x001a0d, line: 0x00ff41, alpha: 0.4,  rows: 5 },
+            RELAXED:    { bg: 0x0a1520, line: 0x00ff41, alpha: 0.4,  rows: 5 },
             WIRED:      { bg: 0x00061a, line: 0x00ccff, alpha: 0.6,  rows: 7 },
         };
         const cfg = S[state] || S.RELAXED;

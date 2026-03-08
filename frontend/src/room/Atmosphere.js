@@ -37,11 +37,6 @@ export class Atmosphere {
         this._flashOverlay = new PIXI.Graphics();
         this.container.addChild(this._flashOverlay);
 
-        // Vignette overlay — darkened edges
-        this._vignetteContainer = new PIXI.Container();
-        this.container.addChild(this._vignetteContainer);
-        this._buildVignette();
-
         // Ambient flicker
         this._flickerBase = 0;
 
@@ -54,6 +49,12 @@ export class Atmosphere {
         this._initDustMotes();
         this._initParticles();
         this._redrawOverlay();
+
+        // Vignette overlay — added last so it draws on top of everything
+        this._vignetteSprite = null;
+        this._vignetteContainer = new PIXI.Container();
+        this.container.addChild(this._vignetteContainer);
+        this._buildVignette();
 
         window.addEventListener('resize', () => this._buildVignette());
     }
@@ -79,80 +80,39 @@ export class Atmosphere {
         }
     }
 
-    // ── Vignette: darkened screen edges ──
+    // ── Vignette: smooth radial gradient via offscreen canvas ──
 
     _buildVignette() {
-        this._vignetteContainer.removeChildren();
-
         const w = window.innerWidth;
         const h = window.innerHeight;
-        const STRIPS = 12;
-        const edgeX = w * 0.15;
-        const edgeY = h * 0.15;
 
-        // Top edge
-        for (let i = 0; i < STRIPS; i++) {
-            const t = i / STRIPS;
-            const alpha = 0.4 * (1 - t) * (1 - t); // quadratic falloff
-            const stripH = edgeY / STRIPS;
-            const g = new PIXI.Graphics();
-            g.beginFill(0x000000, alpha);
-            g.drawRect(0, t * edgeY, w, stripH);
-            g.endFill();
-            this._vignetteContainer.addChild(g);
-        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
 
-        // Bottom edge
-        for (let i = 0; i < STRIPS; i++) {
-            const t = i / STRIPS;
-            const alpha = 0.4 * (1 - t) * (1 - t);
-            const stripH = edgeY / STRIPS;
-            const g = new PIXI.Graphics();
-            g.beginFill(0x000000, alpha);
-            g.drawRect(0, h - edgeY + t * edgeY, w, stripH);
-            g.endFill();
-            this._vignetteContainer.addChild(g);
-        }
+        // Radial gradient: transparent center, dark edges
+        const cx = w / 2;
+        const cy = h / 2;
+        const innerRadius = Math.min(w, h) * 0.35;
+        const outerRadius = Math.max(w, h) * 0.75;
 
-        // Left edge
-        for (let i = 0; i < STRIPS; i++) {
-            const t = i / STRIPS;
-            const alpha = 0.35 * (1 - t) * (1 - t);
-            const stripW = edgeX / STRIPS;
-            const g = new PIXI.Graphics();
-            g.beginFill(0x000000, alpha);
-            g.drawRect(t * edgeX, 0, stripW, h);
-            g.endFill();
-            this._vignetteContainer.addChild(g);
-        }
+        const gradient = ctx.createRadialGradient(cx, cy, innerRadius, cx, cy, outerRadius);
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.15)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
 
-        // Right edge
-        for (let i = 0; i < STRIPS; i++) {
-            const t = i / STRIPS;
-            const alpha = 0.35 * (1 - t) * (1 - t);
-            const stripW = edgeX / STRIPS;
-            const g = new PIXI.Graphics();
-            g.beginFill(0x000000, alpha);
-            g.drawRect(w - edgeX + t * edgeX, 0, stripW, h);
-            g.endFill();
-            this._vignetteContainer.addChild(g);
-        }
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
 
-        // Corners: extra darkness in the 4 corners (layered on top)
-        const cornerAlpha = 0.25;
-        const corners = [
-            [0, 0],
-            [w - edgeX, 0],
-            [0, h - edgeY],
-            [w - edgeX, h - edgeY],
-        ];
-        for (const [cx, cy] of corners) {
-            const g = new PIXI.Graphics();
-            g.beginFill(0x000000, cornerAlpha);
-            g.drawRect(cx, cy, edgeX, edgeY);
-            g.endFill();
-            this._vignetteContainer.addChild(g);
+        // Convert canvas to PIXI sprite
+        const texture = PIXI.Texture.from(canvas);
+        if (this._vignetteSprite) {
+            this._vignetteContainer.removeChild(this._vignetteSprite);
+            this._vignetteSprite.destroy({ texture: true, baseTexture: true });
         }
+        this._vignetteSprite = new PIXI.Sprite(texture);
+        this._vignetteContainer.addChild(this._vignetteSprite);
     }
 
     // ── State transition burst particles ──
