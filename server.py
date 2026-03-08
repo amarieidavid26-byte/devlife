@@ -1,5 +1,6 @@
 import asyncio
-import json 
+import json
+import os
 import time
 import threading
 import random
@@ -7,14 +8,17 @@ from contextlib import asynccontextmanager
 
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.staticfiles import StaticFiles 
-from fastapi.responses import JSONResponse, RedirectResponse 
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from config import (
     CLAUDE_API_KEY, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET,
-    HOST, PORT,
+    HOST, PORT as _CONFIG_PORT,
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH
 )
+
+PORT = int(os.environ.get("PORT", _CONFIG_PORT))
 if GAME_MODE: 
     from content_analyzer import ContentAnalyzer
 else: 
@@ -378,6 +382,14 @@ async def lifespan(app: FastAPI):
 
 # FastAPI
 app = FastAPI(title = "Ghost Desktop Agent", lifespan = lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # test page from public/
 app.mount("/public", StaticFiles(directory="public"), name="public")

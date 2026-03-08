@@ -21,6 +21,7 @@ import { ToastSystem } from './hud/ToastSystem.js';
 import { SettingsMenu } from './menu/SettingsMenu.js';
 import { SceneManager } from './scenes/SceneManager.js';
 import { Town } from './town/Town.js';
+import { CONFIG } from './config.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -76,7 +77,7 @@ function startGame(enableDemo = false) {
     let currentGameScene = 'room';
     let coffeeCount = 0;
 
-    socket = new GhostSocket('ws://localhost:8000/ws');
+    socket = new GhostSocket(CONFIG.WS_URL);
 
     room = new Room(pixiApp.stage);
     furniture = new Furniture(pixiApp.stage, room);
@@ -402,9 +403,11 @@ function startGame(enableDemo = false) {
     });
 
     // check if backend is alive
-    fetch('http://localhost:8000/health').then(r => r.json()).then(d => {
+    fetch(CONFIG.BACKEND_URL + '/health').then(r => r.json()).then(d => {
         console.log('[main] backend health:', d.status);
-    }).catch(() => {});
+    }).catch(() => {
+        console.log('[main] backend unreachable — running in offline/demo mode');
+    });
 
     console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');
 

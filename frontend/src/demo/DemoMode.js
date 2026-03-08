@@ -18,7 +18,28 @@ const STATES = {
 // ---------------------------------------------------------------------------
 
 const SCRIPT = [
-  // ── Chapter 1 — "Morning: Fresh Start" (0:00 – 0:40) ──────────────────
+  // ── Chapter 0 — "Intro: The Next 20 Years" (0:00 – 0:15) ──────────────
+  {
+    title: 'The Next 20 Years',
+    state: null,
+    duration: 15_000,
+    events: [
+      { time: 0,     action: 'showOverlay', data: {} },
+      { time: 500,   action: 'overlayText', data: { index: 0, fade: 'in' } },   // "In the next 20 years..."
+      { time: 3_000, action: 'overlayText', data: { index: 0, fade: 'out' } },
+      { time: 3_500, action: 'overlayText', data: { index: 1, fade: 'in' } },   // "...your code will change the world."
+      { time: 6_000, action: 'overlayText', data: { index: 1, fade: 'out' } },
+      { time: 6_500, action: 'overlayText', data: { index: 2, fade: 'in' } },   // "But who watches over you?"
+      { time: 9_000, action: 'overlayText', data: { index: 2, fade: 'out' } },
+      { time: 9_500, action: 'overlayText', data: { index: 3, fade: 'in' } },   // "DevLife"
+      { time: 12_000, action: 'overlayText', data: { index: 3, fade: 'out' } },
+      { time: 12_500, action: 'overlayText', data: { index: 4, fade: 'in' } },  // Credit
+      { time: 14_000, action: 'overlayText', data: { index: 4, fade: 'out' } },
+      { time: 14_500, action: 'hideOverlay', data: {} },
+    ],
+  },
+
+  // ── Chapter 1 — "Morning: Fresh Start" (0:15 – 0:55) ──────────────────
   {
     title: 'Morning: Fresh Start',
     state: STATES.RELAXED,
@@ -191,11 +212,38 @@ const SCRIPT = [
       },
     ],
   },
+
+  // ── Chapter 7 — "Outro" (3:30 – 3:35) ────────────────────────────────
+  {
+    title: 'Outro',
+    state: null,
+    duration: 5_000,
+    events: [
+      { time: 0,     action: 'showOutro', data: {} },
+      { time: 4_500, action: 'hideOverlay', data: {} },
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
 // DemoMode class
 // ---------------------------------------------------------------------------
+
+// Intro text lines (shown sequentially during Chapter 0)
+const INTRO_LINES = [
+  'In the next 20 years...',
+  '...your code will change the world.',
+  'But who watches over you?',
+  'DevLife',
+  'ROG 20-Year Coding Challenge 2026',
+];
+
+// Outro text lines (shown simultaneously during Chapter 7)
+const OUTRO_LINES = [
+  'DevLife — The Biometric Developer Simulator',
+  'A game that understands you.',
+  'ROG 20-Year Coding Challenge 2026',
+];
 
 export class DemoMode {
   /**
@@ -220,6 +268,10 @@ export class DemoMode {
     this._chapterIndex = 0;
     this._startTime = 0;
     this._looping = false;
+
+    // DOM overlay elements
+    this._overlayEl = null;
+    this._overlayTextEls = [];
   }
 
   // -----------------------------------------------------------------------
@@ -240,6 +292,7 @@ export class DemoMode {
     this._running = false;
     this._looping = false;
     this._clearTimers();
+    this._destroyOverlay();
   }
 
   /** @returns {boolean} */
@@ -307,6 +360,18 @@ export class DemoMode {
         break;
       case 'triggerFirewall':
         this._triggerFirewall(event.data.command);
+        break;
+      case 'showOverlay':
+        this._showOverlay();
+        break;
+      case 'hideOverlay':
+        this._hideOverlay();
+        break;
+      case 'overlayText':
+        this._overlayText(event.data.index, event.data.fade);
+        break;
+      case 'showOutro':
+        this._showOutro();
         break;
       case 'sleep':
         this._sleep();
@@ -412,6 +477,110 @@ export class DemoMode {
       this._player.lieDown();
     }
     console.log('[DemoMode] 💤 Sleep mode');
+  }
+
+  // -----------------------------------------------------------------------
+  // Overlay — Intro & Outro cinematic screens
+  // -----------------------------------------------------------------------
+
+  _createOverlayEl() {
+    if (this._overlayEl) return;
+    const el = document.createElement('div');
+    el.style.cssText = `
+      position: fixed; inset: 0; z-index: 5000;
+      background: rgba(5, 5, 15, 0.97);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.5s ease;
+      opacity: 0;
+    `;
+    document.body.appendChild(el);
+    this._overlayEl = el;
+    // Force reflow then fade in
+    void el.offsetWidth;
+    el.style.opacity = '1';
+  }
+
+  _showOverlay() {
+    this._createOverlayEl();
+    this._overlayTextEls = [];
+
+    // Pre-create all intro text elements (hidden)
+    for (let i = 0; i < INTRO_LINES.length; i++) {
+      const line = INTRO_LINES[i];
+      const span = document.createElement('div');
+      const isTitle = i === 3; // "DevLife" — larger
+      const isCredit = i === 4;
+      span.textContent = line;
+      span.style.cssText = `
+        color: ${isTitle ? '#e94560' : isCredit ? '#888' : '#e0e0e0'};
+        font-family: monospace;
+        font-size: ${isTitle ? '42px' : isCredit ? '14px' : '22px'};
+        font-weight: ${isTitle ? 'bold' : 'normal'};
+        letter-spacing: ${isTitle ? '6px' : '1px'};
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        position: absolute;
+      `;
+      this._overlayEl.appendChild(span);
+      this._overlayTextEls.push(span);
+    }
+  }
+
+  _overlayText(index, fade) {
+    const el = this._overlayTextEls[index];
+    if (!el) return;
+    el.style.opacity = fade === 'in' ? '1' : '0';
+  }
+
+  _showOutro() {
+    this._createOverlayEl();
+    this._overlayTextEls = [];
+
+    // Show all outro lines at once, stacked vertically
+    for (let i = 0; i < OUTRO_LINES.length; i++) {
+      const line = OUTRO_LINES[i];
+      const span = document.createElement('div');
+      const isTitle = i === 0;
+      const isCredit = i === 2;
+      span.textContent = line;
+      span.style.cssText = `
+        color: ${isTitle ? '#e94560' : isCredit ? '#888' : '#e0e0e0'};
+        font-family: monospace;
+        font-size: ${isTitle ? '24px' : isCredit ? '14px' : '18px'};
+        font-weight: ${isTitle ? 'bold' : 'normal'};
+        letter-spacing: ${isTitle ? '3px' : '1px'};
+        text-align: center;
+        margin: 8px 0;
+        opacity: 0;
+        transition: opacity 0.6s ease;
+      `;
+      this._overlayEl.appendChild(span);
+      this._overlayTextEls.push(span);
+
+      // Stagger fade-in for each line
+      setTimeout(() => { span.style.opacity = '1'; }, 300 + i * 400);
+    }
+  }
+
+  _hideOverlay() {
+    if (!this._overlayEl) return;
+    this._overlayEl.style.opacity = '0';
+    const el = this._overlayEl;
+    setTimeout(() => {
+      el.remove();
+    }, 600);
+    this._overlayEl = null;
+    this._overlayTextEls = [];
+  }
+
+  _destroyOverlay() {
+    if (this._overlayEl) {
+      this._overlayEl.remove();
+      this._overlayEl = null;
+      this._overlayTextEls = [];
+    }
   }
 
   // -----------------------------------------------------------------------

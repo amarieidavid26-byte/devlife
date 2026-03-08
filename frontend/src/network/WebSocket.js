@@ -1,29 +1,47 @@
+import { CONFIG } from '../config.js';
+
 export class GhostSocket {
-    constructor(url = 'ws://localhost:8000/ws') {
+    constructor(url = CONFIG.WS_URL) {
         this.url = url;
         this.ws = null;
         this.listeners = new Map();
         this.contentTimer = null;
         this.reconnectTimer = null;
+        this._connectTimeout = null;
         this.isConnected = false;
+        this._offline = false;
         this.lastSentContent = {};
         this.connect();
     }
 
     connect() {
+        if (this._offline) return;
+
         this.ws = new WebSocket(this.url);
 
+        // connection timeout — if not open within 5s, go offline
+        this._connectTimeout = setTimeout(() => {
+            if (!this.isConnected) {
+                console.warn('[GhostSocket] Connection timeout — entering offline mode');
+                this._offline = true;
+                this.ws.close();
+                this.emit('disconnected', {});
+            }
+        }, 5000);
+
         this.ws.onopen = () => {
+            clearTimeout(this._connectTimeout);
             this.isConnected = true;
             console.log('🔌 Connected to Ghost backend');
             this.emit('connected', {});
         };
 
         this.ws.onclose = () => {
+            clearTimeout(this._connectTimeout);
             this.isConnected = false;
             console.log('🔌 Disconnected');
             this.emit('disconnected', {});
-            this.reconnect();
+            if (!this._offline) this.reconnect();
         };
 
         this.ws.onerror = (err) => {
@@ -137,5 +155,3 @@ export class GhostSocket {
         }
     }
 }
-
-export const socket = new GhostSocket();

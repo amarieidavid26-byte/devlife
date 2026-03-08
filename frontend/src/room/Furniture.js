@@ -24,6 +24,10 @@ export class Furniture extends EventEmitter {
         this._steamParticles = [];
         this._doorHandleGlow = null;
         this.onDoorInteract = null;
+        this._deskLedStrip = null;
+        this._ledFlashTimer = 0;
+        this._ledFlashing = false;
+        this._currentState = 'RELAXED';
 
         this._buildRoom();
 
@@ -43,6 +47,8 @@ export class Furniture extends EventEmitter {
         this._addSpeaker(8, 2);
         this._addChair(5, 4);
         this._addDoor(0, 10);
+        this._addRogPoster(10, 5);
+        this._addCompetitionLabel();
     }
 
     // these offsets took forever to get right
@@ -104,6 +110,13 @@ export class Furniture extends EventEmitter {
         this._monitorUnderglow.drawRect(-22, -16, 44, 6);
         this._monitorUnderglow.endFill();
         c.addChild(this._monitorUnderglow);
+
+        // LED strip along desk back edge (flashes ROG red periodically)
+        this._deskLedStrip = new PIXI.Graphics();
+        this._deskLedStrip.beginFill(0x00c864, 0.15);
+        this._deskLedStrip.drawRect(-38, -12, 76, 2);
+        this._deskLedStrip.endFill();
+        c.addChild(this._deskLedStrip);
 
         // State-reactive screen overlay (sits on top of static screen, under scan line)
         this._deskScreenOverlay = new PIXI.Graphics();
@@ -443,6 +456,65 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'door', true, null);
     }
 
+    _addRogPoster(gx, gy) {
+        const c = new PIXI.Container();
+        const g = new PIXI.Graphics();
+
+        // Frame
+        g.lineStyle(1, 0x2a2a40, 1);
+        g.beginFill(0x0a0a15);
+        g.drawRect(-15, -50, 30, 40);
+        g.endFill();
+
+        // ROG-inspired angular eye/arrow shape
+        g.lineStyle(0);
+        g.beginFill(0xff0000, 0.4);
+        g.moveTo(-8, -35);
+        g.lineTo(8, -30);
+        g.lineTo(0, -25);
+        g.lineTo(-8, -30);
+        g.closePath();
+        g.endFill();
+
+        c.addChild(g);
+
+        // "ROG" text below poster
+        const text = new PIXI.Text('ROG', {
+            fontFamily: 'monospace',
+            fontSize: 8,
+            fill: '#ff0000',
+        });
+        text.alpha = 0.3;
+        text.anchor.set(0.5, 0);
+        text.x = 0;
+        text.y = -8;
+        c.addChild(text);
+
+        this._placeItem(c, gx, gy, 'rog_poster', false, null);
+    }
+
+    _addCompetitionLabel() {
+        const text = new PIXI.Text('ROG 20-Year Coding Challenge 2026', {
+            fontFamily: 'monospace',
+            fontSize: 7,
+            fill: 0xffffff,
+        });
+        text.alpha = 0.15;
+        text.anchor.set(0.5, 0.5);
+        const { x, y } = this.room.getTileCenter(5, 10);
+        text.x = x;
+        text.y = y + 10;
+        this.container.addChild(text);
+    }
+
+    _setLedStripColor(color) {
+        if (!this._deskLedStrip) return;
+        this._deskLedStrip.clear();
+        this._deskLedStrip.beginFill(color, 0.15);
+        this._deskLedStrip.drawRect(-38, -12, 76, 2);
+        this._deskLedStrip.endFill();
+    }
+
     _placeItem(container, gx, gy, name, interactive, appType) {
         const { x, y } = this.room.getTileCenter(gx, gy);
         container.x = x;
@@ -523,6 +595,25 @@ export class Furniture extends EventEmitter {
         // door handle glow pulse (2s period, alpha 0.3–0.7)
         if (this._doorHandleGlow) {
             this._doorHandleGlow.alpha = 0.5 + Math.sin(Date.now() / 318.3) * 0.2; // 318.3 ≈ 1000/π for 2s period
+        }
+
+        // LED strip — flash ROG red every ~30s when in RELAXED state
+        if (this._deskLedStrip) {
+            if (this._currentState === 'RELAXED') {
+                this._ledFlashTimer += delta;
+                if (!this._ledFlashing && this._ledFlashTimer >= 1800) {
+                    this._ledFlashing = true;
+                    this._ledFlashTimer = 0;
+                    this._setLedStripColor(0xff0000);
+                } else if (this._ledFlashing && this._ledFlashTimer >= 30) {
+                    this._ledFlashing = false;
+                    this._ledFlashTimer = 0;
+                    this._setLedStripColor(0x00c864);
+                }
+            } else {
+                this._ledFlashTimer = 0;
+                this._ledFlashing = false;
+            }
         }
 
         // update steam particles
@@ -614,14 +705,18 @@ export class Furniture extends EventEmitter {
     }
 
     setMonitorState(state) {
+        this._currentState = state;
         if (this._deskScreenOverlay) this._drawMonitorContent(this._deskScreenOverlay, state);
+        const colors = { DEEP_FOCUS: 0x8000ff, STRESSED: 0xff5050, FATIGUED: 0xffa000, RELAXED: 0x00c864, WIRED: 0x0096ff };
+        const c = colors[state] || 0x00c864;
         if (this._monitorUnderglow) {
-            const colors = { DEEP_FOCUS: 0x8000ff, STRESSED: 0xff5050, FATIGUED: 0xffa000, RELAXED: 0x00c864, WIRED: 0x0096ff };
-            const c = colors[state] || 0x00c864;
             this._monitorUnderglow.clear();
             this._monitorUnderglow.beginFill(c, 0.04);
             this._monitorUnderglow.drawRect(-22, -16, 44, 6);
             this._monitorUnderglow.endFill();
+        }
+        if (this._deskLedStrip && !this._ledFlashing) {
+            this._setLedStripColor(c);
         }
     }
 

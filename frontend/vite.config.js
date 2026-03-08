@@ -8,5 +8,11 @@ export default defineConfig({
                 ws: true
             }
         }
+    },
+    build: {
+        outDir: 'dist',
+        assetsDir: 'assets',
+        sourcemap: false,
+        minify: 'terser'
     }
 });
