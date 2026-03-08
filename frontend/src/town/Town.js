@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
 import { TownPlayer } from './TownPlayer.js';
 import { TownGhost } from './TownGhost.js';
+import { TownDialogue } from './TownDialogue.js';
 
 const GRID_SIZE = 20;
 const GAME_ZOOM = 1.5;
@@ -55,6 +56,7 @@ export class Town {
         this._ghost = null;
         this._entityContainer = null;
         this._onTownKeyDown = null;
+        this._dialogue = null;
     }
 
     // ─────────────────────────────────────────────
@@ -104,6 +106,16 @@ export class Town {
         this._ghost = new TownGhost(this._entityContainer);
         this._ghost.setTarget(this._player.container.x, this._player.container.y);
 
+        // Dialogue — ambient ghost chatter in town
+        this._dialogue = new TownDialogue(this._entityContainer);
+        this._dialogue.startAmbient(
+            () => this._player.getPosition(),
+            () => ({ x: this._ghost._container.x, y: this._ghost._container.y })
+        );
+        setTimeout(() => {
+            if (this._dialogue) this._dialogue.say("Fresh air! Let's explore the neighborhood.", 4000);
+        }, 2000);
+
         // 'E' key to enter HOME when nearby
         this._onTownKeyDown = (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -115,6 +127,12 @@ export class Town {
     }
 
     exit() {
+        if (this._dialogue) {
+            this._dialogue.stopAmbient();
+            this._dialogue.destroy();
+            this._dialogue = null;
+        }
+
         if (this._onTownKeyDown) {
             document.removeEventListener('keydown', this._onTownKeyDown);
             this._onTownKeyDown = null;
@@ -157,7 +175,18 @@ export class Town {
             // Z-sort player and ghost by y position
             this._player.container.zIndex = this._player.container.y;
             this._ghost._container.zIndex = this._ghost._container.y;
+
+            // Camera follow — lerp container so player stays centered
+            const playerWorldX = this._entityContainer.x + this._player.container.x;
+            const playerWorldY = this._entityContainer.y + this._player.container.y;
+            const targetX = this._app.screen.width / 2 - playerWorldX * GAME_ZOOM;
+            const targetY = this._app.screen.height / 2 - playerWorldY * GAME_ZOOM;
+            const camLerp = 0.07 * delta;
+            this._container.x += (targetX - this._container.x) * camLerp;
+            this._container.y += (targetY - this._container.y) * camLerp;
         }
+
+        if (this._dialogue) this._dialogue.update(delta);
     }
 
     // ─────────────────────────────────────────────

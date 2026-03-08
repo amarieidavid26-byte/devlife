@@ -18,6 +18,7 @@ import { MainMenu } from './menu/MainMenu.js';
 import { SoundManager } from './audio/SoundManager.js';
 import { DemoMode } from './demo/DemoMode.js';
 import { ToastSystem } from './hud/ToastSystem.js';
+import { SettingsMenu } from './menu/SettingsMenu.js';
 import { SceneManager } from './scenes/SceneManager.js';
 import { Town } from './town/Town.js';
 
@@ -57,17 +58,23 @@ soundManager = new SoundManager();
 document.addEventListener('click', () => soundManager.resume(), { once: true });
 toastSystem = new ToastSystem();
 
+const settingsMenu = new SettingsMenu();
+settingsMenu.onVolumeChange((vol) => soundManager.setMasterVolume(vol));
+settingsMenu.onMuteToggle((muted) => muted ? soundManager.mute() : soundManager.unmute());
+
 // --- Main Menu ---
 const mainMenu = new MainMenu(pixiApp);
 mainMenu.show(
     () => { soundManager.playClick(); startGame(false); },
-    () => { soundManager.playClick(); startGame(true); }
+    () => { soundManager.playClick(); startGame(true); },
+    () => { soundManager.playClick(); settingsMenu.show(); }
 );
 
 // --- Game init (called when menu START or DEMO is clicked) ---
 function startGame(enableDemo = false) {
     let socket, room, furniture, ghost, atmosphere, hud, beneathView, demoHotbar, apps, activeApp, ePrompt;
     let currentGameScene = 'room';
+    let coffeeCount = 0;
 
     socket = new GhostSocket('ws://localhost:8000/ws');
 
@@ -199,11 +206,27 @@ function startGame(enableDemo = false) {
     // furniture interactions
     furniture.on('interact', (name) => {
         if (name === 'coffee_machine') {
+            coffeeCount++;
+            let message, priority, buttons;
+            if (coffeeCount < 3) {
+                message = "Good idea — coffee fuels great code. Don't forget to hydrate too! ☕";
+                priority = 'low';
+                buttons = ['Thanks!'];
+            } else if (coffeeCount === 3) {
+                message = "That's coffee #3... maybe slow down a bit? Your heart rate doesn't need the help. ☕⚠️";
+                priority = 'warning';
+                buttons = ['I\'m fine', 'You\'re right'];
+                toastSystem.triggerAchievement('coffee_addict');
+            } else {
+                message = `Coffee #${coffeeCount}. I'm genuinely worried now. Hydrate. Please. 💀`;
+                priority = 'warning';
+                buttons = ['Ok ok...', 'One more won\'t hurt'];
+            }
             ghost.showSpeechBubble({
-                message:   "Good idea — coffee fuels great code. Don't forget to hydrate too! ☕",
-                priority:  'low',
-                state:     ghost._state,
-                buttons:   ['Thanks!'],
+                message,
+                priority,
+                state: ghost._state,
+                buttons,
                 biometric: {},
             });
             return;

@@ -93,9 +93,10 @@ export class MainMenu {
         this._subtitleText = null;
     }
 
-    show(onStart, onDemo) {
+    show(onStart, onDemo, onSettings) {
         this._onStart = onStart;
         this._onDemo = onDemo || null;
+        this._onSettings = onSettings || null;
         this._startTime = Date.now();
         this._app.stage.addChild(this._container);
 
@@ -479,7 +480,7 @@ export class MainMenu {
         const btns = [
             { label: '\u25B6  START', action: () => this.hide() },
             { label: '\u25C9  DEMO MODE', action: () => { if (this._onDemo) { this._onStart = this._onDemo; this.hide(); } } },
-            { label: '\u2699  SETTINGS', action: () => console.log('settings') },
+            { label: '\u2699  SETTINGS', action: () => { if (this._onSettings) this._onSettings(); } },
         ];
 
         btns.forEach(({ label, action }) => {
