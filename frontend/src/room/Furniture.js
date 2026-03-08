@@ -42,7 +42,7 @@ export class Furniture extends EventEmitter {
         this._addPlant(10, 10);
         this._addSpeaker(8, 2);
         this._addChair(5, 4);
-        this._addDoor(0, 8);
+        this._addDoor(0, 10);
     }
 
     // these offsets took forever to get right

@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
 
-const SPEED = 2.5;
+const SPEED = 0.08;
 const WALK_CYCLE = 40;
 const BOUNDS_TILES = 20;
 const BOUNDS_PX_X = BOUNDS_TILES * TILE_WIDTH;
