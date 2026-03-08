@@ -53,6 +53,7 @@ last_intervention_hash = None      # hash of content that triggered the last int
 suppressed_hashes = {}        # {hash: expiry_timestamp} — suppressed for 10s after user responds
 mock_override_until = 0
 sleep_mode_active = False
+ble_active = False
 sleep_low_hr_count = 0
 ble_disconnected = False 
 ble_disconnected_timer = None
