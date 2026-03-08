@@ -37,8 +37,31 @@ export class Atmosphere {
         this._flashOverlay = new PIXI.Graphics();
         this.container.addChild(this._flashOverlay);
 
+        this._dustMotes = [];
+        this._initDustMotes();
         this._initParticles();
         this._redrawOverlay();
+    }
+
+    _initDustMotes() {
+        for (let i = 0; i < 10; i++) {
+            const g = new PIXI.Graphics();
+            const alpha = 0.03 + Math.random() * 0.04;
+            g.beginFill(0xffffff, alpha);
+            g.drawCircle(0, 0, 1.5);
+            g.endFill();
+            g.x = Math.random() * window.innerWidth;
+            g.y = Math.random() * window.innerHeight;
+            this.container.addChild(g);
+            this._dustMotes.push({
+                gfx: g,
+                vx: 0.05 + Math.random() * 0.1,
+                baseY: g.y,
+                sineAmp: 5,
+                sinePeriod: 4 + Math.random() * 2,
+                phase: Math.random() * Math.PI * 2,
+            });
+        }
     }
 
     setState(stateName) {
@@ -188,6 +211,17 @@ export class Atmosphere {
                 this._flashOverlay.beginFill(this._flashColor, this._flashAlpha);
                 this._flashOverlay.drawRect(0, 0, window.innerWidth, window.innerHeight);
                 this._flashOverlay.endFill();
+            }
+        }
+
+        // dust motes — slow drift
+        for (const d of this._dustMotes) {
+            d.phase += (delta / 60) * (Math.PI * 2 / d.sinePeriod);
+            d.gfx.x += d.vx * delta;
+            d.gfx.y = d.baseY + Math.sin(d.phase) * d.sineAmp;
+            if (d.gfx.x > window.innerWidth + 10) {
+                d.gfx.x = -10;
+                d.baseY = Math.random() * window.innerHeight;
             }
         }
 

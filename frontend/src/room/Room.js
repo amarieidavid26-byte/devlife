@@ -140,6 +140,40 @@ export class Room {
             this.wallContainer.addChild(panel);
         }
 
+        // window on right wall (at gx=4)
+        const { x: winX, y: winY } = this.gridToScreen(4, 0);
+        const win = new PIXI.Graphics();
+        const winW = TILE_WIDTH * 0.7;
+        const winH2 = 60;
+        const winTop = winY - wallH * 0.75;
+        // night sky fill
+        win.beginFill(0x1a1a3a);
+        win.moveTo(winX, winTop);
+        win.lineTo(winX + winW / 2, winTop + TILE_HEIGHT * 0.35);
+        win.lineTo(winX + winW / 2, winTop + TILE_HEIGHT * 0.35 + winH2);
+        win.lineTo(winX, winTop + winH2);
+        win.closePath();
+        win.endFill();
+        // window frame
+        win.lineStyle(1.5, 0x1a4a80, 0.9);
+        win.moveTo(winX, winTop);
+        win.lineTo(winX + winW / 2, winTop + TILE_HEIGHT * 0.35);
+        win.lineTo(winX + winW / 2, winTop + TILE_HEIGHT * 0.35 + winH2);
+        win.lineTo(winX, winTop + winH2);
+        win.closePath();
+        // cross bar
+        const midY = winTop + winH2 / 2 + TILE_HEIGHT * 0.175;
+        win.moveTo(winX, winTop + winH2 / 2);
+        win.lineTo(winX + winW / 2, midY);
+        win.lineStyle(0);
+        // stars
+        win.beginFill(0xffffff, 0.6);
+        win.drawCircle(winX + 8, winTop + 12, 1);
+        win.drawCircle(winX + winW / 2 - 6, winTop + 8 + TILE_HEIGHT * 0.15, 0.8);
+        win.drawCircle(winX + 14, winTop + winH2 * 0.35, 1.2);
+        win.endFill();
+        this.wallContainer.addChild(win);
+
         // corner
         const { x: cx, y: cy } = this.gridToScreen(0, 0);
         const corner = new PIXI.Graphics();

@@ -93,8 +93,9 @@ export class MainMenu {
         this._subtitleText = null;
     }
 
-    show(onStart) {
+    show(onStart, onDemo) {
         this._onStart = onStart;
+        this._onDemo = onDemo || null;
         this._startTime = Date.now();
         this._app.stage.addChild(this._container);
 
@@ -181,54 +182,71 @@ export class MainMenu {
         const w = this._app.screen.width;
         const h = this._app.screen.height;
         const cx = w / 2;
-        const by = h * 0.72;
+        const by = h * 0.52;
         const sil = new PIXI.Graphics();
 
-        // desk — isometric parallelogram
-        sil.beginFill(0x141425);
-        sil.moveTo(cx - 120, by);
-        sil.lineTo(cx + 120, by);
-        sil.lineTo(cx + 100, by + 40);
-        sil.lineTo(cx - 140, by + 40);
+        // chair (behind desk, dark shape)
+        sil.beginFill(0x10101e);
+        sil.drawRoundedRect(cx - 35, by - 35, 70, 80, 8);
+        sil.endFill();
+        // chair back
+        sil.beginFill(0x10101e);
+        sil.drawRoundedRect(cx - 30, by - 80, 60, 55, 6);
+        sil.endFill();
+
+        // desk — isometric parallelogram (280px wide)
+        sil.beginFill(0x1a1a35);
+        sil.moveTo(cx - 140, by);
+        sil.lineTo(cx + 140, by);
+        sil.lineTo(cx + 120, by + 44);
+        sil.lineTo(cx - 160, by + 44);
         sil.closePath();
         sil.endFill();
 
         // desk legs
-        sil.beginFill(0x141425);
-        sil.drawRect(cx - 110, by + 40, 8, 30);
-        sil.drawRect(cx + 82, by + 40, 8, 30);
+        sil.beginFill(0x1a1a35);
+        sil.drawRect(cx - 130, by + 44, 8, 32);
+        sil.drawRect(cx + 100, by + 44, 8, 32);
+        sil.endFill();
+
+        // monitor light cone hitting desk surface
+        sil.beginFill(0x8000ff, 0.04);
+        sil.moveTo(cx - 50, by - 30);
+        sil.lineTo(cx + 50, by - 30);
+        sil.lineTo(cx + 90, by);
+        sil.lineTo(cx - 90, by);
+        sil.closePath();
         sil.endFill();
 
         // monitor glow (behind monitor)
         sil.beginFill(0x8000ff, 0.08);
-        sil.drawRect(cx - 50, by - 105, 100, 80);
+        sil.drawRect(cx - 55, by - 115, 110, 90);
         sil.endFill();
 
-        // monitor
-        sil.beginFill(0x141425);
-        sil.drawRect(cx - 40, by - 95, 80, 65);
+        // monitor (90px wide)
+        sil.beginFill(0x1a1a35);
+        sil.drawRect(cx - 45, by - 105, 90, 70);
         sil.endFill();
-        sil.lineStyle(1, 0x8000ff, 0.5);
-        sil.drawRect(cx - 40, by - 95, 80, 65);
+        sil.lineStyle(1, 0x8000ff, 0.6);
+        sil.drawRect(cx - 45, by - 105, 90, 70);
         sil.lineStyle(0);
 
         // screen glow inside monitor
-        sil.beginFill(0x8000ff, 0.12);
-        sil.drawRect(cx - 34, by - 89, 68, 53);
+        sil.beginFill(0x8000ff, 0.2);
+        sil.drawRect(cx - 39, by - 99, 78, 58);
+        sil.endFill();
+
+        // code lines on screen
+        sil.beginFill(0x00c864, 0.15);
+        sil.drawRect(cx - 32, by - 92, 40, 2);
+        sil.drawRect(cx - 32, by - 84, 55, 2);
+        sil.drawRect(cx - 32, by - 76, 35, 2);
+        sil.drawRect(cx - 32, by - 68, 48, 2);
         sil.endFill();
 
         // monitor stand
-        sil.beginFill(0x141425);
-        sil.drawRect(cx - 6, by - 30, 12, 30);
-        sil.endFill();
-
-        // chair (behind desk, dark shape)
-        sil.beginFill(0x08080f);
-        sil.drawRoundedRect(cx - 30, by - 30, 60, 70, 8);
-        sil.endFill();
-        // chair back
-        sil.beginFill(0x08080f);
-        sil.drawRoundedRect(cx - 25, by - 70, 50, 50, 6);
+        sil.beginFill(0x1a1a35);
+        sil.drawRect(cx - 7, by - 35, 14, 35);
         sil.endFill();
 
         this._container.addChild(sil);
@@ -460,7 +478,7 @@ export class MainMenu {
 
         const btns = [
             { label: '\u25B6  START', action: () => this.hide() },
-            { label: '\u25C9  DEMO MODE', action: () => console.log('demo') },
+            { label: '\u25C9  DEMO MODE', action: () => { if (this._onDemo) { this._onStart = this._onDemo; this.hide(); } } },
             { label: '\u2699  SETTINGS', action: () => console.log('settings') },
         ];
 

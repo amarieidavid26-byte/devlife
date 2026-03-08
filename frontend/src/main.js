@@ -15,6 +15,9 @@ import { BrowserApp } from './apps/Browser.js';
 import { NotesApp } from './apps/Notes.js';
 import { ChatApp } from './apps/Chat.js';
 import { MainMenu } from './menu/MainMenu.js';
+import { SoundManager } from './audio/SoundManager.js';
+import { DemoMode } from './demo/DemoMode.js';
+import { ToastSystem } from './hud/ToastSystem.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -33,6 +36,9 @@ pixiApp.view.style.left = '0';
 const GAME_ZOOM = 1.5;
 let gameContainer = null;
 let player = null;
+let soundManager = null;
+let demoMode = null;
+let toastSystem = null;
 
 window.addEventListener('resize', () => {
     pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
@@ -43,12 +49,20 @@ window.addEventListener('resize', () => {
     }
 });
 
+// --- Sound & Toast (before menu so click-to-resume works on menu buttons) ---
+soundManager = new SoundManager();
+document.addEventListener('click', () => soundManager.resume(), { once: true });
+toastSystem = new ToastSystem();
+
 // --- Main Menu ---
 const mainMenu = new MainMenu(pixiApp);
-mainMenu.show(() => startGame());
+mainMenu.show(
+    () => { soundManager.playClick(); startGame(false); },
+    () => { soundManager.playClick(); startGame(true); }
+);
 
-// --- Game init (called when menu START is clicked) ---
-function startGame() {
+// --- Game init (called when menu START or DEMO is clicked) ---
+function startGame(enableDemo = false) {
     let socket, room, furniture, ghost, atmosphere, hud, beneathView, demoHotbar, apps, activeApp, ePrompt;
 
     socket = new GhostSocket('ws://localhost:8000/ws');
@@ -128,6 +142,7 @@ function startGame() {
         const app = apps[name];
         if (!app) return;
         app.open();
+        soundManager.playOpen();
         socket.sendAppFocus(app.appType);
         activeApp = app;
         pixiApp.view.style.pointerEvents = 'none';
@@ -135,6 +150,7 @@ function startGame() {
     }
 
     function closeAllApps() {
+        if (activeApp) soundManager.playClose();
         Object.values(apps).forEach(a => a.close());
         socket.sendAppFocus(null);
         activeApp = null;
@@ -212,7 +228,17 @@ function startGame() {
     socket.on('connected', () => hud.setConnected(true));
     socket.on('disconnected', () => hud.setConnected(false));
 
-    socket.on('intervention',     (data) => ghost.showSpeechBubble(data));
+    socket.on('intervention', (data) => {
+        ghost.showSpeechBubble(data);
+        if (data.priority === 'critical' || data.priority === 'warning') {
+            soundManager.playGhostAlert();
+        } else {
+            soundManager.playGhostSpeak();
+        }
+        if (data.priority === 'critical') {
+            toastSystem.triggerAchievement('firewall_blocked');
+        }
+    });
 
     socket.on('biometric_update', (data) => {
         hud.update(data);
@@ -221,6 +247,7 @@ function startGame() {
         atmosphere.setState(data.state);
         ghost.setStateTint(data.state);
         furniture.setMonitorState(data.state);
+        soundManager.setState(data.state);
     });
 
     socket.on('state_change', (data) => {
@@ -228,6 +255,11 @@ function startGame() {
         atmosphere.transition(data.from, data.to);
         ghost.setStateTint(data.to);
         furniture.setMonitorState(data.to);
+        soundManager.setState(data.to);
+        toastSystem.show('state', 'State: ' + data.to, 'Biometric state shifted to ' + data.to);
+        if (data.to === 'DEEP_FOCUS') {
+            toastSystem.triggerAchievement('first_flow');
+        }
     });
 
     // keyboard
@@ -325,4 +357,11 @@ function startGame() {
     }).catch(() => {});
 
     console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');
+
+    // Demo mode — auto-play cinematic sequence
+    if (enableDemo) {
+        demoMode = new DemoMode({ socket, ghost, atmosphere, hud, furniture, player });
+        demoMode.start({ loop: true });
+        console.log('[DevLife] Demo mode started — looping through all states');
+    }
 }

@@ -43,12 +43,36 @@ export class HUD {
         this._ecgLastTs = null;
 
         this._sleepMode = false;
+        this._lastHR = '—';
 
+        this._injectStyles();
         this._el = this._createEl();
         document.body.appendChild(this._el);
 
         this._render();
         this._startEcgLoop();
+    }
+
+    _injectStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes hud-pulse {
+                0%   { transform: scale(1); }
+                50%  { transform: scale(1.15); }
+                100% { transform: scale(1); }
+            }
+            @keyframes hud-blink {
+                0%, 100% { opacity: 1; }
+                50%      { opacity: 0.3; }
+            }
+            #ghost-hud .hr-pulse.pulse {
+                animation: hud-pulse 0.3s ease;
+            }
+            #ghost-hud .live-dot {
+                animation: hud-blink 1s ease infinite;
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     _createEl() {
@@ -63,7 +87,9 @@ export class HUD {
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255,255,255,0.08);
+            border-top: 2px solid #00c864;
             border-radius: 12px;
+            transition: border-color 0.5s ease;
             overflow: hidden;
             font-family: 'Segoe UI', monospace, sans-serif;
             font-size: 13px;
@@ -83,6 +109,10 @@ export class HUD {
         this._ecgCtx.scale(dpr, dpr);
         this._ecgDpr = dpr;
         el.appendChild(this._ecgCanvas);
+
+        const divider = document.createElement('div');
+        divider.style.cssText = 'height:1px;background:rgba(255,255,255,0.1);';
+        el.appendChild(divider);
 
         this._textEl = document.createElement('div');
         this._textEl.style.cssText = 'padding:10px 16px 12px;';
@@ -156,8 +186,8 @@ export class HUD {
         ctx.save();
         ctx.shadowBlur  = 0;
         ctx.strokeStyle = col;
-        ctx.globalAlpha = 0.18;
-        ctx.lineWidth   = 3.5;
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth   = 4;
         ctx.lineJoin    = 'round';
         ctx.beginPath();
         for (let x = 0; x < W; x++) {
@@ -193,6 +223,7 @@ export class HUD {
     }
 
     update(data) {
+        const prevHR = this._data.heartRate;
         this._data = { ...this._data, ...data };
         if (data.heartRate && data.heartRate !== '—') {
             this._ecgTargetBPM = parseFloat(data.heartRate) || 72;
@@ -201,6 +232,17 @@ export class HUD {
             this._ecgColor = STATE_COLORS[data.state];
         }
         this._render();
+
+        // pulse HR display on change
+        if (data.heartRate && data.heartRate !== prevHR) {
+            const hrEl = this._textEl.querySelector('.hr-pulse');
+            if (hrEl) {
+                hrEl.classList.remove('pulse');
+                void hrEl.offsetWidth;
+                hrEl.classList.add('pulse');
+                setTimeout(() => hrEl.classList.remove('pulse'), 300);
+            }
+        }
     }
 
     setConnected(v) {
@@ -238,13 +280,15 @@ export class HUD {
         const hrvFmt    = d.hrv       !== '—' ? `${Math.round(d.hrv)}ms`         : '—';
         const bpmFmt    = d.heartRate !== '—' ? `${Math.round(d.heartRate)}`     : '—';
 
+        this._el.style.borderTopColor = stateColor;
+
         const connDot = this._connected
-            ? '<span style="color:#00c864;font-size:10px;letter-spacing:0.05em">● LIVE</span>'
+            ? '<span class="live-dot" style="color:#00c864;font-size:10px;letter-spacing:0.05em">● LIVE</span>'
             : '<span style="color:#444;font-size:10px;letter-spacing:0.05em">● OFFLINE</span>';
 
         this._textEl.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span>❤️ <strong>${bpmFmt}</strong> bpm</span>
+                <span class="hr-pulse" style="display:inline-block">❤️ <strong>${bpmFmt}</strong> bpm</span>
                 <span>${connDot}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">

@@ -91,6 +91,13 @@ export class Furniture extends EventEmitter {
         monitorGlow.endFill();
         c.addChildAt(monitorGlow, 0); // behind everything in this container
 
+        // Monitor underglow (state-reactive, updated via setMonitorState)
+        this._monitorUnderglow = new PIXI.Graphics();
+        this._monitorUnderglow.beginFill(0x00c864, 0.04);
+        this._monitorUnderglow.drawRect(-22, -16, 44, 6);
+        this._monitorUnderglow.endFill();
+        c.addChild(this._monitorUnderglow);
+
         // State-reactive screen overlay (sits on top of static screen, under scan line)
         this._deskScreenOverlay = new PIXI.Graphics();
         this._drawMonitorContent(this._deskScreenOverlay, 'RELAXED');
@@ -329,11 +336,16 @@ export class Furniture extends EventEmitter {
         g.beginFill(0x111118);
         g.drawCircle(0, -8, 4);
         g.endFill();
-        g.beginFill(0x0066ff);
-        g.drawCircle(0, 8, 2);
-        g.endFill();
 
         c.addChild(g);
+
+        // Pulsing power LED
+        this._speakerLED = new PIXI.Graphics();
+        this._speakerLED.beginFill(0x0066ff);
+        this._speakerLED.drawCircle(0, 8, 2);
+        this._speakerLED.endFill();
+        c.addChild(this._speakerLED);
+
         this._placeItem(c, gx, gy, 'speaker', true, null);
     }
 
@@ -435,6 +447,11 @@ export class Furniture extends EventEmitter {
             this._coffeeSpawnAccum = 0;
         }
 
+        // speaker LED pulse
+        if (this._speakerLED) {
+            this._speakerLED.alpha = 0.2 + Math.sin(Date.now() / 1000) * 0.2 + 0.2;
+        }
+
         // update steam particles
         for (let i = this._steamParticles.length - 1; i >= 0; i--) {
             const p = this._steamParticles[i];
@@ -525,6 +542,14 @@ export class Furniture extends EventEmitter {
 
     setMonitorState(state) {
         if (this._deskScreenOverlay) this._drawMonitorContent(this._deskScreenOverlay, state);
+        if (this._monitorUnderglow) {
+            const colors = { DEEP_FOCUS: 0x8000ff, STRESSED: 0xff5050, FATIGUED: 0xffa000, RELAXED: 0x00c864, WIRED: 0x0096ff };
+            const c = colors[state] || 0x00c864;
+            this._monitorUnderglow.clear();
+            this._monitorUnderglow.beginFill(c, 0.04);
+            this._monitorUnderglow.drawRect(-22, -16, 44, 6);
+            this._monitorUnderglow.endFill();
+        }
     }
 
     // Returns name of nearest interactable within range, or null
