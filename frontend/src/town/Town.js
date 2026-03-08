@@ -1,5 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
+import { TownPlayer } from './TownPlayer.js';
+import { TownGhost } from './TownGhost.js';
 
 const GRID_SIZE = 20;
 const GAME_ZOOM = 1.5;
@@ -48,6 +50,11 @@ export class Town {
         this._trees = [];
         this._lampGlows = [];
         this._elapsed = 0;
+
+        this._player = null;
+        this._ghost = null;
+        this._entityContainer = null;
+        this._onTownKeyDown = null;
     }
 
     // ─────────────────────────────────────────────
@@ -80,9 +87,50 @@ export class Town {
         this._initParticles();
         this._setupHomeClick(3, 3, 4, 4);
         this._centerCamera();
+
+        // Entity container — viewport offset aligns cartToIso coords with the grid
+        this._entityContainer = new PIXI.Container();
+        this._entityContainer.sortableChildren = true;
+        this._entityContainer.x = (window.innerWidth / GAME_ZOOM) / 2;
+        this._entityContainer.y = (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2);
+        this._container.addChild(this._entityContainer);
+
+        // Player — spawn near HOME door (HOME is at grid 3,3 size 4x4, door on right face at ~grid 7,5)
+        this._player = new TownPlayer(this._entityContainer);
+        this._player.setPosition(8, 5);
+        this._player.enable();
+
+        // Ghost — follows player
+        this._ghost = new TownGhost(this._entityContainer);
+        this._ghost.setTarget(this._player.container.x, this._player.container.y);
+
+        // 'E' key to enter HOME when nearby
+        this._onTownKeyDown = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key.toLowerCase() === 'e' && this._isNearHome()) {
+                if (this.onEnterHome) this.onEnterHome();
+            }
+        };
+        document.addEventListener('keydown', this._onTownKeyDown);
     }
 
     exit() {
+        if (this._onTownKeyDown) {
+            document.removeEventListener('keydown', this._onTownKeyDown);
+            this._onTownKeyDown = null;
+        }
+
+        if (this._player) {
+            this._player.disable();
+            this._player.destroy();
+            this._player = null;
+        }
+        if (this._ghost) {
+            this._ghost.destroy();
+            this._ghost = null;
+        }
+        this._entityContainer = null;
+
         if (this._container) {
             this._app.stage.removeChild(this._container);
             this._container.destroy({ children: true });
@@ -98,6 +146,18 @@ export class Town {
         this._elapsed += delta;
         this._updateParticles(delta);
         this._updateLampGlow();
+
+        if (this._player) {
+            this._player.update(delta);
+
+            // Ghost follows player
+            this._ghost.setTarget(this._player.container.x, this._player.container.y);
+            this._ghost.update(delta);
+
+            // Z-sort player and ghost by y position
+            this._player.container.zIndex = this._player.container.y;
+            this._ghost._container.zIndex = this._ghost._container.y;
+        }
     }
 
     // ─────────────────────────────────────────────
@@ -494,6 +554,19 @@ export class Town {
     }
 
     // ─────────────────────────────────────────────
+    //  Proximity check — HOME door
+    // ─────────────────────────────────────────────
+
+    _isNearHome() {
+        if (!this._player) return false;
+        // HOME door center in grid coords: right face of (3,3)+(4,4) → midpoint (7, 5)
+        const doorIso = cartToIso(7, 5);
+        const dx = this._player.container.x - doorIso.x;
+        const dy = this._player.container.y - doorIso.y;
+        return (dx * dx + dy * dy) < 80 * 80;
+    }
+
+    // ─────────────────────────────────────────────
     //  Interactivity — HOME click area
     // ─────────────────────────────────────────────
 
@@ -519,8 +592,7 @@ export class Town {
         hitArea.cursor = 'pointer';
 
         hitArea.on('pointerdown', () => {
-            // Scene transition hook — SceneManager will wire this up later
-            if (this.onEnterHome) this.onEnterHome();
+            if (this._isNearHome() && this.onEnterHome) this.onEnterHome();
         });
 
         this._buildingContainer.addChild(hitArea);

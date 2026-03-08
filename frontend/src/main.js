@@ -188,6 +188,15 @@ function startGame(enableDemo = false) {
     }
 
     // furniture interactions
+    // door → town transition
+    furniture.onDoorInteract = () => {
+        if (sceneManager && sceneManager.getCurrentScene() === 'room') {
+            currentGameScene = 'town';
+            sceneManager.transitionTo('town', { duration: 800 });
+        }
+    };
+
+    // furniture interactions
     furniture.on('interact', (name) => {
         if (name === 'coffee_machine') {
             ghost.showSpeechBubble({
