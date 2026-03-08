@@ -83,7 +83,7 @@ def broadcast_sync (message: dict):
 def build_biometric_msg(data, state):
     return {
         "type": "biometric_update", 
-        "source": "ble" if ble_active else source,
+        "source": "ble" if ble_active else "api",
         "heartRate": round(data.get("heartRate", 0)),
         "recovery": round(data.get("recovery", 0)),
         "strain": round(data.get("strain", 0), 1),
