@@ -87,9 +87,7 @@ export class HUD {
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255,255,255,0.08);
-            border-top: 2px solid #00c864;
             border-radius: 12px;
-            transition: border-color 0.5s ease;
             overflow: hidden;
             font-family: 'Segoe UI', monospace, sans-serif;
             font-size: 13px;
@@ -279,8 +277,6 @@ export class HUD {
         const strainFmt = d.strain    !== '—' ? parseFloat(d.strain).toFixed(1)  : '—';
         const hrvFmt    = d.hrv       !== '—' ? `${Math.round(d.hrv)}ms`         : '—';
         const bpmFmt    = d.heartRate !== '—' ? `${Math.round(d.heartRate)}`     : '—';
-
-        this._el.style.borderTopColor = stateColor;
 
         const connDot = this._connected
             ? '<span class="live-dot" style="color:#00c864;font-size:10px;letter-spacing:0.05em">● LIVE</span>'

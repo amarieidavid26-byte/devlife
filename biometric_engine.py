@@ -237,8 +237,8 @@ class BiometricEngine:
                 new_state = "STRESSED"
             elif strain > 12 and recovery < 60:
                 new_state = "WIRED"
-            elif 0.9 > estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
-                new_state = "RELAXED"
+            elif 0.9 <= estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
+                new_state = "DEEP_FOCUS"
             else:
                 new_state = "RELAXED"
         self.current_state = new_state
