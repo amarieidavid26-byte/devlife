@@ -178,7 +178,7 @@ def _check_sleep_mode(data):
 def biometric_loop():
     global last_coding_activity
     while ghost_running:
-        is whoop = False 
+        is_whoop = False 
         if time.time() < mock_override_until:
             data = mock.get_data()
         elif bio.access_token:
