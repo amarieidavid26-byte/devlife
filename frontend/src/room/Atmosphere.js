@@ -37,10 +37,25 @@ export class Atmosphere {
         this._flashOverlay = new PIXI.Graphics();
         this.container.addChild(this._flashOverlay);
 
+        // Vignette overlay — darkened edges
+        this._vignetteContainer = new PIXI.Container();
+        this.container.addChild(this._vignetteContainer);
+        this._buildVignette();
+
+        // Ambient flicker
+        this._flickerBase = 0;
+
+        // State-transition burst particles
+        this._burstParticles = [];
+        this._burstContainer = new PIXI.Container();
+        this.container.addChild(this._burstContainer);
+
         this._dustMotes = [];
         this._initDustMotes();
         this._initParticles();
         this._redrawOverlay();
+
+        window.addEventListener('resize', () => this._buildVignette());
     }
 
     _initDustMotes() {
@@ -64,6 +79,108 @@ export class Atmosphere {
         }
     }
 
+    // ── Vignette: darkened screen edges ──
+
+    _buildVignette() {
+        this._vignetteContainer.removeChildren();
+
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const STRIPS = 12;
+        const edgeX = w * 0.15;
+        const edgeY = h * 0.15;
+
+        // Top edge
+        for (let i = 0; i < STRIPS; i++) {
+            const t = i / STRIPS;
+            const alpha = 0.4 * (1 - t) * (1 - t); // quadratic falloff
+            const stripH = edgeY / STRIPS;
+            const g = new PIXI.Graphics();
+            g.beginFill(0x000000, alpha);
+            g.drawRect(0, t * edgeY, w, stripH);
+            g.endFill();
+            this._vignetteContainer.addChild(g);
+        }
+
+        // Bottom edge
+        for (let i = 0; i < STRIPS; i++) {
+            const t = i / STRIPS;
+            const alpha = 0.4 * (1 - t) * (1 - t);
+            const stripH = edgeY / STRIPS;
+            const g = new PIXI.Graphics();
+            g.beginFill(0x000000, alpha);
+            g.drawRect(0, h - edgeY + t * edgeY, w, stripH);
+            g.endFill();
+            this._vignetteContainer.addChild(g);
+        }
+
+        // Left edge
+        for (let i = 0; i < STRIPS; i++) {
+            const t = i / STRIPS;
+            const alpha = 0.35 * (1 - t) * (1 - t);
+            const stripW = edgeX / STRIPS;
+            const g = new PIXI.Graphics();
+            g.beginFill(0x000000, alpha);
+            g.drawRect(t * edgeX, 0, stripW, h);
+            g.endFill();
+            this._vignetteContainer.addChild(g);
+        }
+
+        // Right edge
+        for (let i = 0; i < STRIPS; i++) {
+            const t = i / STRIPS;
+            const alpha = 0.35 * (1 - t) * (1 - t);
+            const stripW = edgeX / STRIPS;
+            const g = new PIXI.Graphics();
+            g.beginFill(0x000000, alpha);
+            g.drawRect(w - edgeX + t * edgeX, 0, stripW, h);
+            g.endFill();
+            this._vignetteContainer.addChild(g);
+        }
+
+        // Corners: extra darkness in the 4 corners (layered on top)
+        const cornerAlpha = 0.25;
+        const corners = [
+            [0, 0],
+            [w - edgeX, 0],
+            [0, h - edgeY],
+            [w - edgeX, h - edgeY],
+        ];
+        for (const [cx, cy] of corners) {
+            const g = new PIXI.Graphics();
+            g.beginFill(0x000000, cornerAlpha);
+            g.drawRect(cx, cy, edgeX, edgeY);
+            g.endFill();
+            this._vignetteContainer.addChild(g);
+        }
+    }
+
+    // ── State transition burst particles ──
+
+    _spawnBurst(color) {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        for (let i = 0; i < 30; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 4;
+            const size = 2 + Math.random() * 1.5;
+            const g = new PIXI.Graphics();
+            g.beginFill(color, 0.7 + Math.random() * 0.3);
+            g.drawCircle(0, 0, size);
+            g.endFill();
+            g.x = cx;
+            g.y = cy;
+            this._burstContainer.addChild(g);
+            this._burstParticles.push({
+                gfx: g,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: 0,
+                maxLife: 40,
+            });
+        }
+    }
+
     setState(stateName) {
         if (!STATE_CONFIG[stateName]) return;
         if (stateName === this._currentState && this._lerpT >= 1) return;
@@ -72,6 +189,7 @@ export class Atmosphere {
             this._lerpT = 0;
             this._flashAlpha = 0.22;
             this._flashColor = STATE_CONFIG[stateName].color;
+            this._spawnBurst(STATE_CONFIG[stateName].color);
         }
     }
 
@@ -264,6 +382,26 @@ export class Atmosphere {
         while (this._particles.length > targetCount + 10) {
             const p = this._particles.shift();
             p.gfx.destroy();
+        }
+
+        // ── Ambient light flicker ──
+        this._flickerBase += delta;
+        const flicker = (Math.random() - 0.5) * 0.01;
+        this._overlay.alpha = Math.max(0, Math.min(1, this._curAlpha + flicker));
+
+        // ── State-transition burst particles ──
+        for (let i = this._burstParticles.length - 1; i >= 0; i--) {
+            const bp = this._burstParticles[i];
+            bp.gfx.x += bp.vx * delta;
+            bp.gfx.y += bp.vy * delta;
+            bp.life += delta;
+            const pct = bp.life / bp.maxLife;
+            bp.gfx.alpha = 1 - pct;
+            bp.gfx.scale.set(1 - pct * 0.5);
+            if (bp.life >= bp.maxLife) {
+                bp.gfx.destroy();
+                this._burstParticles.splice(i, 1);
+            }
         }
     }
 }

@@ -47,7 +47,6 @@ export class Furniture extends EventEmitter {
         this._addSpeaker(8, 2);
         this._addChair(5, 4);
         this._addDoor(0, 10);
-        this._addRogPoster(10, 5);
         this._addCompetitionLabel();
     }
 
@@ -55,6 +54,11 @@ export class Furniture extends EventEmitter {
     _addDesk(gx, gy) {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
+
+        // Desk shadow (grounding)
+        g.beginFill(0x000000, 0.15);
+        g.drawRect(-35, -9, 80, 40);
+        g.endFill();
 
         g.beginFill(0x0f3460);
         g.drawRect(-40, -12, 80, 40);
@@ -65,12 +69,20 @@ export class Furniture extends EventEmitter {
         g.endFill();
         g.lineStyle(1, 0x1e4a80, 0.8);
         g.drawRect(-40, -12, 80, 40);
+        // Top edge highlight
+        g.lineStyle(1, 0x1a4a80, 1);
+        g.moveTo(-40, -12);
+        g.lineTo(40, -12);
 
         // Monitor frame
         g.lineStyle(0);
         g.beginFill(0x0d0d1a);
         g.drawRect(-20, -46, 40, 30);
         g.endFill();
+        // Bezel border
+        g.lineStyle(2, 0x222230, 1);
+        g.drawRect(-20, -46, 40, 30);
+        g.lineStyle(0);
         g.beginFill(0x1a1a3e);
         g.drawRect(-18, -44, 36, 26);
         g.endFill();
@@ -78,21 +90,43 @@ export class Furniture extends EventEmitter {
         g.beginFill(0x001a0d);
         g.drawRect(-16, -43, 32, 23);
         g.endFill();
+        // Scanline effect
+        g.beginFill(0x000000, 0.05);
+        for (let sy = -43; sy < -20; sy += 2) {
+            g.drawRect(-16, sy, 32, 1);
+        }
+        g.endFill();
         // Static code lines
-        g.lineStyle(1, 0x00ff41, 0.25);
+        g.lineStyle(1, 0x00ff41, 0.3);
         for (let i = 0; i < 4; i++) {
             const y = -40 + i * 5;
             const w = 14 + Math.floor(i * 3.5);
             g.moveTo(-14, y); g.lineTo(-14 + w, y);
         }
-        // Monitor stand
+        // Power LED on bottom bezel
         g.lineStyle(0);
+        g.beginFill(0x00ff00, 0.5);
+        g.drawCircle(0, -17, 1);
+        g.endFill();
+        // Monitor stand
         g.beginFill(0x0a2040);
         g.drawRect(-4, -16, 8, 6);
         g.endFill();
         // Keyboard
-        g.beginFill(0x0a1530);
-        g.drawRoundedRect(-22, 10, 44, 10, 2);
+        g.beginFill(0x15152a);
+        g.drawRoundedRect(-18, 10, 30, 10, 2);
+        g.endFill();
+        // Key dots (3x2 grid)
+        g.beginFill(0x1a1a35);
+        for (let kx = 0; kx < 3; kx++) {
+            for (let ky = 0; ky < 2; ky++) {
+                g.drawRect(-14 + kx * 9, 12 + ky * 4, 6, 2);
+            }
+        }
+        g.endFill();
+        // Mouse
+        g.beginFill(0x15152a);
+        g.drawEllipse(18, 15, 3, 5);
         g.endFill();
 
         c.addChild(g);
@@ -173,11 +207,21 @@ export class Furniture extends EventEmitter {
         g.beginFill(0x0a0a18);
         g.drawRect(-30, -50, 60, 40);
         g.endFill();
+        // Bezel border
+        g.lineStyle(2, 0x222230, 1);
+        g.drawRect(-30, -50, 60, 40);
+        g.lineStyle(0);
         g.beginFill(0x0d1a2e);
         g.drawRect(-27, -47, 54, 34);
         g.endFill();
         g.beginFill(0x0a1830);
         g.drawRect(-25, -45, 50, 30);
+        g.endFill();
+        // Scanline effect
+        g.beginFill(0x000000, 0.05);
+        for (let sy = -45; sy < -15; sy += 2) {
+            g.drawRect(-25, sy, 50, 1);
+        }
         g.endFill();
         // Browser tabs
         g.beginFill(0x1a3050);
@@ -185,6 +229,10 @@ export class Furniture extends EventEmitter {
         g.endFill();
         g.beginFill(0x0f2040);
         g.drawRect(-8, -45, 16, 6);
+        g.endFill();
+        // Power LED on bottom bezel
+        g.beginFill(0x00ff00, 0.5);
+        g.drawCircle(0, -11, 1);
         g.endFill();
         // Stand
         g.beginFill(0x0a1a30);
@@ -206,12 +254,28 @@ export class Furniture extends EventEmitter {
         g.beginFill(0xeeeef5);
         g.drawRect(-32, -62, 64, 52);
         g.endFill();
+        // Brainstorm lines in state colors
+        g.lineStyle(2, 0x8000ff, 0.2);
+        g.moveTo(-26, -56); g.lineTo(4, -56);
         g.lineStyle(2, 0x334466, 0.8);
         g.moveTo(-26, -50); g.lineTo(10, -50);
         g.moveTo(-26, -42); g.lineTo(20, -42);
         g.moveTo(-26, -34); g.lineTo(5, -34);
+        g.lineStyle(2, 0x0096ff, 0.2);
+        g.moveTo(-26, -28); g.lineTo(12, -28);
         g.lineStyle(2, 0xcc3333, 0.7);
-        g.drawRect(-10, -30, 20, 16);
+        g.drawRect(-10, -44, 20, 16);
+        // Sticky notes
+        g.lineStyle(0);
+        g.beginFill(0x00c864, 0.25);
+        g.drawRect(14, -56, 6, 6);
+        g.endFill();
+        g.beginFill(0xffd700, 0.25);
+        g.drawRect(6, -24, 6, 6);
+        g.endFill();
+        g.beginFill(0xff5050, 0.25);
+        g.drawRect(18, -38, 6, 6);
+        g.endFill();
         g.lineStyle(0);
         g.beginFill(0x0a1020);
         g.drawRect(-32, -10, 64, 6);
@@ -373,19 +437,36 @@ export class Furniture extends EventEmitter {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
 
+        // Seat
         g.beginFill(0x1a1a30);
         g.drawRect(-16, -6, 32, 20);
         g.endFill();
+        // Chair back
         g.beginFill(0x222238);
         g.drawRect(-14, -28, 28, 24);
         g.endFill();
+        // Red accent stripe down center (gaming chair style)
+        g.lineStyle(1, 0xe94560, 0.6);
+        g.moveTo(0, -26); g.lineTo(0, -6);
+        // Horizontal support line
         g.lineStyle(1, 0x3a3a5a, 0.8);
         g.moveTo(-12, -16); g.lineTo(12, -16);
+        // Headrest
         g.lineStyle(0);
+        g.beginFill(0x2a2a42);
+        g.drawRoundedRect(-10, -34, 20, 8, 2);
+        g.endFill();
+        // Armrests
+        g.beginFill(0x1a1a30);
+        g.drawRect(-20, -10, 6, 4);
+        g.drawRect(14, -10, 6, 4);
+        g.endFill();
+        // Legs
         g.beginFill(0x0a0a18);
         g.drawRect(-14, 14, 6, 16);
         g.drawRect(8, 14, 6, 16);
         g.endFill();
+        // Wheels
         g.beginFill(0x333345);
         g.drawCircle(-11, 30, 4);
         g.drawCircle(11, 30, 4);
@@ -454,43 +535,6 @@ export class Furniture extends EventEmitter {
         c.addChild(label);
 
         this._placeItem(c, gx, gy, 'door', true, null);
-    }
-
-    _addRogPoster(gx, gy) {
-        const c = new PIXI.Container();
-        const g = new PIXI.Graphics();
-
-        // Frame
-        g.lineStyle(1, 0x2a2a40, 1);
-        g.beginFill(0x0a0a15);
-        g.drawRect(-15, -50, 30, 40);
-        g.endFill();
-
-        // ROG-inspired angular eye/arrow shape
-        g.lineStyle(0);
-        g.beginFill(0xff0000, 0.4);
-        g.moveTo(-8, -35);
-        g.lineTo(8, -30);
-        g.lineTo(0, -25);
-        g.lineTo(-8, -30);
-        g.closePath();
-        g.endFill();
-
-        c.addChild(g);
-
-        // "ROG" text below poster
-        const text = new PIXI.Text('ROG', {
-            fontFamily: 'monospace',
-            fontSize: 8,
-            fill: '#ff0000',
-        });
-        text.alpha = 0.3;
-        text.anchor.set(0.5, 0);
-        text.x = 0;
-        text.y = -8;
-        c.addChild(text);
-
-        this._placeItem(c, gx, gy, 'rog_poster', false, null);
     }
 
     _addCompetitionLabel() {
@@ -702,6 +746,13 @@ export class Furniture extends EventEmitter {
                 g.moveTo(-14, -42 + i * 2); g.lineTo(6 + i * 2, -42 + i * 2);
             }
         }
+        // Scanline effect (persists across state changes)
+        g.lineStyle(0);
+        g.beginFill(0x000000, 0.05);
+        for (let sy = -43; sy < -20; sy += 2) {
+            g.drawRect(-16, sy, 32, 1);
+        }
+        g.endFill();
     }
 
     setMonitorState(state) {

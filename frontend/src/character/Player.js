@@ -29,6 +29,7 @@ export class Player {
         this._isMoving = false;
         this._isSitting = false;
         this._bobOffset = 0;
+        this._breathTick = 0;
         this._furniture = furniture ?? null;
 
         this._dustParticles  = [];
@@ -40,8 +41,11 @@ export class Player {
         this._zzzParticles = [];
 
         this._shadow = new PIXI.Graphics();
-        this._shadow.beginFill(0x000000, 0.28);
-        this._shadow.drawEllipse(0, 0, 16, 6);
+        this._shadow.beginFill(0x000000, 0.12);
+        this._shadow.drawEllipse(0, 0, 22, 9);
+        this._shadow.endFill();
+        this._shadow.beginFill(0x000000, 0.2);
+        this._shadow.drawEllipse(0, 0, 16, 7);
         this._shadow.endFill();
         this._shadow.y = 20;
         this.container.addChild(this._shadow);
@@ -55,7 +59,7 @@ export class Player {
 
     _buildSprite() {
         const container = new PIXI.Container();
-        const OL_C = 0x0d0d1a; // HACK: same color defined 3 times
+        const OL = 0x0a0a14;
 
         this._legLeft  = new PIXI.Graphics();
         this._legRight = new PIXI.Graphics();
@@ -63,22 +67,36 @@ export class Player {
         container.addChild(this._legLeft);
         container.addChild(this._legRight);
 
+        // body outline (dark shape drawn slightly larger behind)
+        const bodyOL = new PIXI.Graphics();
+        bodyOL.beginFill(OL);
+        bodyOL.drawRoundedRect(-13, -29, 26, 30, 5);
+        bodyOL.endFill();
+        container.addChild(bodyOL);
+
         const body = new PIXI.Graphics();
-        body.lineStyle(1.8, OL_C, 0.88);
         body.beginFill(0x4a6fa5);
         body.drawRoundedRect(-12, -28, 24, 28, 5);
         body.endFill();
-        body.lineStyle(0);
         body.beginFill(0x3a5588);
         body.drawEllipse(0, -28, 8, 4.5);
         body.endFill();
-        body.lineStyle(1, OL_C, 0.45);
+        body.lineStyle(1, OL, 0.45);
         body.beginFill(0x3a5588);
         body.drawRoundedRect(-8, -14, 16, 10, 3);
         body.endFill();
+        // center seam
         body.lineStyle(1, 0x1e3060, 0.5);
         body.moveTo(0, -28); body.lineTo(0, -4);
+        // collar V-shape
+        body.lineStyle(1.2, 0x3a5080, 0.7);
+        body.moveTo(-5, -28); body.lineTo(0, -23);
+        body.moveTo( 5, -28); body.lineTo(0, -23);
+        // chest pocket
+        body.lineStyle(0.8, 0x5a82b8, 0.35);
+        body.drawRoundedRect(3, -22, 6, 5, 1);
         container.addChild(body);
+        this._bodyGfx = body;
 
         this._armLeft  = new PIXI.Graphics();
         this._armRight = new PIXI.Graphics();
@@ -86,12 +104,25 @@ export class Player {
         container.addChild(this._armLeft);
         container.addChild(this._armRight);
 
+        // shadow under head onto body
+        const neckShadow = new PIXI.Graphics();
+        neckShadow.beginFill(0x000000, 0.08);
+        neckShadow.drawEllipse(0, -27, 10, 3);
+        neckShadow.endFill();
+        container.addChild(neckShadow);
+
+        // head outline (dark shape drawn slightly larger behind)
+        const headOL = new PIXI.Graphics();
+        headOL.beginFill(OL);
+        headOL.drawEllipse(0, -38, 14, 15);
+        headOL.endFill();
+        container.addChild(headOL);
+
         const head = new PIXI.Graphics();
-        head.lineStyle(1.8, OL_C, 0.88);
         head.beginFill(0xf8c9a0);
         head.drawEllipse(0, -38, 13, 14);
         head.endFill();
-        head.lineStyle(0);
+        // eyes
         head.beginFill(0xffffff, 0.95);
         head.drawCircle(-4,   -39.5, 3.5);
         head.drawCircle( 4,   -39.5, 3.5);
@@ -104,21 +135,29 @@ export class Player {
         head.drawCircle(-2.8, -40.5, 0.85);
         head.drawCircle( 5.2, -40.5, 0.85);
         head.endFill();
+        // eyebrows
+        head.lineStyle(1.2, 0x2c1800, 0.7);
+        head.moveTo(-6.5, -43.5); head.lineTo(-2, -42.5);
+        head.moveTo( 2,   -42.5); head.lineTo( 6.5, -43.5);
+        // mouth (subtle smile — control points below endpoints for upward curve)
         head.lineStyle(1.5, 0xb8885a, 0.82);
         head.moveTo(-3, -32);
-        head.bezierCurveTo(-1, -30, 1, -30, 3, -32);
+        head.bezierCurveTo(-1, -29.5, 1, -29.5, 3, -32);
+        // nose
         head.lineStyle(0);
         head.beginFill(0xd4a070, 0.45);
         head.drawCircle(0, -35.5, 1.3);
         head.endFill();
         container.addChild(head);
 
+        // hair with outline behind
         const hair = new PIXI.Graphics();
-        hair.lineStyle(1.5, OL_C, 0.75);
+        hair.beginFill(OL);
+        hair.drawEllipse(0, -52, 14, 6);
+        hair.endFill();
         hair.beginFill(0x2c1800);
         hair.drawEllipse(0, -52, 13, 5);
         hair.endFill();
-        hair.lineStyle(0);
         hair.beginFill(0x2c1800);
         hair.drawRect(-13, -52, 26, 8);
         hair.drawEllipse(-12, -47, 4, 5);
@@ -132,7 +171,7 @@ export class Player {
     _drawLegs(walkPhase) {
         const lOff =  Math.sin(walkPhase) * 5;
         const rOff = -Math.sin(walkPhase) * 5;
-        const OL_C = 0x0d0d1a;
+        const OL_C = 0x0a0a14;
 
         this._legLeft.clear();
         this._legLeft.lineStyle(1.5, OL_C, 0.85);
@@ -168,7 +207,7 @@ export class Player {
     _drawArms(walkPhase) {
         const lOff =  Math.sin(walkPhase + Math.PI) * 4;
         const rOff = -Math.sin(walkPhase + Math.PI) * 4;
-        const OL_C = 0x0d0d1a;
+        const OL_C = 0x0a0a14;
 
         this._armLeft.clear();
         this._armLeft.lineStyle(1.5, OL_C, 0.85);
@@ -273,9 +312,23 @@ export class Player {
             }
         }
 
-        const bobT = (this._bobOffset + 1.5) / 3;
-        this._shadow.scale.x = 0.8 + bobT * 0.35;
-        this._shadow.alpha   = 0.14 + bobT * 0.10;
+        // shadow pulse with walk cycle
+        if (this._isMoving) {
+            const pulse = 1.0 + Math.sin((this._walkTick / WALK_CYCLE) * Math.PI * 2) * 0.05;
+            this._shadow.scale.set(pulse);
+        } else {
+            this._shadow.scale.set(1.0);
+        }
+        this._shadow.alpha = 0.2;
+
+        // idle breathing — very subtle body scale oscillation
+        if (!this._isMoving && !this._isSitting && !this._sleeping) {
+            this._breathTick += delta;
+            const breath = 1.0 + Math.sin((this._breathTick / 180) * Math.PI * 2) * 0.008;
+            this._bodyGfx.scale.y = breath;
+        } else {
+            this._bodyGfx.scale.y = 1.0;
+        }
 
         this._updateScreenPos();
     }

@@ -36,6 +36,46 @@ export class Ghost {
         this._prevY = 300;
         this._leanAngle = 0;
 
+        // Trail afterimages
+        this._trailPositions = [];
+        this._trailFrameCount = 0;
+        this._trailContainer = new PIXI.Container();
+        this.container.addChildAt(this._trailContainer, 0);
+        this._trailGfx = [];
+        const trailAlphas = [0.06, 0.04, 0.02];
+        for (let i = 0; i < 3; i++) {
+            const g = new PIXI.Graphics();
+            g.alpha = trailAlphas[i];
+            g.visible = false;
+            this._trailGfx.push(g);
+            // Trail lives in parent space, added later in update
+        }
+
+        // Particle aura
+        this._auraContainer = new PIXI.Container();
+        this._auraParticles = [];
+        for (let i = 0; i < 7; i++) {
+            const p = new PIXI.Graphics();
+            p.beginFill(0xffffff, 1);
+            p.drawCircle(0, 0, 1.5);
+            p.endFill();
+            this._auraContainer.addChild(p);
+            this._auraParticles.push({
+                gfx: p,
+                angle: (i / 7) * Math.PI * 2,
+                radius: 25 + Math.random() * 10,
+                speed: (Math.PI * 2) / (240 + Math.random() * 120), // 4-6s orbit in frames
+                baseAlpha: 0.2 + Math.random() * 0.2,
+                phaseOffset: Math.random() * Math.PI * 2,
+            });
+        }
+
+        // State transition flash
+        this._flashScale = 1;
+        this._flashTimer = 0;
+        this._burstParticles = [];
+        this._burstContainer = new PIXI.Container();
+
         this._shadow = new PIXI.Graphics();
         this._shadow.beginFill(0x000000, 0.06);
         this._shadow.drawEllipse(0, 0, 34, 12);
@@ -51,6 +91,8 @@ export class Ghost {
 
         this._sprite = this._buildSprite();
         this.container.addChild(this._sprite);
+        this.container.addChild(this._auraContainer);
+        this.container.addChild(this._burstContainer);
 
         this._bubble = null;
         this._bubbleRoot = document.getElementById('ghost-bubble-root');
@@ -152,17 +194,18 @@ export class Ghost {
                 break;
 
             case 'WIRED':
+                // Wide eyes with tiny pupils — jittery
                 g.beginFill(0xffffff, 0.98);
                 g.drawCircle(-9, -6, 7.5);
                 g.drawCircle( 9, -6, 7.5);
                 g.endFill();
                 g.beginFill(0x1a1a40, 0.98);
-                g.drawCircle(-9, -6, 4.2);
-                g.drawCircle( 9, -6, 4.2);
+                g.drawCircle(-9, -6, 2.2);
+                g.drawCircle( 9, -6, 2.2);
                 g.endFill();
                 g.beginFill(0xffffff, 0.85);
-                g.drawCircle(-7,  -8.5, 1.5);
-                g.drawCircle(11,  -8.5, 1.5);
+                g.drawCircle(-7.5, -8.5, 1.2);
+                g.drawCircle(10.5, -8.5, 1.2);
                 g.endFill();
                 break;
 
@@ -178,6 +221,23 @@ export class Ghost {
                 g.beginFill(0x8000ff, 0.5);
                 g.drawCircle(-7,  -8, 1.2);
                 g.drawCircle(11,  -8, 1.2);
+                g.endFill();
+                break;
+
+            case 'RELAXED':
+                // Half-closed eyes — sleepy/content
+                g.beginFill(0xffffff, 0.88);
+                g.drawEllipse(-9, -5, 6, 3);
+                g.drawEllipse( 9, -5, 6, 3);
+                g.endFill();
+                g.beginFill(0x1a1a40, 0.95);
+                g.drawEllipse(-9, -4.5, 3.5, 2.2);
+                g.drawEllipse( 9, -4.5, 3.5, 2.2);
+                g.endFill();
+                // Eyelid droop (upper lid line)
+                g.beginFill(0xffffff, 0.12);
+                g.drawEllipse(-9, -7, 6, 2.5);
+                g.drawEllipse( 9, -7, 6, 2.5);
                 g.endFill();
                 break;
 
@@ -236,18 +296,59 @@ export class Ghost {
         if (!STATE_COLORS[stateName]) return;
         const changed = stateName !== this._state;
         this._state = stateName;
-        if (changed && this._stateInitialized) this._showStateReaction(stateName);
+        if (changed && this._stateInitialized) {
+            this._showStateReaction(stateName);
+            this._triggerFlash(STATE_COLORS[stateName]);
+        }
         this._stateInitialized = true;
 
         this._drawGhostShape(this._bodyGfx, STATE_COLORS[stateName]);
 
         this._sprite.tint = STATE_COLORS[stateName];
 
+        // Recolor aura particles
+        for (const p of this._auraParticles) {
+            p.gfx.clear();
+            p.gfx.beginFill(STATE_COLORS[stateName], 1);
+            p.gfx.drawCircle(0, 0, 1.5);
+            p.gfx.endFill();
+        }
+
+        // Redraw trail shapes in new color
+        for (const g of this._trailGfx) {
+            this._drawGhostShape(g, STATE_COLORS[stateName]);
+        }
+
         this._redrawEyes(stateName);
 
         if (this._bubble) {
             const glow = STATE_GLOW_CSS[stateName] || 'rgba(255,255,255,0.1)';
             this._bubble.style.boxShadow = `0 8px 32px rgba(0,0,0,0.4), 0 0 20px ${glow}`;
+        }
+    }
+
+    _triggerFlash(color) {
+        // Scale pop
+        this._flashScale = 1.2;
+        this._flashTimer = 18; // ~0.3s at 60fps
+
+        // Burst particles
+        for (let i = 0; i < 10; i++) {
+            const angle = (i / 10) * Math.PI * 2;
+            const speed = 1.5 + Math.random() * 1.5;
+            const g = new PIXI.Graphics();
+            g.beginFill(color, 0.6);
+            g.drawCircle(0, 0, 2);
+            g.endFill();
+            g.x = 0;
+            g.y = 0;
+            this._burstContainer.addChild(g);
+            this._burstParticles.push({
+                gfx: g,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: 30, // ~0.5s
+            });
         }
     }
 
@@ -282,6 +383,75 @@ export class Ghost {
 
         this.container.x = this._x;
         this.container.y = this._y;
+
+        // WIRED jitter
+        if (this._state === 'WIRED') {
+            this._sprite.x = (Math.random() - 0.5) * 1.0;
+            this._sprite.y = bob + (Math.random() - 0.5) * 1.0;
+        } else {
+            this._sprite.x = 0;
+        }
+
+        // --- Glow trail ---
+        this._trailFrameCount += delta;
+        if (this._trailFrameCount >= 5) {
+            this._trailFrameCount = 0;
+            this._trailPositions.push({ x: this._x, y: this._y, bob });
+            if (this._trailPositions.length > 3) {
+                this._trailPositions.shift();
+            }
+        }
+        // Position trail afterimages in parent space
+        if (this.container.parent) {
+            const trailAlphas = [0.02, 0.04, 0.06];
+            for (let i = 0; i < this._trailGfx.length; i++) {
+                const g = this._trailGfx[i];
+                if (i < this._trailPositions.length) {
+                    const pos = this._trailPositions[i];
+                    if (!g.parent) this.container.parent.addChildAt(g, 0);
+                    g.visible = true;
+                    g.x = pos.x;
+                    g.y = pos.y + pos.bob;
+                    g.alpha = trailAlphas[i];
+                } else {
+                    g.visible = false;
+                }
+            }
+        }
+
+        // --- Particle aura ---
+        for (const p of this._auraParticles) {
+            p.angle += p.speed * delta;
+            p.gfx.x = Math.cos(p.angle) * p.radius;
+            p.gfx.y = Math.sin(p.angle) * p.radius * 0.6 - 5; // squash vertically to match iso feel
+            const pulse = 0.8 + Math.sin(this._bobTick * 0.02 + p.phaseOffset) * 0.2;
+            p.gfx.alpha = p.baseAlpha * pulse;
+        }
+
+        // --- State transition flash ---
+        if (this._flashTimer > 0) {
+            this._flashTimer -= delta;
+            const progress = Math.max(0, this._flashTimer / 18);
+            this._flashScale = 1 + 0.2 * progress;
+            this._sprite.scale.set(this._flashScale);
+        } else if (this._flashScale !== 1) {
+            this._flashScale = 1;
+            this._sprite.scale.set(1);
+        }
+
+        // --- Burst particles ---
+        for (let i = this._burstParticles.length - 1; i >= 0; i--) {
+            const bp = this._burstParticles[i];
+            bp.gfx.x += bp.vx * delta;
+            bp.gfx.y += bp.vy * delta;
+            bp.life -= delta;
+            bp.gfx.alpha = Math.max(0, bp.life / 30) * 0.6;
+            if (bp.life <= 0) {
+                bp.gfx.parent?.removeChild(bp.gfx);
+                bp.gfx.destroy();
+                this._burstParticles.splice(i, 1);
+            }
+        }
     }
 
     // TODO: refactor this massive method lol
@@ -419,6 +589,35 @@ export class Ghost {
             <div class="ghost-bubble-footer">${buttons}${trailingBtn}</div>
         `;
 
+        // State color glow behind the bubble (as a sibling, not a child, to avoid overflow clip)
+        const stateColor = STATE_COLORS[data.state || this._state] || 0x00c864;
+        const r = (stateColor >> 16) & 0xff;
+        const gn = (stateColor >> 8) & 0xff;
+        const b = stateColor & 0xff;
+        const bubbleGlow = document.createElement('div');
+        bubbleGlow.className = 'ghost-bubble-glow';
+        bubbleGlow.style.cssText = `
+            position: fixed;
+            border-radius: 24px;
+            background: rgba(${r},${gn},${b},0.08);
+            filter: blur(16px);
+            pointer-events: none;
+            z-index: 9998;
+            transition: opacity 300ms ease-out;
+        `;
+        // Sync position with bubble after layout
+        this._bubbleGlow = bubbleGlow;
+        this._bubbleRoot.appendChild(bubbleGlow);
+        requestAnimationFrame(() => {
+            if (el.parentNode) {
+                const rect = el.getBoundingClientRect();
+                bubbleGlow.style.left = (rect.left - 8) + 'px';
+                bubbleGlow.style.top = (rect.top - 8) + 'px';
+                bubbleGlow.style.width = (rect.width + 16) + 'px';
+                bubbleGlow.style.height = (rect.height + 16) + 'px';
+            }
+        });
+
         this._bubbleRoot.appendChild(el);
         this._bubble = el;
         this._bubbleIsCritical = isCritical;
@@ -499,6 +698,10 @@ export class Ghost {
         clearTimeout(this._autoDismissTimer);
         clearInterval(this._typewriterInterval);
         this._removeVignette();
+        if (this._bubbleGlow) {
+            this._bubbleGlow.remove();
+            this._bubbleGlow = null;
+        }
 
         if (!this._bubble) return;
         const el = this._bubble;
