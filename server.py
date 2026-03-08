@@ -378,6 +378,15 @@ async def lifespan(app: FastAPI):
 # FastAPI
 app = FastAPI(title = "Ghost Desktop Agent", lifespan = lifespan)
 
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # test page from public/
 app.mount("/public", StaticFiles(directory="public"), name="public")
 
