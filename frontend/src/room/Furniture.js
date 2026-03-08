@@ -22,8 +22,14 @@ export class Furniture extends EventEmitter {
         this._coffeeContainer = null;
         this._coffeeSpawnAccum = 0;
         this._steamParticles = [];
+        this._doorHandleGlow = null;
+        this.onDoorInteract = null;
 
         this._buildRoom();
+
+        this.on('interact', (name) => {
+            if (name === 'door' && this.onDoorInteract) this.onDoorInteract();
+        });
     }
 
     _buildRoom() {
@@ -36,6 +42,7 @@ export class Furniture extends EventEmitter {
         this._addPlant(10, 10);
         this._addSpeaker(8, 2);
         this._addChair(5, 4);
+        this._addDoor(0, 8);
     }
 
     // these offsets took forever to get right
@@ -375,6 +382,67 @@ export class Furniture extends EventEmitter {
         this._placeItem(c, gx, gy, 'chair', false, null);
     }
 
+    _addDoor(gx, gy) {
+        const c = new PIXI.Container();
+        const g = new PIXI.Graphics();
+
+        // Door panel on left wall — isometric rectangle matching wall angle
+        // The left wall face runs from top-right to bottom-left with a leftward slant
+        const doorW = 40;
+        const doorH = 60;
+        const slant = (16 / 32) * doorW; // TILE_HEIGHT/TILE_WIDTH ratio for wall angle
+
+        // Door frame (slightly lighter border)
+        g.lineStyle(2, 0x1a4a80, 0.9);
+        g.moveTo(0, 0);
+        g.lineTo(-doorW / 2, slant / 2);
+        g.lineTo(-doorW / 2, slant / 2 - doorH);
+        g.lineTo(0, -doorH);
+        g.closePath();
+
+        // Door fill (darker than wall)
+        g.lineStyle(0);
+        g.beginFill(0x0a2540);
+        g.moveTo(0, 0);
+        g.lineTo(-doorW / 2, slant / 2);
+        g.lineTo(-doorW / 2, slant / 2 - doorH);
+        g.lineTo(0, -doorH);
+        g.closePath();
+        g.endFill();
+
+        // Inner panel detail
+        g.lineStyle(1, 0x0e3058, 0.5);
+        g.moveTo(-2, -4);
+        g.lineTo(-doorW / 2 + 3, slant / 2 - 4 + 1.5);
+        g.lineTo(-doorW / 2 + 3, slant / 2 - doorH + 6 + 1.5);
+        g.lineTo(-2, -doorH + 6);
+        g.closePath();
+
+        c.addChild(g);
+
+        // Door handle (amber/gold circle) — on the right side of the door face
+        this._doorHandleGlow = new PIXI.Graphics();
+        this._doorHandleGlow.beginFill(0xffa040);
+        this._doorHandleGlow.drawCircle(-4, -doorH / 2 + 4, 3);
+        this._doorHandleGlow.endFill();
+        this._doorHandleGlow.alpha = 0.5;
+        c.addChild(this._doorHandleGlow);
+
+        // "EXIT" label
+        const label = new PIXI.Text('EXIT', {
+            fontFamily: 'monospace',
+            fontSize: 9,
+            fill: 0xffffff,
+        });
+        label.alpha = 0.4;
+        label.anchor.set(0.5, 0);
+        label.x = -doorW / 4;
+        label.y = 6;
+        c.addChild(label);
+
+        this._placeItem(c, gx, gy, 'door', true, null);
+    }
+
     _placeItem(container, gx, gy, name, interactive, appType) {
         const { x, y } = this.room.getTileCenter(gx, gy);
         container.x = x;
@@ -450,6 +518,11 @@ export class Furniture extends EventEmitter {
         // speaker LED pulse
         if (this._speakerLED) {
             this._speakerLED.alpha = 0.2 + Math.sin(Date.now() / 1000) * 0.2 + 0.2;
+        }
+
+        // door handle glow pulse (2s period, alpha 0.3–0.7)
+        if (this._doorHandleGlow) {
+            this._doorHandleGlow.alpha = 0.5 + Math.sin(Date.now() / 318.3) * 0.2; // 318.3 ≈ 1000/π for 2s period
         }
 
         // update steam particles

@@ -18,6 +18,8 @@ import { MainMenu } from './menu/MainMenu.js';
 import { SoundManager } from './audio/SoundManager.js';
 import { DemoMode } from './demo/DemoMode.js';
 import { ToastSystem } from './hud/ToastSystem.js';
+import { SceneManager } from './scenes/SceneManager.js';
+import { Town } from './town/Town.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -39,6 +41,7 @@ let player = null;
 let soundManager = null;
 let demoMode = null;
 let toastSystem = null;
+let sceneManager = null;
 
 window.addEventListener('resize', () => {
     pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
@@ -64,6 +67,7 @@ mainMenu.show(
 // --- Game init (called when menu START or DEMO is clicked) ---
 function startGame(enableDemo = false) {
     let socket, room, furniture, ghost, atmosphere, hud, beneathView, demoHotbar, apps, activeApp, ePrompt;
+    let currentGameScene = 'room';
 
     socket = new GhostSocket('ws://localhost:8000/ws');
 
@@ -292,6 +296,16 @@ function startGame(enableDemo = false) {
         const tag = e.target.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
 
+        if (e.key.toLowerCase() === 't') {
+            if (sceneManager) {
+                sceneManager.transitionTo(
+                    sceneManager.getCurrentScene() === 'room' ? 'town' : 'room',
+                    { duration: 800 }
+                );
+            }
+            return;
+        }
+
         if (e.key.toLowerCase() === 'e') {
             const name = furniture.getNearbyInteractable(player.gridX, player.gridY);
             if (name) furniture.emit('interact', name);
@@ -300,6 +314,10 @@ function startGame(enableDemo = false) {
 
     // game loop
     pixiApp.ticker.add((delta) => {
+        if (sceneManager) sceneManager.update(delta);
+
+        if (currentGameScene !== 'room') return;
+
         player.update(delta);
         ghost.update(delta, player.position);
         atmosphere.update(delta);
@@ -364,4 +382,36 @@ function startGame(enableDemo = false) {
         demoMode.start({ loop: true });
         console.log('[DevLife] Demo mode started — looping through all states');
     }
+
+    // ── Scene Manager ──
+    sceneManager = new SceneManager(pixiApp);
+
+    const roomScene = {
+        enter() {
+            pixiApp.stage.addChild(gameContainer);
+            pixiApp.stage.addChild(atmosphere.container);
+            if (hud._el) hud._el.style.display = '';
+            if (demoHotbar._el) demoHotbar._el.style.display = '';
+            currentGameScene = 'room';
+        },
+        exit() {
+            pixiApp.stage.removeChild(gameContainer);
+            pixiApp.stage.removeChild(atmosphere.container);
+            if (hud._el) hud._el.style.display = 'none';
+            if (demoHotbar._el) demoHotbar._el.style.display = 'none';
+            currentGameScene = null;
+        },
+        update(delta) {
+            // Room updates happen in the main ticker
+        },
+    };
+
+    const town = new Town(pixiApp);
+    town.onEnterHome = () => {
+        sceneManager.transitionTo('room', { duration: 800 });
+    };
+
+    sceneManager.registerScene('room', roomScene);
+    sceneManager.registerScene('town', town);
+    sceneManager.transitionTo('room', { duration: 0 });
 }
