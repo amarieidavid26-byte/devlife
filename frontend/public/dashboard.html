@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevLife × Ghost — Mission Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        html,body{width:100%;height:100%;overflow:hidden;background:#0a0a19;color:#e0e0e0;font-family:'Inter',system-ui,sans-serif}
+
+        /* Faint grid background */
+        body::before{
+            content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.008) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(255,255,255,0.008) 1px,transparent 1px);
+            background-size:48px 48px;
+            pointer-events:none;z-index:0
+        }
+
+        /* grid */
+        .dash{
+            display:grid;
+            grid-template-columns:60fr 40fr;
+            grid-template-rows:48px 1fr 150px;
+            width:100%;height:100%;gap:0;
+            position:relative;z-index:1;
+            border:2px solid transparent;transition:border-color 0.4s
+        }
+        .dash.pulse{animation:borderPulse 2s ease-out}
+        @keyframes borderPulse{0%{border-color:var(--state-color)}100%{border-color:transparent}}
+
+        /* top bar */
+        .topbar{
+            grid-column:1/-1;
+            display:flex;align-items:center;justify-content:space-between;
+            padding:0 32px;
+            background:rgba(0,0,0,0.4);
+            border-bottom:1px solid rgba(255,255,255,0.06)
+        }
+        .topbar-logo{font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:0.18em;color:#fff;font-size:13px}
+        .topbar-logo span{color:var(--state-color,#00c864);transition:color 0.5s}
+        .topbar-clock{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:#ccc;letter-spacing:0.1em}
+        .topbar-right{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.06em}
+        .session-dot{width:8px;height:8px;border-radius:50%;background:#333;transition:background 0.3s;flex-shrink:0}
+        .session-dot.on{background:#00c864;animation:pulseGlow 2s ease-in-out infinite}
+        @keyframes pulseGlow{0%,100%{box-shadow:0 0 4px rgba(0,200,100,0.3)}50%{box-shadow:0 0 12px rgba(0,200,100,0.7)}}
+
+        /* left panel */
+        .left{
+            padding:32px 40px;
+            display:flex;flex-direction:column;gap:32px;
+            border-right:1px solid rgba(255,255,255,0.05);
+            overflow-y:auto;scrollbar-width:none
+        }
+        .left::-webkit-scrollbar{display:none}
+
+        /* Section headers — telemetry labels */
+        .sec-hdr{
+            font-size:11px;text-transform:uppercase;letter-spacing:2px;
+            color:#aaa;font-weight:600;margin-bottom:12px
+        }
+
+        /* Heart rate hero */
+        .hr-section{display:flex;flex-direction:column}
+        .hr-row{display:flex;align-items:baseline;gap:14px}
+        .hr-heart{font-size:34px;display:inline-block;transform-origin:center}
+        .hr-value{
+            font-family:'JetBrains Mono',monospace;font-size:100px;font-weight:700;
+            color:#ffffff;line-height:1;transition:opacity 0.1s;
+            text-shadow:0 0 20px var(--state-color,rgba(0,200,100,0.3))
+        }
+        .hr-unit{font-family:'JetBrains Mono',monospace;font-size:24px;color:#888;font-weight:400}
+        @keyframes heartbeat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}}
+
+        /* Metric trio */
+        .metrics{display:flex;gap:48px}
+        .metric .val{
+            font-family:'JetBrains Mono',monospace;font-size:42px;font-weight:700;
+            color:#ffffff;line-height:1;
+            text-shadow:0 0 12px var(--state-color,rgba(0,200,100,0.2))
+        }
+        .metric .unit{font-size:18px;font-weight:400;color:#888}
+        .metric .lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa;margin-top:6px}
+
+        /* State name — dominant */
+        .state-section{}
+        .state-name{
+            font-family:'JetBrains Mono',monospace;font-size:64px;font-weight:700;
+            line-height:1;transition:color 0.5s
+        }
+        .state-lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa;margin-top:8px}
+
+        /* Stress bar */
+        .stress-section{}
+        .stress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .stress-header .lbl{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa}
+        .stress-header .val{font-family:'JetBrains Mono',monospace;font-size:14px;color:#ccc}
+        .stress-track{width:100%;height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden}
+        .stress-fill{height:100%;border-radius:4px;transition:width 0.6s ease,background 0.6s ease}
+
+        /* HRV Sparkline — bigger */
+        .hrv-section{}
+        .hrv-spark-canvas{width:100%;height:80px;display:block;border-radius:6px;background:rgba(0,0,0,0.2)}
+
+        /* Gauges row */
+        .gauges-row{display:flex;gap:48px;align-items:flex-start}
+
+        /* Recovery Arc Gauge — 120px */
+        .gauge-box{text-align:center}
+        .gauge-box .sec-hdr{margin-bottom:8px}
+        .gauge-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:#ffffff}
+        .gauge-sub{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa;margin-top:4px}
+
+        /* right panel */
+        .right{
+            padding:32px 28px;
+            display:flex;flex-direction:column;gap:24px;
+            border-left:1px solid rgba(255,255,255,0.05);
+            overflow-y:auto;scrollbar-width:none
+        }
+        .right::-webkit-scrollbar{display:none}
+
+        /* Threat level — bigger */
+        .threat{
+            display:flex;align-items:center;gap:14px;
+            padding:16px 20px;border-radius:8px;
+            background:rgba(0,0,0,0.25);
+            border:1px solid rgba(255,255,255,0.04);
+            transition:border-color 0.4s
+        }
+        .threat-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;transition:all 0.4s}
+        .threat-label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa}
+        .threat-val{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;letter-spacing:1px;transition:color 0.4s}
+        .threat.nominal .threat-dot{background:#00c864;box-shadow:0 0 10px rgba(0,200,100,0.5)}
+        .threat.nominal .threat-val{color:#00c864}
+        .threat.nominal{border-color:rgba(0,200,100,0.12)}
+        .threat.elevated .threat-dot{background:#ffa000;box-shadow:0 0 10px rgba(255,160,0,0.5)}
+        .threat.elevated .threat-val{color:#ffa000}
+        .threat.elevated{border-color:rgba(255,160,0,0.12)}
+        .threat.critical .threat-dot{background:#ff5050;box-shadow:0 0 10px rgba(255,80,80,0.5);animation:pulseRed 1s ease-in-out infinite}
+        .threat.critical .threat-val{color:#ff5050}
+        .threat.critical{border-color:rgba(255,80,80,0.15)}
+        @keyframes pulseRed{0%,100%{box-shadow:0 0 8px rgba(255,80,80,0.4)}50%{box-shadow:0 0 22px rgba(255,80,80,0.9)}}
+
+        /* Intervention count */
+        .int-count{
+            font-family:'JetBrains Mono',monospace;font-size:14px;color:#ccc;
+            letter-spacing:1px;padding-bottom:4px;
+            border-bottom:1px solid rgba(255,255,255,0.04)
+        }
+        .int-count strong{font-size:20px;color:#ffffff;font-weight:700}
+
+        /* Log */
+        .log-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#aaa;font-weight:600}
+        .log-scroll{flex:1;overflow-y:auto;scrollbar-width:none}
+        .log-scroll::-webkit-scrollbar{display:none}
+        .log-entry{padding:16px 0;border-bottom:1px solid rgba(255,255,255,0.03)}
+        .log-meta{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+        .log-icon{font-size:14px;line-height:1}
+        .log-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:#888}
+        .log-badge{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;color:#fff}
+        .log-state{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;color:#fff}
+        .log-msg{font-size:13px;color:#ddd;line-height:1.55}
+        .log-entry.critical{
+            background:rgba(255,50,50,0.04);border-left:3px solid #ff5050;
+            padding-left:14px;margin-left:-14px
+        }
+        .log-empty{color:#666;font-size:13px;letter-spacing:0.08em;padding:40px 0;text-align:center;
+            font-family:'JetBrains Mono',monospace}
+
+        /* bottom ecg */
+        .bottom{
+            grid-column:1/-1;
+            border-top:1px solid rgba(255,255,255,0.06);
+            position:relative;background:rgba(0,0,0,0.3);
+            transition:border-color 0.3s
+        }
+        .bottom.alarm{border-top:2px solid #ff5050;animation:ecgAlarm 0.8s ease-in-out infinite}
+        @keyframes ecgAlarm{0%,100%{border-top-color:#ff5050}50%{border-top-color:rgba(255,50,50,0.15)}}
+        .ecg-canvas{width:100%;height:100%;display:block}
+        .ecg-lbl-left{position:absolute;top:12px;left:20px;font-family:'JetBrains Mono',monospace;
+            font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px}
+        .ecg-lbl-right{position:absolute;top:10px;right:24px;display:flex;align-items:baseline;gap:5px}
+        .ecg-bpm-num{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;color:#ccc;transition:color 0.3s}
+        .ecg-bpm-unit{font-family:'JetBrains Mono',monospace;font-size:12px;color:#888}
+
+        /* firewall alert */
+        .firewall-alert{
+            position:fixed;top:0;left:0;width:100%;height:100%;
+            display:flex;align-items:center;justify-content:center;flex-direction:column;
+            background:rgba(8,0,0,0.88);z-index:9999;pointer-events:none;
+            opacity:1;transition:opacity 1.5s ease
+        }
+        .firewall-alert.fade{opacity:0}
+        .firewall-alert .fa-icon{font-size:80px;margin-bottom:20px;animation:faPulse 0.5s ease-in-out infinite alternate}
+        .firewall-alert .fa-text{
+            font-family:'JetBrains Mono',monospace;font-size:52px;font-weight:700;
+            color:#ff5050;text-align:center;letter-spacing:3px;line-height:1.15;
+            text-shadow:0 0 40px rgba(255,50,50,0.6),0 0 80px rgba(255,50,50,0.25);
+            padding:0 40px
+        }
+        .firewall-alert .fa-sub{
+            font-family:'JetBrains Mono',monospace;font-size:13px;color:#ff8080;
+            margin-top:18px;letter-spacing:4px;text-transform:uppercase
+        }
+        @keyframes faPulse{from{transform:scale(1)}to{transform:scale(1.12)}}
+    </style>
+</head>
+<body>
+<div class="dash" id="dash">
+
+    <!-- top bar -->
+    <div class="topbar">
+        <div class="topbar-logo">DEVLIFE <span id="topbar-accent">&times;</span> GHOST</div>
+        <div class="topbar-clock" id="clock">--:--:--</div>
+        <div class="topbar-right">
+            <span class="session-dot" id="session-dot"></span>
+            <span id="session-label" style="color:#888">OFFLINE</span>
+            <span id="session-timer" style="color:#888">00:00:00</span>
+        </div>
+    </div>
+
+    <!-- left -->
+    <div class="left">
+
+        <!-- 1. Heart Rate -->
+        <div class="hr-section">
+            <div class="sec-hdr">Cardiac Output</div>
+            <div class="hr-row">
+                <span class="hr-heart" id="heart">&#10084;&#65039;</span>
+                <span class="hr-value" id="hr">--</span>
+                <span class="hr-unit">BPM</span>
+            </div>
+        </div>
+
+        <!-- 2. Three metrics -->
+        <div class="metrics">
+            <div class="metric">
+                <div><span class="val" id="hrv">--</span><span class="unit"> ms</span></div>
+                <div class="lbl">HRV</div>
+            </div>
+            <div class="metric">
+                <div><span class="val" id="rec">--</span><span class="unit"> %</span></div>
+                <div class="lbl">Recovery</div>
+            </div>
+            <div class="metric">
+                <div><span class="val" id="strain">--</span></div>
+                <div class="lbl">Strain</div>
+            </div>
+        </div>
+
+        <!-- 3. State name -->
+        <div class="state-section">
+            <div class="state-name" id="state" style="color:var(--state-color,#666)">CONNECTING</div>
+            <div class="state-lbl">Cognitive State</div>
+        </div>
+
+        <!-- 4. Stress bar -->
+        <div class="stress-section">
+            <div class="stress-header">
+                <span class="lbl">Stress Level</span>
+                <span class="val" id="stress-val">0.0 / 3.0</span>
+            </div>
+            <div class="stress-track">
+                <div class="stress-fill" id="stress-bar" style="width:0%;background:#00c864"></div>
+            </div>
+        </div>
+
+        <!-- 5. HRV Trend -->
+        <div class="hrv-section">
+            <div class="sec-hdr">HRV Trend</div>
+            <canvas class="hrv-spark-canvas" id="hrv-spark"></canvas>
+        </div>
+
+        <!-- 6. Recovery gauge + Cognitive load ring -->
+        <div class="gauges-row">
+            <div class="gauge-box">
+                <div class="sec-hdr">Recovery Zones</div>
+                <svg width="140" height="80" viewBox="0 0 140 80">
+                    <!-- Background arc -->
+                    <path d="M15 72 A55 55 0 0 1 125 72" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="8" stroke-linecap="round"/>
+                    <!-- Zone gradient hint -->
+                    <path d="M15 72 A55 55 0 0 1 125 72" fill="none" stroke="url(#recGrad)" stroke-width="3" stroke-linecap="round" opacity="0.12"/>
+                    <!-- Active arc -->
+                    <path d="M15 72 A55 55 0 0 1 125 72" fill="none" stroke="#00c864" stroke-width="8" stroke-linecap="round"
+                          id="rec-arc" stroke-dasharray="172.79" stroke-dashoffset="172.79"
+                          style="transition:stroke-dashoffset 0.6s ease,stroke 0.4s"/>
+                    <!-- Needle -->
+                    <line x1="70" y1="72" x2="70" y2="22" stroke="#e0e0e0" stroke-width="1.5" stroke-linecap="round"
+                          id="rec-needle" style="transform-origin:70px 72px;transition:transform 0.6s ease"/>
+                    <defs><linearGradient id="recGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#ff5050"/><stop offset="33%" stop-color="#ff5050"/>
+                        <stop offset="34%" stop-color="#ffa000"/><stop offset="66%" stop-color="#ffa000"/>
+                        <stop offset="67%" stop-color="#00c864"/><stop offset="100%" stop-color="#00c864"/>
+                    </linearGradient></defs>
+                </svg>
+                <div class="gauge-val" id="rec-gauge-val">--%</div>
+                <div class="gauge-sub">Recovery</div>
+            </div>
+
+            <div class="gauge-box">
+                <div class="sec-hdr">Cognitive Load</div>
+                <div style="position:relative;width:120px;height:120px">
+                    <svg width="120" height="120" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="7"/>
+                        <circle cx="60" cy="60" r="48" fill="none" stroke="#0096ff" stroke-width="7"
+                                stroke-dasharray="301.59" stroke-dashoffset="301.59" stroke-linecap="round"
+                                id="cog-fill"
+                                style="transition:stroke-dashoffset 0.6s ease,stroke 0.4s;transform:rotate(-90deg);transform-origin:60px 60px"/>
+                    </svg>
+                    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+                        <div class="gauge-val" id="cog-val" style="font-size:24px">0%</div>
+                        <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-top:2px">INDEX</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- right -->
+    <div class="right">
+
+        <!-- Threat Level -->
+        <div class="threat nominal" id="threat">
+            <div class="threat-dot"></div>
+            <div>
+                <div class="threat-label">Threat Level</div>
+                <div class="threat-val" id="threat-val">NOMINAL</div>
+            </div>
+        </div>
+
+        <!-- Intervention count -->
+        <div class="int-count" id="int-count"><strong>0</strong> INTERVENTIONS</div>
+
+        <!-- Log -->
+        <div class="log-title">Intervention Log</div>
+        <div class="log-scroll" id="log">
+            <div class="log-empty" id="log-empty">Monitoring...</div>
+        </div>
+    </div>
+
+    <!-- bottom ecg -->
+    <div class="bottom" id="ecg-container">
+        <div class="ecg-lbl-left">Lead II &middot; ECG</div>
+        <div class="ecg-lbl-right">
+            <span class="ecg-bpm-num" id="ecg-bpm-num">72</span>
+            <span class="ecg-bpm-unit">BPM</span>
+        </div>
+        <canvas class="ecg-canvas" id="ecg"></canvas>
+    </div>
+</div>
+
+<script>
+// constants
+const STATE_COLORS = {
+    DEEP_FOCUS: '#8000ff',
+    STRESSED:   '#ff5050',
+    FATIGUED:   '#ffa000',
+    RELAXED:    '#00c864',
+    WIRED:      '#0096ff',
+};
+
+const BEAT_SHAPE = [
+    0.5, 0.5, 0.5, 0.5,
+    0.44, 0.38, 0.38, 0.44,
+    0.5, 0.5,
+    0.58,
+    0.14, 0.07, 0.14,
+    0.64, 0.58,
+    0.5, 0.5, 0.5,
+    0.40, 0.33, 0.30, 0.33, 0.40,
+    0.5, 0.5, 0.5, 0.5,
+];
+
+// Recovery gauge arc: path "M15 72 A55 55 0 0 1 125 72" = semicircle r=55 → arc = pi * 55 ≈ 172.79
+const REC_ARC_LEN = 172.79;
+// Cognitive load ring: circle r=48 → circumference = 2 * pi * 48 ≈ 301.59
+const COG_CIRC = 301.59;
+
+let curState = 'RELAXED';
+let ecgColor = STATE_COLORS.RELAXED;
+let ecgTargetBPM = 72;
+let ecgBPM = 72;
+let ecgBuffer = [];
+let ecgBeatIndex = -1;
+let ecgMsSinceBeat = 0;
+let ecgLastTs = null;
+let interventions = [];
+let intTotalCount = 0;
+
+// Lerp targets
+let targetHR = 0, displayHR = 0;
+let targetHRV = 0, displayHRV = 0;
+let targetRec = 0, displayRec = 0;
+let targetStrain = 0,  displayStrain = 0;
+let targetStress = 0, displayStress = 0;
+
+// HRV sparkline history
+const hrvHistory = [];
+const HRV_MAX_POINTS = 30;
+
+// Session timer
+let sessionStart = null;
+let isConnected = false;
+
+const dash = document.getElementById('dash');
+const clockEl = document.getElementById('clock');
+const sessionDot = document.getElementById('session-dot');
+const sessionLabel = document.getElementById('session-label');
+const sessionTimerEl = document.getElementById('session-timer');
+const topbarAccent = document.getElementById('topbar-accent');
+const heartEl = document.getElementById('heart');
+const hrEl = document.getElementById('hr');
+const hrvEl = document.getElementById('hrv');
+const recEl = document.getElementById('rec');
+const strainEl = document.getElementById('strain');
+const stateEl = document.getElementById('state');
+const stressValEl = document.getElementById('stress-val');
+const stressBarEl = document.getElementById('stress-bar');
+const logEl = document.getElementById('log');
+const logEmpty = document.getElementById('log-empty');
+const ecgCanvas = document.getElementById('ecg');
+const ecgBpmNum = document.getElementById('ecg-bpm-num');
+const ecgContainerEl = document.getElementById('ecg-container');
+const ecgCtx = ecgCanvas.getContext('2d');
+const sparkCanvas = document.getElementById('hrv-spark');
+const sparkCtx = sparkCanvas.getContext('2d');
+const recArc = document.getElementById('rec-arc');
+const recNeedle = document.getElementById('rec-needle');
+const recGaugeVal = document.getElementById('rec-gauge-val');
+const cogFill = document.getElementById('cog-fill');
+const cogVal = document.getElementById('cog-val');
+const threatEl = document.getElementById('threat');
+const threatValEl = document.getElementById('threat-val');
+const intCountEl = document.getElementById('int-count');
+
+// clock
+function padZ(n) { return n < 10 ? '0' + n : '' + n; }
+setInterval(() => {
+    const now = new Date();
+    clockEl.textContent = padZ(now.getHours()) + ':' + padZ(now.getMinutes()) + ':' + padZ(now.getSeconds());
+    if (sessionStart && isConnected) {
+        const s = Math.floor((Date.now() - sessionStart) / 1000);
+        sessionTimerEl.textContent = padZ(Math.floor(s/3600)) + ':' + padZ(Math.floor(s%3600/60)) + ':' + padZ(s%60);
+    }
+}, 1000);
+
+// ecg canvas
+function resizeECG() {
+    const rect = ecgCanvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    ecgCanvas.width  = rect.width * dpr;
+    ecgCanvas.height = rect.height * dpr;
+    ecgCtx.setTransform(1,0,0,1,0,0);
+    ecgCtx.scale(dpr, dpr);
+    ecgCanvas._w = rect.width;
+    ecgCanvas._h = rect.height;
+    const newLen = Math.ceil(rect.width);
+    const old = ecgBuffer;
+    ecgBuffer = new Array(newLen).fill(0.5);
+    if (old.length) {
+        const start = Math.max(0, old.length - newLen);
+        for (let i = start; i < old.length; i++) ecgBuffer[newLen - (old.length - i)] = old[i];
+    }
+}
+
+function resizeSpark() {
+    const rect = sparkCanvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    sparkCanvas.width  = rect.width * dpr;
+    sparkCanvas.height = 80 * dpr;
+    sparkCtx.setTransform(1,0,0,1,0,0);
+    sparkCtx.scale(dpr, dpr);
+    sparkCanvas._w = rect.width;
+    sparkCanvas._h = 80;
+}
+
+window.addEventListener('resize', () => { resizeECG(); resizeSpark(); });
+resizeECG();
+resizeSpark();
+
+// ecg animation
+function ecgTick(ts) {
+    if (ecgLastTs !== null) {
+        const delta = Math.min(ts - ecgLastTs, 50);
+        ecgBPM += (ecgTargetBPM - ecgBPM) * 0.05;
+        const beatInterval = 60000 / Math.max(30, Math.min(150, ecgBPM));
+        ecgMsSinceBeat += delta;
+        if (ecgBeatIndex < 0 && ecgMsSinceBeat >= beatInterval) {
+            ecgMsSinceBeat -= beatInterval;
+            ecgBeatIndex = 0;
+        }
+        ecgBuffer.shift();
+        if (ecgBeatIndex >= 0 && ecgBeatIndex < BEAT_SHAPE.length) {
+            ecgBuffer.push(BEAT_SHAPE[ecgBeatIndex++]);
+        } else {
+            ecgBuffer.push(0.5);
+            if (ecgBeatIndex >= BEAT_SHAPE.length) ecgBeatIndex = -1;
+        }
+        drawECG();
+    }
+    ecgLastTs = ts;
+    requestAnimationFrame(ecgTick);
+}
+requestAnimationFrame(ecgTick);
+
+function drawECG() {
+    const W = ecgCanvas._w, H = ecgCanvas._h;
+    if (!W) return;
+    const ctx = ecgCtx;
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Minor grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    ctx.lineWidth = 0.5;
+    for (let x = 0; x < W; x += 20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    // Major grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 100) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 100) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    // Baseline
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+
+    const buf = ecgBuffer, len = buf.length, pad = 12;
+
+    // Glow
+    ctx.save();
+    ctx.strokeStyle = ecgColor; ctx.globalAlpha = 0.15; ctx.lineWidth = 6; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < len; i++) { const x = (i/len)*W, y = buf[i]*(H-pad*2)+pad; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke(); ctx.restore();
+
+    // Main
+    ctx.save();
+    ctx.shadowBlur = 10; ctx.shadowColor = ecgColor;
+    ctx.strokeStyle = ecgColor; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < len; i++) { const x = (i/len)*W, y = buf[i]*(H-pad*2)+pad; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.stroke();
+
+    // Dot
+    const lastY = buf[len-1]*(H-pad*2)+pad;
+    ctx.shadowBlur = 16; ctx.fillStyle = ecgColor;
+    ctx.beginPath(); ctx.arc(W-1, lastY, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+}
+
+// hrv sparkline
+function hexToRgba(hex, a) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return 'rgba('+r+','+g+','+b+','+a+')';
+}
+
+function drawSparkline() {
+    const W = sparkCanvas._w, H = sparkCanvas._h;
+    if (!W || hrvHistory.length < 2) return;
+    const ctx = sparkCtx;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(0, 0, W, H);
+
+    const vals = hrvHistory;
+    const min = Math.max(0, Math.min(...vals) - 5);
+    const max = Math.max(...vals) + 5;
+    const range = max - min || 1;
+    const padX = 6, padY = 14;
+
+    // Fill area
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(padX, H - padY);
+    for (let i = 0; i < vals.length; i++) {
+        const x = padX + (i / (HRV_MAX_POINTS - 1)) * (W - padX * 2);
+        const y = H - padY - ((vals[i] - min) / range) * (H - padY * 2);
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(padX + ((vals.length - 1) / (HRV_MAX_POINTS - 1)) * (W - padX * 2), H - padY);
+    ctx.closePath();
+    ctx.fillStyle = hexToRgba(ecgColor, 0.08);
+    ctx.fill();
+    ctx.restore();
+
+    // Line
+    ctx.save();
+    ctx.strokeStyle = ecgColor; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+    ctx.shadowBlur = 8; ctx.shadowColor = ecgColor;
+    ctx.beginPath();
+    for (let i = 0; i < vals.length; i++) {
+        const x = padX + (i / (HRV_MAX_POINTS - 1)) * (W - padX * 2);
+        const y = H - padY - ((vals[i] - min) / range) * (H - padY * 2);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Dots
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = ecgColor;
+    for (let i = 0; i < vals.length; i++) {
+        const x = padX + (i / (HRV_MAX_POINTS - 1)) * (W - padX * 2);
+        const y = H - padY - ((vals[i] - min) / range) * (H - padY * 2);
+        ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+
+    // Axis labels
+    ctx.fillStyle = '#999';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round(max) + ' ms', W - 8, 12);
+    ctx.fillText(Math.round(min) + ' ms', W - 8, H - 4);
+    // Latest value
+    ctx.textAlign = 'left';
+    ctx.fillStyle = ecgColor;
+    ctx.fillText(Math.round(vals[vals.length - 1]) + ' ms', 8, 12);
+}
+
+// lerp loop
+function lerpLoop() {
+    displayHR += (targetHR - displayHR) * 0.12;
+    displayHRV += (targetHRV - displayHRV) * 0.12;
+    displayRec += (targetRec - displayRec) * 0.12;
+    displayStrain += (targetStrain - displayStrain) * 0.12;
+    displayStress += (targetStress - displayStress) * 0.12;
+
+    if (targetHR > 0) hrEl.textContent = Math.round(displayHR);
+    if (targetHRV > 0) hrvEl.textContent = Math.round(displayHRV);
+    if (targetRec > 0) recEl.textContent = Math.round(displayRec);
+    if (targetStrain > 0) strainEl.textContent = displayStrain.toFixed(1);
+
+    // Stress bar
+    stressValEl.textContent = displayStress.toFixed(1) + ' / 3.0';
+    stressBarEl.style.width = (Math.min(displayStress / 3, 1) * 100) + '%';
+    stressBarEl.style.background = displayStress > 2 ? '#ff5050' : displayStress > 1 ? '#ffa000' : '#00c864';
+
+    // ECG BPM label
+    const bpmRound = Math.round(ecgBPM);
+    ecgBpmNum.textContent = bpmRound;
+    ecgBpmNum.style.color = bpmRound > 100 ? '#ff5050' : '#ccc';
+    if (bpmRound > 100) ecgContainerEl.classList.add('alarm');
+    else                ecgContainerEl.classList.remove('alarm');
+
+    // Recovery gauge
+    const recPct = Math.max(0, Math.min(100, displayRec));
+    recArc.setAttribute('stroke-dashoffset', (REC_ARC_LEN * (1 - recPct / 100)).toFixed(2));
+    recArc.setAttribute('stroke', recPct < 33 ? '#ff5050' : recPct < 67 ? '#ffa000' : '#00c864');
+    recNeedle.setAttribute('transform', 'rotate(' + (-90 + recPct / 100 * 180) + ')');
+    recGaugeVal.textContent = (targetRec > 0 ? Math.round(displayRec) : '--') + '%';
+
+    // Cognitive load ring
+    const cogPct = Math.min(100, (displayStress / 3) * 100);
+    cogFill.setAttribute('stroke-dashoffset', (COG_CIRC * (1 - cogPct / 100)).toFixed(2));
+    cogFill.setAttribute('stroke', cogPct > 66 ? '#ff5050' : cogPct > 33 ? '#ffa000' : '#0096ff');
+    cogVal.textContent = Math.round(cogPct) + '%';
+
+    // Sparkline
+    drawSparkline();
+
+    requestAnimationFrame(lerpLoop);
+}
+requestAnimationFrame(lerpLoop);
+
+// heartbeat
+let heartbeatTimer = null;
+function syncHeartbeat(bpm) {
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    const ms = Math.max(300, 60000 / (bpm || 72));
+    heartbeatTimer = setInterval(() => {
+        heartEl.style.animation = 'none';
+        void heartEl.offsetWidth;
+        heartEl.style.animation = 'heartbeat 0.3s ease';
+        hrEl.style.opacity = '0.6';
+        setTimeout(() => { hrEl.style.opacity = '1'; }, 100);
+    }, ms);
+}
+syncHeartbeat(72);
+
+// state change
+function setState(s) {
+    if (!STATE_COLORS[s]) return;
+    const changed = s !== curState;
+    curState = s;
+    const color = STATE_COLORS[s];
+    ecgColor = color;
+
+    stateEl.textContent = s;
+    stateEl.style.color = color;
+    stateEl.style.textShadow = '0 0 24px ' + color + ', 0 0 48px ' + hexToRgba(color, 0.3);
+    topbarAccent.style.color = color;
+    dash.style.setProperty('--state-color', color);
+
+    // Update number glow to match state
+    hrEl.style.textShadow = '0 0 20px ' + hexToRgba(color, 0.3);
+    hrvEl.style.textShadow = '0 0 12px ' + hexToRgba(color, 0.15);
+    recEl.style.textShadow = '0 0 12px ' + hexToRgba(color, 0.15);
+    strainEl.style.textShadow = '0 0 12px ' + hexToRgba(color, 0.15);
+
+    if (changed) {
+        dash.classList.remove('pulse');
+        void dash.offsetWidth;
+        dash.classList.add('pulse');
+    }
+    updateThreat();
+}
+
+// threat
+function updateThreat() {
+    let level = 'nominal';
+    if (curState === 'STRESSED' || displayStress > 2) level = 'critical';
+    else if (curState === 'FATIGUED' || curState === 'WIRED' || displayStress > 1) level = 'elevated';
+    threatEl.className = 'threat ' + level;
+    threatValEl.textContent = level.toUpperCase();
+}
+
+// intervention log
+function getIcon(msg) {
+    if (msg.message && msg.message.includes('FIREWALL')) return '\u{1F6E1}\u{FE0F}';
+    if (msg.priority === 'critical') return '\u26A0\u{FE0F}';
+    if (msg.risky) return '\u{1F6E1}\u{FE0F}';
+    return '\u{1F4A1}';
+}
+
+function addIntervention(msg) {
+    logEmpty.style.display = 'none';
+    msg._time = new Date().toLocaleTimeString('en-US', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    interventions.unshift(msg);
+    if (interventions.length > 8) interventions.pop();
+    intTotalCount++;
+    intCountEl.innerHTML = '<strong>' + intTotalCount + '</strong> INTERVENTION' + (intTotalCount !== 1 ? 'S' : '');
+
+    logEl.innerHTML = '';
+    interventions.forEach(m => {
+        const isCritical = m.priority === 'critical';
+        const stateColor = STATE_COLORS[m.state] || '#888';
+        const prioColor = m.priority === 'critical' ? '#ff5050' : m.priority === 'high' ? '#ffa000' : m.priority === 'medium' ? '#0096ff' : '#444';
+
+        const div = document.createElement('div');
+        div.className = 'log-entry' + (isCritical ? ' critical' : '');
+        div.innerHTML =
+            '<div class="log-meta">' +
+                '<span class="log-icon">' + getIcon(m) + '</span>' +
+                '<span class="log-time">' + (m._time || '') + '</span>' +
+                '<span class="log-state" style="background:' + stateColor + '">' + (m.state || '') + '</span>' +
+                '<span class="log-badge" style="background:' + prioColor + '">' + (m.priority || 'low') + '</span>' +
+            '</div>' +
+            '<div class="log-msg">' + escapeHtml(m.message || '') + '</div>';
+        logEl.appendChild(div);
+    });
+
+    updateThreat();
+}
+
+function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+// firewall alert
+function showFirewallAlert(msg) {
+    const el = document.createElement('div');
+    el.className = 'firewall-alert';
+    const isStress = msg.message && msg.message.includes('STRESS');
+    el.innerHTML =
+        '<div class="fa-icon">\u{1F6A8}</div>' +
+        '<div class="fa-text">' + (isStress ? 'STRESS ALERT<br>ACTIVATED' : 'FATIGUE FIREWALL<br>ACTIVATED') + '</div>' +
+        '<div class="fa-sub">Biometric safety override engaged</div>';
+    document.body.appendChild(el);
+    setTimeout(() => el.classList.add('fade'), 3500);
+    setTimeout(() => el.remove(), 5000);
+}
+
+// websocket
+let ws;
+function connect() {
+    ws = new WebSocket('ws://localhost:8000/ws');
+
+    ws.onopen = () => {
+        isConnected = true;
+        sessionStart = Date.now();
+        sessionDot.classList.add('on');
+        sessionLabel.textContent = 'SESSION ACTIVE';
+        sessionLabel.style.color = '#00c864';
+    };
+
+    ws.onclose = () => {
+        isConnected = false;
+        sessionDot.classList.remove('on');
+        sessionLabel.textContent = 'OFFLINE';
+        sessionLabel.style.color = '#888';
+        setTimeout(connect, 3000);
+    };
+
+    ws.onerror = () => {};
+
+    ws.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
+
+        switch (msg.type) {
+            case 'biometric_update':
+                targetHR     = msg.heartRate || 0;
+                targetHRV    = msg.hrv || 0;
+                targetRec    = msg.recovery || 0;
+                targetStrain = msg.strain || 0;
+                targetStress = msg.estimated_stress || 0;
+                ecgTargetBPM = msg.heartRate || 72;
+                syncHeartbeat(msg.heartRate || 72);
+                if (msg.state) setState(msg.state);
+                if (msg.hrv && msg.hrv > 0) {
+                    hrvHistory.push(msg.hrv);
+                    if (hrvHistory.length > HRV_MAX_POINTS) hrvHistory.shift();
+                }
+                break;
+
+            case 'intervention':
+                addIntervention(msg);
+                if (msg.message && (msg.message.includes('FIREWALL') || msg.message.includes('STRESS ALERT'))) {
+                    showFirewallAlert(msg);
+                }
+                break;
+
+            case 'state_change':
+                if (msg.to) setState(msg.to);
+                break;
+        }
+    };
+}
+connect();
+</script>
+</body>
+</html>

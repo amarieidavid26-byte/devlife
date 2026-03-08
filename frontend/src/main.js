@@ -1,0 +1,328 @@
+import * as PIXI from 'pixi.js';
+import { Howl } from 'howler';
+import { GhostSocket } from './network/WebSocket.js';
+import { Room } from './room/Room.js';
+import { Furniture } from './room/Furniture.js';
+import { Atmosphere } from './room/Atmosphere.js';
+import { Player } from './character/Player.js';
+import { Ghost } from './character/Ghost.js';
+import { HUD } from './hud/HUD.js';
+import { BeneathView } from './hud/BeneathView.js';
+import { DemoHotbar } from './hud/DemoHotbar.js';
+import { CodeEditorApp } from './apps/CodeEditor.js';
+import { TerminalApp } from './apps/Terminal.js';
+import { BrowserApp } from './apps/Browser.js';
+import { NotesApp } from './apps/Notes.js';
+import { ChatApp } from './apps/Chat.js';
+import { MainMenu } from './menu/MainMenu.js';
+
+const pixiApp = new PIXI.Application({
+    width: window.innerWidth,
+    height: window.innerHeight,
+    backgroundColor: 0x1a1a2e,
+    antialias: true,
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true,
+});
+document.body.appendChild(pixiApp.view);
+// Set position/offset individually so autoDensity's width/height styles survive
+pixiApp.view.style.position = 'fixed';
+pixiApp.view.style.top = '0';
+pixiApp.view.style.left = '0';
+
+const GAME_ZOOM = 1.5;
+let gameContainer = null;
+let player = null;
+
+window.addEventListener('resize', () => {
+    pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
+    if (gameContainer && player) {
+        // Snap immediately to player on resize (no lerp lag)
+        gameContainer.x = window.innerWidth  / 2 - player.container.x * GAME_ZOOM;
+        gameContainer.y = window.innerHeight / 2 - player.container.y * GAME_ZOOM;
+    }
+});
+
+// --- Main Menu ---
+const mainMenu = new MainMenu(pixiApp);
+mainMenu.show(() => startGame());
+
+// --- Game init (called when menu START is clicked) ---
+function startGame() {
+    let socket, room, furniture, ghost, atmosphere, hud, beneathView, demoHotbar, apps, activeApp, ePrompt;
+
+    socket = new GhostSocket('ws://localhost:8000/ws');
+
+    room = new Room(pixiApp.stage);
+    furniture = new Furniture(pixiApp.stage, room);
+    player = new Player(pixiApp.stage, room, furniture);
+    ghost = new Ghost(pixiApp.stage);
+    atmosphere = new Atmosphere(pixiApp.stage);
+
+    // world container for z-sorting
+    const worldContainer = new PIXI.Container();
+    worldContainer.sortableChildren = true;
+
+    // Remove from stage (room.container stays at index 0)
+    pixiApp.stage.removeChild(furniture.container);
+    pixiApp.stage.removeChild(player.container);
+    pixiApp.stage.removeChild(ghost.container);
+    pixiApp.stage.removeChild(atmosphere.container);
+
+    pixiApp.stage.addChild(worldContainer);       // sorted world objects
+    pixiApp.stage.addChild(atmosphere.container); // atmosphere overlay always on top
+
+    furniture.attachToWorld(worldContainer);
+    worldContainer.addChild(player.container);
+    worldContainer.addChild(ghost.container);
+
+    // zoom
+    gameContainer = new PIXI.Container();
+    pixiApp.stage.removeChild(room.container);
+    pixiApp.stage.removeChild(worldContainer);
+    pixiApp.stage.addChildAt(gameContainer, 0); // index 0, before atmosphere.container
+    gameContainer.addChild(room.container);
+    gameContainer.addChild(worldContainer);
+    gameContainer.scale.set(GAME_ZOOM);
+    gameContainer.x = Math.round(window.innerWidth  / 2 * (1 - GAME_ZOOM));
+    gameContainer.y = Math.round(window.innerHeight / 2 * (1 - GAME_ZOOM));
+
+    // [E] prompt above interactable
+    ePrompt = new PIXI.Text('[E]', {
+        fontFamily:         'monospace',
+        fontSize:           13,
+        fill:               0xe94560,
+        fontWeight:         'bold',
+        dropShadow:         true,
+        dropShadowColor:    '#000000',
+        dropShadowBlur:     4,
+        dropShadowAlpha:    0.6,
+        dropShadowDistance: 0,
+    });
+    ePrompt.anchor.set(0.5, 1);
+    ePrompt.visible = false;
+    ePrompt.zIndex = 10000;
+    worldContainer.addChild(ePrompt);
+
+    // Link atmosphere to ghost so critical interventions can trigger screen shake
+    ghost.setAtmosphere(atmosphere);
+
+    hud = new HUD();
+    beneathView = new BeneathView();
+    demoHotbar = new DemoHotbar();
+    demoHotbar.setClickHandler((key) => socket.sendMockState(key));
+
+    // app overlays
+    apps = {
+        desk_computer: new CodeEditorApp(socket),
+        desk_terminal: new TerminalApp(socket),
+        second_monitor: new BrowserApp(socket),
+        whiteboard: new NotesApp(socket),
+        phone: new ChatApp(socket),
+    };
+
+    activeApp = null;
+
+    function openApp(name) {
+        closeAllApps();
+        const app = apps[name];
+        if (!app) return;
+        app.open();
+        socket.sendAppFocus(app.appType);
+        activeApp = app;
+        pixiApp.view.style.pointerEvents = 'none';
+        player.sit();
+    }
+
+    function closeAllApps() {
+        Object.values(apps).forEach(a => a.close());
+        socket.sendAppFocus(null);
+        activeApp = null;
+        pixiApp.view.style.pointerEvents = 'auto';
+        player.stand();
+    }
+
+    // ambient music
+    // Drop ambient.mp3/ogg in /public to enable speaker toggle
+    let ambientSound = new Howl({
+        src:         ['/ambient.mp3', '/ambient.ogg'],
+        loop:        true,
+        volume:      0.35,
+        html5:       true,
+        onloaderror: () => {
+            ambientSound = null;
+            console.log('[main] No ambient audio file found — speaker will be silent');
+        },
+    });
+    let musicPlaying = false;
+
+    function toggleMusic() {
+        if (!ambientSound) return;
+        if (musicPlaying) {
+            ambientSound.pause();
+            musicPlaying = false;
+        } else {
+            ambientSound.play();
+            musicPlaying = true;
+        }
+    }
+
+    // furniture interactions
+    furniture.on('interact', (name) => {
+        if (name === 'coffee_machine') {
+            ghost.showSpeechBubble({
+                message:   "Good idea — coffee fuels great code. Don't forget to hydrate too! ☕",
+                priority:  'low',
+                state:     ghost._state,
+                buttons:   ['Thanks!'],
+                biometric: {},
+            });
+            return;
+        }
+        if (name === 'speaker') {
+            toggleMusic();
+            ghost.showSpeechBubble({
+                message:   musicPlaying ? "Music on. Let the flow state begin. 🎵" : "Music off.",
+                priority:  'low',
+                state:     ghost._state,
+                buttons:   ['Nice'],
+                biometric: {},
+            });
+            return;
+        }
+        openApp(name);
+    });
+
+    // ghost feedback
+    ghost.setFeedbackHandler((label) => {
+        socket.sendFeedback(label);
+        if (label === 'Apply Fix' || label === 'I Understand') {
+            furniture.onInterventionAccepted();
+        }
+    });
+
+    // apply fix handler
+    ghost.setApplyFixHandler((code) => {
+        const editor = apps.desk_computer;
+        if (editor && editor.isOpen && code) {
+            editor.replaceContent(code);
+        }
+    });
+
+    socket.on('connected', () => hud.setConnected(true));
+    socket.on('disconnected', () => hud.setConnected(false));
+
+    socket.on('intervention',     (data) => ghost.showSpeechBubble(data));
+
+    socket.on('biometric_update', (data) => {
+        hud.update(data);
+        beneathView.update(data);
+        demoHotbar.setActive(data.state);
+        atmosphere.setState(data.state);
+        ghost.setStateTint(data.state);
+        furniture.setMonitorState(data.state);
+    });
+
+    socket.on('state_change', (data) => {
+        demoHotbar.setActive(data.to);
+        atmosphere.transition(data.from, data.to);
+        ghost.setStateTint(data.to);
+        furniture.setMonitorState(data.to);
+    });
+
+    // keyboard
+    document.addEventListener('keydown', (e) => {
+        // 1-5: ALWAYS change mock biometric state, even inside app overlays
+        if (e.key >= '1' && e.key <= '5') {
+            e.preventDefault();
+            socket.sendMockState(parseInt(e.key));
+            return;
+        }
+
+        // Escape always works (closes apps/bubbles even while typing)
+        if (e.key === 'Escape') {
+            if (ghost._bubble) { ghost.dismissBubble(true); return; }
+            closeAllApps();
+            return;
+        }
+
+        // TAB: toggle Beneath the Surface overlay (only when no app is open)
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            if (!activeApp) beneathView.toggle();
+            return;
+        }
+
+        // Don't capture WASD/E when an app overlay is open — let the app handle them
+        if (activeApp) return;
+
+        // Skip game shortcuts while typing in an input field (e.g. HUD search)
+        const tag = e.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
+
+        if (e.key.toLowerCase() === 'e') {
+            const name = furniture.getNearbyInteractable(player.gridX, player.gridY);
+            if (name) furniture.emit('interact', name);
+        }
+    });
+
+    // game loop
+    pixiApp.ticker.add((delta) => {
+        player.update(delta);
+        ghost.update(delta, player.position);
+        atmosphere.update(delta);
+        furniture.update(delta);
+
+        // Smooth camera follow — lerp gameContainer toward player centre
+        const camTargetX = window.innerWidth  / 2 - player.container.x * GAME_ZOOM;
+        const camTargetY = window.innerHeight / 2 - player.container.y * GAME_ZOOM;
+        const camLerp = 0.07 * delta;
+        gameContainer.x += (camTargetX - gameContainer.x) * camLerp;
+        gameContainer.y += (camTargetY - gameContainer.y) * camLerp;
+
+        // Screen shake (critical interventions — Fatigue Firewall)
+        atmosphere.applyScreenShake(gameContainer);
+
+        // Beneath the Surface: feed screen-space positions for rings + particles
+        if (beneathView._visible) {
+            beneathView.setPositions(
+                {
+                    x: gameContainer.x + player.container.x * GAME_ZOOM,
+                    y: gameContainer.y + player.container.y * GAME_ZOOM,
+                },
+                {
+                    x: gameContainer.x + ghost.container.x * GAME_ZOOM,
+                    y: gameContainer.y + ghost.container.y * GAME_ZOOM,
+                }
+            );
+        }
+
+        // z-sorting — higher screen Y = closer to camera
+        furniture._items.forEach(item => { item.container.zIndex = item.container.y; });
+        player.container.zIndex = player.container.y;
+        ghost.container.zIndex = player.container.y + 50;
+
+        // [E] prompt
+        const nearbyName = furniture.getNearbyInteractable(player.gridX, player.gridY);
+        const nearbyItem = nearbyName
+            ? furniture._items.find(i => i.name === nearbyName)
+            : null;
+        if (nearbyItem && !activeApp) {
+            ePrompt.visible = true;
+            ePrompt.x = nearbyItem.container.x;
+            ePrompt.y = nearbyItem.container.y - 55 + Math.sin(Date.now() / 280) * 4;
+        } else {
+            ePrompt.visible = false;
+        }
+
+        // highlight ring
+        furniture.updateHighlights(player.gridX, player.gridY);
+    });
+
+    // check if backend is alive
+    fetch('http://localhost:8000/health').then(r => r.json()).then(d => {
+        console.log('[main] backend health:', d.status);
+    }).catch(() => {});
+
+    console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');
+}

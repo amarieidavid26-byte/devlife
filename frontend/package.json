@@ -1,0 +1,20 @@
+{
+    "name": "devlife-frontend",
+    "version": "1.0.0",
+    "description": "DevLife — AI companion game with WHOOP biometrics",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "test-server": "node test-server.js"
+    },
+    "dependencies": {
+        "howler": "^2.2.4",
+        "pixi.js": "^7.3.0"
+    },
+    "devDependencies": {
+        "vite": "^5.0.0",
+        "ws": "^8.16.0"
+    }
+}
