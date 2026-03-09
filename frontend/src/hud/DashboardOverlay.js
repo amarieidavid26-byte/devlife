@@ -650,16 +650,9 @@ export class DashboardOverlay {
         if (data.heartRate) {
             this._targetHR = data.heartRate;
             this._ecgTargetBPM = data.heartRate;
-            this._syncHeartbeat(data.heartRate);
+            this._syncHeartBeat(data.heartRate);
         }
         if (data.hrv > 0) {
-            this._targetHRV = data.hrv;
-            this._hrvHistory.push(data.hrv);
-            if (this._hrvHistory.length > HRV_MAX_POINTS)
-                this._hrvHistory.shift();
-        }
-
-        if(data.hrv > 0) {
             this._targetHRV = data.hrv;
             this._hrvHistory.push(data.hrv);
             if (this._hrvHistory.length > HRV_MAX_POINTS)
@@ -722,9 +715,13 @@ export class DashboardOverlay {
     }
 
     toggle() {
-        this._el.style.display = 'block';
-        this._visible = true;
-        requestAnimationFrame(() => {this._resizeECG(); this._resizeSpark(); });
+        if (this._visible) {
+            this.hide();
+        } else {
+            this._el.style.display = 'block';
+            this._visible = true;
+            requestAnimationFrame(() => {this._resizeECG(); this._resizeSpark(); });
+        }
     }
 
     hide(){
