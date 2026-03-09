@@ -46,8 +46,12 @@ export class Atmosphere {
         this.container.addChild(this._burstContainer);
 
         this._dustMotes = [];
+        this._fireflies = [];
         this._initDustMotes();
+        this._initFireflies();
         this._initParticles();
+        this._buildLampGlow();
+        this._buildMoonlight();
         this._redrawOverlay();
 
         // Vignette overlay — added last so it draws on top of everything
@@ -78,6 +82,70 @@ export class Atmosphere {
                 phase: Math.random() * Math.PI * 2,
             });
         }
+    }
+
+    // ── Firefly-style glowing particles ──
+
+    _initFireflies() {
+        for (let i = 0; i < 6; i++) {
+            const g = new PIXI.Graphics();
+            g.beginFill(0xFFE4B5, 1);
+            g.drawCircle(0, 0, 2);
+            g.endFill();
+            g.x = Math.random() * window.innerWidth;
+            g.y = Math.random() * window.innerHeight;
+            g.alpha = 0;
+            this.container.addChild(g);
+            this._fireflies.push({
+                gfx: g,
+                vx: (Math.random() - 0.5) * 0.1,
+                baseY: g.y,
+                sineAmp: 8 + Math.random() * 6,
+                sinePeriod: 3 + Math.random() * 3,
+                phase: Math.random() * Math.PI * 2,
+                pulsePhase: Math.random() * Math.PI * 2,
+                pulsePeriod: 3 + Math.random() * 3,
+            });
+        }
+    }
+
+    // ── Warm lamp light pool on floor ──
+
+    _buildLampGlow() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 100;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(100, 50, 0, 100, 50, 100);
+        gradient.addColorStop(0, 'rgba(255, 228, 181, 0.08)');
+        gradient.addColorStop(0.6, 'rgba(255, 228, 181, 0.03)');
+        gradient.addColorStop(1, 'rgba(255, 228, 181, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 200, 100);
+        const texture = PIXI.Texture.from(canvas);
+        this._lampGlow = new PIXI.Sprite(texture);
+        this._lampGlow.anchor.set(0.5, 0.5);
+        this._lampGlow.x = window.innerWidth * 0.35;
+        this._lampGlow.y = window.innerHeight * 0.6;
+        this.container.addChild(this._lampGlow);
+    }
+
+    // ── Moonlight beam on floor near window ──
+
+    _buildMoonlight() {
+        this._moonlight = new PIXI.Graphics();
+        this._moonlight.beginFill(0x8AAAB8, 0.03);
+        // Parallelogram suggesting angled moonlight from top-right window
+        const bx = window.innerWidth * 0.7;
+        const by = window.innerHeight * 0.45;
+        this._moonlight.drawPolygon([
+            bx,      by,
+            bx + 80, by,
+            bx + 50, by + 120,
+            bx - 30, by + 120,
+        ]);
+        this._moonlight.endFill();
+        this.container.addChild(this._moonlight);
     }
 
     // ── Vignette: smooth radial gradient via offscreen canvas ──
@@ -300,6 +368,23 @@ export class Atmosphere {
             if (d.gfx.x > window.innerWidth + 10) {
                 d.gfx.x = -10;
                 d.baseY = Math.random() * window.innerHeight;
+            }
+        }
+
+        // fireflies — pulsing warm glow
+        for (const f of this._fireflies) {
+            f.phase += (delta / 60) * (Math.PI * 2 / f.sinePeriod);
+            f.pulsePhase += (delta / 60) * (Math.PI * 2 / f.pulsePeriod);
+            f.gfx.x += f.vx * delta;
+            f.gfx.y = f.baseY + Math.sin(f.phase) * f.sineAmp;
+            f.gfx.alpha = Math.max(0, Math.sin(f.pulsePhase) * 0.12);
+            if (f.gfx.x > window.innerWidth + 10) {
+                f.gfx.x = -10;
+                f.baseY = Math.random() * window.innerHeight;
+            }
+            if (f.gfx.x < -10) {
+                f.gfx.x = window.innerWidth + 10;
+                f.baseY = Math.random() * window.innerHeight;
             }
         }
 

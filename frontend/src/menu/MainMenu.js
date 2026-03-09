@@ -268,8 +268,8 @@ export class MainMenu {
 
         // title text
         this._titleText = new PIXI.Text('DEVLIFE', {
-            fontFamily: "'Courier New', monospace",
-            fontWeight: 'bold',
+            fontFamily: "'Fredoka', sans-serif",
+            fontWeight: '700',
             fontSize: 80,
             fill: 0x6AD89A,
         });
@@ -280,8 +280,8 @@ export class MainMenu {
 
         // glow text behind title
         this._titleGlow = new PIXI.Text('DEVLIFE', {
-            fontFamily: "'Courier New', monospace",
-            fontWeight: 'bold',
+            fontFamily: "'Fredoka', sans-serif",
+            fontWeight: '700',
             fontSize: 80,
             fill: 0x6AD89A,
         });
@@ -302,7 +302,7 @@ export class MainMenu {
 
         // subtitle
         this._subtitleText = new PIXI.Text('The Biometric Developer Simulator', {
-            fontFamily: 'monospace',
+            fontFamily: "'Nunito', sans-serif",
             fontSize: 20,
             fill: 0xB8A88C,
         });
@@ -454,7 +454,7 @@ export class MainMenu {
             'background:rgba(10,10,20,0.85)',
             'border:1px solid rgba(106,216,154,0.2)',
             'color:#b0b0b0',
-            "font:500 15px 'Courier New',monospace",
+            "font:600 15px 'Nunito',sans-serif",
             'padding:14px 56px',
             'min-width:240px',
             'text-align:center',
@@ -498,7 +498,7 @@ export class MainMenu {
 
     // LAYER 8 — corner text
     _buildLayer8() {
-        const cornerStyle = "position:fixed;bottom:20px;font:11px 'Courier New',monospace;color:#333;z-index:10000;opacity:0;transition:opacity 0.5s ease";
+        const cornerStyle = "position:fixed;bottom:20px;font:11px 'Nunito',sans-serif;color:#333;z-index:10000;opacity:0;transition:opacity 0.5s ease";
 
         const right = document.createElement('div');
         right.style.cssText = cornerStyle + ';right:20px';

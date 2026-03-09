@@ -64,6 +64,7 @@ export class Town {
 
         this._benchTex = null;
         this._plantTex = null;
+        this._pondRipple = null;
     }
 
     // ─────────────────────────────────────────────
@@ -173,6 +174,7 @@ export class Town {
         this._particles = [];
         this._trees = [];
         this._lampGlows = [];
+        this._pondRipple = null;
         this._elapsed = 0;
     }
 
@@ -200,6 +202,23 @@ export class Town {
             const camLerp = 0.07 * delta;
             this._container.x += (targetX - this._container.x) * camLerp;
             this._container.y += (targetY - this._container.y) * camLerp;
+        }
+
+        // Pond ripple animation
+        if (this._pondRipple) {
+            const pr = this._pondRipple;
+            const now = Date.now();
+            const elapsed = now - pr.lastRipple;
+            const cycle = 3000;
+            if (elapsed > cycle) pr.lastRipple = now;
+            const t = (elapsed % cycle) / cycle;
+            pr.gfx.clear();
+            if (t < 0.7) {
+                const radius = 4 + t * 28;
+                const alpha = 0.15 * (1 - t / 0.7);
+                pr.gfx.lineStyle(1, 0x8AD0E0, alpha);
+                pr.gfx.drawEllipse(pr.cx, pr.cy, radius, radius * 0.5);
+            }
         }
 
         if (this._dialogue) this._dialogue.update(delta);
@@ -700,42 +719,191 @@ export class Town {
     // ─────────────────────────────────────────────
 
     _drawPark(startX, startY, w, h) {
-        // Positions within the park grid for trees (offset so they look scattered)
+        // ── Park fence (low decorative perimeter) ──
+        const fencePosts = [
+            [startX, startY], [startX + 2, startY], [startX + w, startY],
+            [startX + w, startY + 2], [startX + w, startY + h],
+            [startX + 2, startY + h], [startX, startY + h],
+            [startX, startY + 2],
+        ];
+        const fence = new PIXI.Graphics();
+        const fenceScreenPts = fencePosts.map(([gx, gy]) => this._gridToScreen(gx, gy));
+        // Posts
+        for (const pt of fenceScreenPts) {
+            fence.beginFill(COL.trunk, 0.7);
+            fence.drawRect(pt.x - 1.5, pt.y - 8, 3, 8);
+            fence.endFill();
+        }
+        // Connecting rails
+        fence.lineStyle(1, COL.bench, 0.4);
+        for (let i = 0; i < fenceScreenPts.length; i++) {
+            const a = fenceScreenPts[i];
+            const b = fenceScreenPts[(i + 1) % fenceScreenPts.length];
+            fence.moveTo(a.x, a.y - 5);
+            fence.lineTo(b.x, b.y - 5);
+        }
+        fence.lineStyle(0);
+        this._detailContainer.addChild(fence);
+
+        // ── Garden path (curved stepping stones) ──
+        const stonePath = [
+            [startX + 0.2, startY + 1.0],
+            [startX + 0.8, startY + 1.6],
+            [startX + 1.4, startY + 2.0],
+            [startX + 2.0, startY + 2.4],
+            [startX + 2.6, startY + 2.6],
+            [startX + 3.2, startY + 2.8],
+            [startX + 3.8, startY + 3.2],
+        ];
+        const stones = new PIXI.Graphics();
+        for (const [sx, sy] of stonePath) {
+            const sp = this._gridToScreen(sx, sy);
+            stones.beginFill(0xBFAF93, 0.5);
+            stones.drawEllipse(sp.x, sp.y + TILE_HEIGHT / 2, 5, 3);
+            stones.endFill();
+        }
+        this._floorContainer.addChild(stones);
+
+        // ── Pond (center-right area) ──
+        const pondPos = this._gridToScreen(startX + 2.8, startY + 1.3);
+        const pondCX = pondPos.x;
+        const pondCY = pondPos.y + TILE_HEIGHT / 2;
+        const pond = new PIXI.Graphics();
+        // Water body
+        pond.beginFill(0x6AB8D0, 0.7);
+        pond.drawEllipse(pondCX, pondCY, 20, 12);
+        pond.endFill();
+        // Highlight
+        pond.beginFill(0x8AD0E0, 0.3);
+        pond.drawEllipse(pondCX - 3, pondCY - 2, 12, 7);
+        pond.endFill();
+        // Edge
+        pond.lineStyle(1, 0x5A9AAC, 0.3);
+        pond.drawEllipse(pondCX, pondCY, 20, 12);
+        pond.lineStyle(0);
+        // Lily pads
+        const lilyPositions = [[-8, -3], [6, 2], [0, 5]];
+        for (const [lx, ly] of lilyPositions) {
+            pond.beginFill(0x5BA05C, 0.7);
+            pond.drawCircle(pondCX + lx, pondCY + ly, 3);
+            pond.endFill();
+            // Notch in lily pad
+            pond.beginFill(0x6AB8D0, 0.7);
+            pond.moveTo(pondCX + lx, pondCY + ly);
+            pond.lineTo(pondCX + lx + 2, pondCY + ly - 1);
+            pond.lineTo(pondCX + lx + 2, pondCY + ly + 1);
+            pond.closePath();
+            pond.endFill();
+            // Tiny flower on one pad
+            if (lx === 0) {
+                pond.beginFill(0xFFB5E8, 0.8);
+                pond.drawCircle(pondCX + lx - 1, pondCY + ly - 1, 1.5);
+                pond.endFill();
+            }
+        }
+        this._detailContainer.addChild(pond);
+
+        // Pond ripple ring (animated in update)
+        const rippleGfx = new PIXI.Graphics();
+        this._detailContainer.addChild(rippleGfx);
+        this._pondRipple = { gfx: rippleGfx, cx: pondCX, cy: pondCY, lastRipple: Date.now() };
+
+        // ── Flowers (12 scattered with stems and petals) ──
+        const flowerColors = [0xFF9A8C, 0xFFD66B, 0x9BDFFF, 0xFFB5E8, 0xFFFFFF];
+        const flowerPositions = [
+            [startX + 0.3, startY + 0.4],
+            [startX + 1.2, startY + 0.3],
+            [startX + 0.5, startY + 1.8],
+            [startX + 1.7, startY + 0.7],
+            [startX + 0.3, startY + 2.8],
+            [startX + 1.4, startY + 2.2],
+            [startX + 3.5, startY + 0.5],
+            [startX + 3.7, startY + 2.0],
+            [startX + 0.6, startY + 3.6],
+            [startX + 1.5, startY + 3.3],
+            [startX + 3.6, startY + 3.6],
+            [startX + 2.6, startY + 3.4],
+        ];
+        const flowers = new PIXI.Graphics();
+        for (let i = 0; i < flowerPositions.length; i++) {
+            const fp = this._gridToScreen(flowerPositions[i][0], flowerPositions[i][1]);
+            const fx = fp.x;
+            const fy = fp.y + TILE_HEIGHT / 2;
+            const col = flowerColors[i % flowerColors.length];
+            // Stem
+            flowers.lineStyle(1, 0x4A8A4C, 0.7);
+            flowers.moveTo(fx, fy);
+            flowers.lineTo(fx, fy - 6);
+            flowers.lineStyle(0);
+            // Petals (3-4 tiny circles around center)
+            const petalCount = 3 + (i % 2);
+            for (let p = 0; p < petalCount; p++) {
+                const angle = (p / petalCount) * Math.PI * 2;
+                const px = fx + Math.cos(angle) * 2;
+                const py = fy - 6 + Math.sin(angle) * 2;
+                flowers.beginFill(col, 0.7);
+                flowers.drawCircle(px, py, 2);
+                flowers.endFill();
+            }
+            // Center dot
+            flowers.beginFill(0xFFD66B, 0.9);
+            flowers.drawCircle(fx, fy - 6, 1.2);
+            flowers.endFill();
+        }
+        this._detailContainer.addChild(flowers);
+
+        // ── Trees (puffball Animal Crossing style) ──
         const treePositions = [
-            [startX + 0.8, startY + 0.8],
-            [startX + 3.2, startY + 0.5],
-            [startX + 1.0, startY + 3.0],
-            [startX + 3.0, startY + 2.8],
-            [startX + 2.0, startY + 1.5],
+            [startX + 0.6, startY + 0.7],
+            [startX + 3.4, startY + 0.4],
+            [startX + 0.8, startY + 3.2],
+            [startX + 3.2, startY + 2.7],
+            [startX + 1.8, startY + 1.4],
         ];
 
         for (const [tx, ty] of treePositions) {
             const { x, y } = this._gridToScreen(tx, ty);
             const tree = new PIXI.Graphics();
 
-            // Trunk — warm brown
+            // Shadow under tree
+            tree.beginFill(0x3C2A1A, 0.1);
+            tree.drawEllipse(x, y, 24, 12);
+            tree.endFill();
+
+            // Trunk — thick warm brown
             tree.beginFill(COL.trunk);
-            tree.drawRect(x - 3, y - 14, 6, 14);
+            tree.drawRect(x - 4, y - 20, 8, 20);
             tree.endFill();
+            // Trunk bark detail
+            tree.lineStyle(0.5, 0x7A5A2A, 0.3);
+            tree.moveTo(x - 1, y - 18);
+            tree.lineTo(x - 2, y - 6);
+            tree.moveTo(x + 2, y - 16);
+            tree.lineTo(x + 1, y - 4);
+            tree.lineStyle(0);
 
-            // Puffy Animal Crossing canopy — 3 overlapping circles
+            // Canopy — 4 overlapping puffball circles
             tree.beginFill(COL.canopy, 0.9);
-            tree.drawCircle(x - 6, y - 22, 10);   // left puff
-            tree.drawCircle(x + 6, y - 22, 10);   // right puff
-            tree.drawCircle(x, y - 28, 11);        // top puff
+            tree.drawCircle(x, y - 30, 18);         // main
+            tree.drawCircle(x - 10, y - 26, 14);    // left puff
+            tree.drawCircle(x + 10, y - 26, 14);    // right puff
+            tree.endFill();
+            // Top highlight puff (lighter green)
+            tree.beginFill(0x6DC86E, 0.6);
+            tree.drawCircle(x, y - 42, 12);          // top puff
             tree.endFill();
 
-            // Highlight puffs — lighter green on top
-            tree.beginFill(COL.canopyHi, 0.4);
-            tree.drawCircle(x - 4, y - 26, 6);
-            tree.drawCircle(x + 3, y - 30, 5);
+            // Canopy highlight accents
+            tree.beginFill(COL.canopyHi, 0.3);
+            tree.drawCircle(x - 6, y - 36, 7);
+            tree.drawCircle(x + 5, y - 40, 6);
             tree.endFill();
 
             this._detailContainer.addChild(tree);
             this._trees.push(tree);
         }
 
-        // Bench — sprite or improved procedural
+        // ── Bench with bird ──
         const benchPos = this._gridToScreen(startX + 2, startY + 3.5);
 
         if (this._benchTex) {
@@ -786,13 +954,11 @@ export class Town {
 
             // Armrests
             bench.beginFill(COL.trunk, 0.9);
-            // Left armrest
             bench.drawRect(benchPos.x - bw / 2 - 1, benchPos.y + bSlant - bh - 8, 3, 8);
-            // Right armrest
             bench.drawRect(benchPos.x + bw / 2 - 2, benchPos.y - bSlant - bh - 8, 3, 8);
             bench.endFill();
 
-            // Legs — warm brown
+            // Legs
             bench.beginFill(COL.trunk, 0.8);
             bench.drawRect(benchPos.x - bw / 2 + 2, benchPos.y + bSlant, 2, 5);
             bench.drawRect(benchPos.x + bw / 2 - 4, benchPos.y - bSlant, 2, 5);
@@ -801,18 +967,65 @@ export class Town {
             this._detailContainer.addChild(bench);
         }
 
-        // Park label
-        const labelPos = this._gridToScreen(startX + w / 2, startY + h / 2);
-        const text = new PIXI.Text('PARK', {
+        // Bird on the bench backrest
+        const bird = new PIXI.Graphics();
+        const birdX = benchPos.x + 4;
+        const birdY = benchPos.y - 12;
+        // Body
+        bird.beginFill(0x8B6B3A, 0.9);
+        bird.drawEllipse(birdX, birdY, 3, 2.5);
+        bird.endFill();
+        // Head
+        bird.beginFill(0x8B6B3A);
+        bird.drawCircle(birdX + 3, birdY - 2, 2);
+        bird.endFill();
+        // Beak
+        bird.beginFill(0xE8A04C);
+        bird.moveTo(birdX + 5, birdY - 2);
+        bird.lineTo(birdX + 7, birdY - 1.5);
+        bird.lineTo(birdX + 5, birdY - 1);
+        bird.closePath();
+        bird.endFill();
+        // Eye
+        bird.beginFill(0x1a1a1a);
+        bird.drawCircle(birdX + 3.5, birdY - 2.5, 0.6);
+        bird.endFill();
+        // Tail feathers
+        bird.beginFill(0x7A5A2A, 0.7);
+        bird.moveTo(birdX - 3, birdY);
+        bird.lineTo(birdX - 6, birdY - 1);
+        bird.lineTo(birdX - 5, birdY + 1);
+        bird.closePath();
+        bird.endFill();
+        this._detailContainer.addChild(bird);
+
+        // ── Park sign (signpost replacing floating label) ──
+        const signPos = this._gridToScreen(startX + 0.5, startY);
+        const sign = new PIXI.Graphics();
+        // Post
+        sign.beginFill(0x6B5B3E);
+        sign.drawRect(signPos.x - 1.5, signPos.y - 20, 3, 20);
+        sign.endFill();
+        // Sign board
+        sign.beginFill(COL.bench);
+        sign.drawRoundedRect(signPos.x - 17, signPos.y - 30, 35, 14, 2);
+        sign.endFill();
+        // Board border
+        sign.lineStyle(0.5, 0x8B7348, 0.5);
+        sign.drawRoundedRect(signPos.x - 17, signPos.y - 30, 35, 14, 2);
+        sign.lineStyle(0);
+        this._detailContainer.addChild(sign);
+        // Sign text
+        const signText = new PIXI.Text('PARK', {
             fontFamily: 'monospace',
-            fontSize: 12,
+            fontSize: 9,
             fill: COL.labelFill,
         });
-        text.alpha = 0.7;
-        text.anchor.set(0.5, 0.5);
-        text.x = labelPos.x;
-        text.y = labelPos.y - 40;
-        this._labelContainer.addChild(text);
+        signText.alpha = 0.85;
+        signText.anchor.set(0.5, 0.5);
+        signText.x = signPos.x;
+        signText.y = signPos.y - 23;
+        this._labelContainer.addChild(signText);
     }
 
     // ─────────────────────────────────────────────

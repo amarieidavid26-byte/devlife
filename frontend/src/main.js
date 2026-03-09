@@ -21,6 +21,7 @@ import { ToastSystem } from './hud/ToastSystem.js';
 import { SettingsMenu } from './menu/SettingsMenu.js';
 import { SceneManager } from './scenes/SceneManager.js';
 import { Town } from './town/Town.js';
+import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
 import { CONFIG } from './config.js';
 
 const pixiApp = new PIXI.Application({
@@ -139,6 +140,20 @@ async function startGame(enableDemo = false) {
     beneathView = new BeneathView();
     demoHotbar = new DemoHotbar();
     demoHotbar.setClickHandler((key) => socket.sendMockState(key));
+
+    // WHOOP BLE pairing — connects the PAIR WHOOP button to the Web Bluetooth API
+    const whoop = new WHOOPBluetooth();
+    window.connectWHOOP = async () => {
+        const ok = await whoop.connect();
+        if (ok) demoHotbar.setBLEConnected(true);
+    };
+    whoop.onUpdate((bpm, connected) => {
+        demoHotbar.setBLEConnected(connected);
+        if (connected && bpm > 0) {
+            socket.send({ type: 'heart_rate', bpm });
+            hud.update({ heart_rate: bpm });
+        }
+    });
 
     // app overlays
     apps = {

@@ -89,7 +89,7 @@ export class HUD {
             border: 1px solid rgba(255,228,181,0.12);
             border-radius: 12px;
             overflow: hidden;
-            font-family: 'Segoe UI', monospace, sans-serif;
+            font-family: 'Nunito', sans-serif;
             font-size: 13px;
             color: #F5F0E8;
             z-index: 150;
@@ -284,7 +284,7 @@ export class HUD {
 
         this._textEl.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span class="hr-pulse" style="display:inline-block">❤️ <strong>${bpmFmt}</strong> bpm</span>
+                <span class="hr-pulse" style="display:inline-block">❤️ <strong style="font-family:monospace">${bpmFmt}</strong> bpm</span>
                 <span>${connDot}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -292,10 +292,10 @@ export class HUD {
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:2px">
                 <span>Strain: <strong>${strainFmt}</strong></span>
-                <span>HRV: <strong>${hrvFmt}</strong></span>
+                <span>HRV: <strong style="font-family:monospace">${hrvFmt}</strong></span>
             </div>
             <div style="margin:6px 0 4px">
-                State: <strong style="color:${stateColor}">${stateLabel}</strong>
+                State: <strong style="color:${stateColor};font-family:'Fredoka',sans-serif;font-weight:600">${stateLabel}</strong>
             </div>
             <div style="font-size:11px;color:#B8A88C;margin-bottom:4px">
                 Stress ${stress.toFixed(1)}/3.0

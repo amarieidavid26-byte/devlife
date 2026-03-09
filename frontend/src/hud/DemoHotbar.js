@@ -49,7 +49,7 @@ export class DemoHotbar {
                 }
                 .dh-num  { font-size: 10px; font-family: monospace; color: #B8A88C; font-weight: 700; }
                 .dh-icon { font-size: 15px; line-height: 1; }
-                .dh-name { font-size: 8px;  font-family: monospace; color: #B8A88C; letter-spacing: 0.06em; }
+                .dh-name { font-size: 8px;  font-family: 'Fredoka', sans-serif; color: #B8A88C; letter-spacing: 0.06em; font-weight: 500; }
             `;
             document.head.appendChild(style);
         }
@@ -66,7 +66,7 @@ export class DemoHotbar {
             border: 1px solid rgba(255,228,181,0.12);
             border-radius: 12px;
             padding: 10px 12px 10px;
-            font-family: 'Segoe UI', monospace, sans-serif;
+            font-family: 'Nunito', sans-serif;
             z-index: 150;
             pointer-events: all;
             box-shadow: 0 4px 24px rgba(0,0,0,0.45);

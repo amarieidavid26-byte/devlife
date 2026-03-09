@@ -51,7 +51,7 @@ export class ToastSystem {
       borderLeft: `3px solid ${cfg.color}`,
       borderRadius: '4px',
       padding: '12px 16px',
-      fontFamily: "'Courier New', monospace",
+      fontFamily: "'Nunito', sans-serif",
       fontSize: '13px',
       color: '#F5F0E8',
       backdropFilter: 'blur(8px)',
@@ -66,7 +66,7 @@ export class ToastSystem {
     el.innerHTML =
       `<div style="display:flex;align-items:baseline;gap:6px">` +
         `<span>${cfg.icon}</span>` +
-        `<span style="font-weight:bold">${this._esc(title)}</span>` +
+        `<span style="font-weight:bold;font-family:'Fredoka',sans-serif">${this._esc(title)}</span>` +
       `</div>` +
       `<div style="color:#B8A88C;margin-top:2px">${this._esc(message)}</div>`;
 
