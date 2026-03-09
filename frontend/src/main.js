@@ -7,7 +7,7 @@ import { Atmosphere } from './room/Atmosphere.js';
 import { Player } from './character/Player.js';
 import { Ghost } from './character/Ghost.js';
 import { HUD } from './hud/HUD.js';
-import { BeneathView } from './hud/BeneathView.js';
+import { DashboardOverlay } from './hud/DashboardOverlay.js';
 import { DemoHotbar } from './hud/DemoHotbar.js';
 import { CodeEditorApp } from './apps/CodeEditor.js';
 import { TerminalApp } from './apps/Terminal.js';
@@ -98,7 +98,7 @@ worldContainer.addChild(ePrompt);
 ghost.setAtmosphere(atmosphere);
 
 const hud = new HUD();
-const beneathView = new BeneathView();
+const beneathView = new DashboardOverlay();
 const demoHotbar = new DemoHotbar();
 demoHotbar.setClickHandler((key) => socket.sendMockState(key));
 

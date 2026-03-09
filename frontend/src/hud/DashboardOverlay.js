@@ -1,6 +1,3 @@
-import { parse } from "dotenv";
-import { request } from "express";
-
 const STATE_COLORS = {
     DEEP_FOCUS: '#8000ff',
     STRESSED:   '#ff5050',
