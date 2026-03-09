@@ -86,7 +86,7 @@ export class WHOOPBluetooth {
                     this._reconnecting = false;
                     return;
             } catch (e) {
-                console.log('[whoop ble] reconnect attempt ${i + 1} failed');
+                console.log(`[whoop ble] reconnect attempt ${i + 1} failed`);
             }
         }
         this._reconnecting = false;

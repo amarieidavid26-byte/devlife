@@ -135,7 +135,7 @@ def _simulate_hr(state):
     global _sim_hr
     lo, hi = _SIM_HR_RANGES.get(state, (62, 72))
     mid = (lo + hi) / 2
-    _sim_hr += (mid - sim_hr) * 0.15 + random.uniform(-3, 3)
+    _sim_hr += (mid - _sim_hr) * 0.15 + random.uniform(-3, 3)
     _sim_hr = max(lo, min(hi, _sim_hr))
     return round(_sim_hr)
 
@@ -567,7 +567,33 @@ async def websocket_endpoint(ws: WebSocket):
                     suppressed_hashes.clear()
                     brain.last_intervention_time = 0
             
-            elif data.get("type") == "app_focus": 
+            elif data.get("type") == "live_hr":
+                live_hr = data.get("heart_rate", 0)
+                if 30 < live_hr < 220:
+                    bio.live_heart_rate = live_hr
+                    bio.live_hr_timestamp = time.time()
+
+            elif data.get("type") == "ble_disconnected":
+                ble_disconnected = True
+                if ble_disconnected_timer:
+                    ble_disconnected_timer.cancel()
+                ble_disconnected_timer = threading.Timer(10.0, _on_ble_disconnect_timeout)
+                ble_disconnected_timer.daemon = True
+                ble_disconnected_timer.start()
+                print("[ws] BLE disconnected — 10s sleep timer started")
+
+            elif data.get("type") == "ble_reconnected":
+                ble_disconnected = False
+                if ble_disconnected_timer:
+                    ble_disconnected_timer.cancel()
+                    ble_disconnected_timer = None
+                if sleep_mode_active:
+                    sleep_mode_active = False
+                    sleep_low_hr_count = 0
+                    broadcast_sync({"type": "sleep_mode", "active": False})
+                    print("[bio] Sleep mode OFF — BLE reconnected")
+
+            elif data.get("type") == "app_focus":
                 app_type = data.get("app_type")
                 if app_type:
                     broadcast_sync({

@@ -76,6 +76,8 @@ class BiometricEngine:
             self.refresh_token = data.get("refresh_token")
             expires_in = data.get("expires_in", 3600)
             self.token_expiry = time.time() + expires_in
+            if self.access_token:
+                self._save_tokens()
             return self.access_token is not None
         except Exception as e:
             print(f"[biometric_engine] Token exchange error: {e}")
@@ -216,7 +218,7 @@ class BiometricEngine:
         live_hr = self.live_heart_rate if (time.time() - self.live_hr_timestamp < 5) else 0
         # print("DEBUG hr", live_hr)
         if live_hr > 0:
-            if live_hr > 100:
+            if live_hr > 110:
                 new_state = "STRESSED"
                 estimated_stress = 2.5
             elif live_hr > 95:
@@ -237,7 +239,9 @@ class BiometricEngine:
                 new_state = "STRESSED"
             elif strain > 12 and recovery < 60:
                 new_state = "WIRED"
-            elif 0.9 > estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
+            elif 0.9 < estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
+                new_state = "DEEP_FOCUS"
+            elif estimated_stress <= 0.9 and strain < 6 and recovery > 80:
                 new_state = "RELAXED"
             else:
                 new_state = "RELAXED"
