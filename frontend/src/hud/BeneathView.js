@@ -1,9 +1,9 @@
 const STATE_COLORS = {
-    DEEP_FOCUS: '#8000ff',
-    STRESSED:   '#ff5050',
-    FATIGUED:   '#ffa000',
-    RELAXED:    '#00c864',
-    WIRED:      '#0096ff',
+    DEEP_FOCUS: '#9B6AFF',
+    STRESSED:   '#FF7A6A',
+    FATIGUED:   '#FFB84A',
+    RELAXED:    '#6AD89A',
+    WIRED:      '#6AB8FF',
 };
 
 export class BeneathView {
@@ -96,7 +96,7 @@ export class BeneathView {
         ctx.shadowColor     = 'transparent';
         ctx.clearRect(0, 0, W, H);
 
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillStyle = 'rgba(42,36,28,0.9)';
         ctx.fillRect(0, 0, W, H);
 
         ctx.save();
@@ -214,7 +214,7 @@ export class BeneathView {
 
         ctx.save();
         ctx.font        = '12px monospace';
-        ctx.fillStyle   = '#aaaaaa';
+        ctx.fillStyle   = '#B8A88C';
         ctx.globalAlpha = 0.5;
         ctx.textAlign   = 'center';
         ctx.fillText('what ghost sees — press TAB to hide', W / 2, 72);
@@ -237,7 +237,7 @@ export class BeneathView {
             ctx.globalAlpha = 0.9;
 
             ctx.font        = '10px monospace';
-            ctx.fillStyle   = '#777777';
+            ctx.fillStyle   = '#B8A88C';
             ctx.shadowBlur  = 0;
             ctx.fillText(s.label, bx, baseY - 34);
 
@@ -248,7 +248,7 @@ export class BeneathView {
             ctx.fillText(s.value, bx, baseY);
 
             ctx.font        = '13px monospace';
-            ctx.fillStyle   = '#aaaaaa';
+            ctx.fillStyle   = '#B8A88C';
             ctx.shadowBlur  = 0;
             ctx.fillText(s.unit, bx, baseY + 20);
             ctx.restore();

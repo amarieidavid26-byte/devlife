@@ -1,10 +1,10 @@
 export class ToastSystem {
   static TYPES = {
-    achievement: { color: '#ffd700', icon: '\u2B50' },
-    state:       { color: '#888',    icon: '\uD83E\uDDE0' },
-    ghost:       { color: '#00c864', icon: '\uD83D\uDC7B' },
-    warning:     { color: '#ff5050', icon: '\u26A0\uFE0F' },
-    info:        { color: '#0096ff', icon: '\u2139\uFE0F' },
+    achievement: { color: '#FFB84A', icon: '\u2B50' },
+    state:       { color: '#B8A88C', icon: '\uD83E\uDDE0' },
+    ghost:       { color: '#6AD89A', icon: '\uD83D\uDC7B' },
+    warning:     { color: '#FF7A6A', icon: '\u26A0\uFE0F' },
+    info:        { color: '#6AB8FF', icon: '\u2139\uFE0F' },
   };
 
   static ACHIEVEMENTS = {
@@ -47,13 +47,13 @@ export class ToastSystem {
       right: '20px',
       top: `${20 + this._toasts.size * 60}px`,
       maxWidth: '320px',
-      background: 'rgba(10, 10, 25, 0.92)',
+      background: 'rgba(42, 36, 28, 0.92)',
       borderLeft: `3px solid ${cfg.color}`,
       borderRadius: '4px',
       padding: '12px 16px',
       fontFamily: "'Courier New', monospace",
       fontSize: '13px',
-      color: '#e0e0e0',
+      color: '#F5F0E8',
       backdropFilter: 'blur(8px)',
       boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
       zIndex: '9000',
@@ -68,7 +68,7 @@ export class ToastSystem {
         `<span>${cfg.icon}</span>` +
         `<span style="font-weight:bold">${this._esc(title)}</span>` +
       `</div>` +
-      `<div style="color:#aaa;margin-top:2px">${this._esc(message)}</div>`;
+      `<div style="color:#B8A88C;margin-top:2px">${this._esc(message)}</div>`;
 
     this._container.appendChild(el);
 

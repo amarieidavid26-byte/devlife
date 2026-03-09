@@ -61,13 +61,23 @@ export class Town {
         this._entityContainer = null;
         this._onTownKeyDown = null;
         this._dialogue = null;
+
+        this._benchTex = null;
+        this._plantTex = null;
     }
 
     // ─────────────────────────────────────────────
     //  Scene interface
     // ─────────────────────────────────────────────
 
-    enter() {
+    async enter() {
+        // Load optional Kenney sprites (fail gracefully)
+        const wallTex = await PIXI.Assets.load('/assets/Isometric/wall_SE.png').catch(() => null);
+        const doorTex = await PIXI.Assets.load('/assets/Isometric/doorway_SE.png').catch(() => null);
+        const windowTex = await PIXI.Assets.load('/assets/Isometric/wallWindow_SE.png').catch(() => null);
+        this._benchTex = await PIXI.Assets.load('/assets/Isometric/benchCushion_SE.png').catch(() => null);
+        this._plantTex = await PIXI.Assets.load('/assets/Isometric/plantSmall1_SE.png').catch(() => null);
+
         this._container = new PIXI.Container();
         this._container.scale.set(GAME_ZOOM);
         this._app.stage.addChild(this._container);
@@ -90,6 +100,8 @@ export class Town {
         this._drawCoworkIcon(3, 14, 4, 4);
         this._drawPark(14, 14, 4, 4);
         this._drawStreetLamps();
+        this._drawFlowerPatches();
+        this._drawMailbox();
         this._initParticles();
         this._setupHomeClick(3, 3, 4, 4);
         this._centerCamera();
@@ -246,14 +258,57 @@ export class Town {
                 tile.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
                 tile.closePath();
 
+                // Stepping stones — lighter accent on every 4th path tile
+                if (isPath(gx, gy) && (gx + gy) % 4 === 0) {
+                    tile.lineStyle(0);
+                    tile.beginFill(0xAA9B7E, 0.35);
+                    const hw = TILE_WIDTH * 0.22;
+                    const hh = TILE_HEIGHT * 0.22;
+                    tile.moveTo(x, y + TILE_HEIGHT / 2 - hh);
+                    tile.lineTo(x + hw, y + TILE_HEIGHT / 2);
+                    tile.lineTo(x, y + TILE_HEIGHT / 2 + hh);
+                    tile.lineTo(x - hw, y + TILE_HEIGHT / 2);
+                    tile.closePath();
+                    tile.endFill();
+                }
+
                 this._floorContainer.addChild(tile);
             }
         }
     }
 
     // ─────────────────────────────────────────────
-    //  Buildings (isometric boxes)
+    //  Buildings (isometric boxes with detail)
     // ─────────────────────────────────────────────
+
+    // Draw a window parallelogram on an isometric wall face
+    _drawFaceWindow(g, nearPt, farPt, t, heightFrac) {
+        const cx = nearPt.x + (farPt.x - nearPt.x) * t;
+        const cyBase = nearPt.y + (farPt.y - nearPt.y) * t;
+        const cy = cyBase - WALL_H * heightFrac;
+        const dx = farPt.x - nearPt.x;
+        const slope = dx !== 0 ? (farPt.y - nearPt.y) / dx : 0;
+        const hw = 5, hh = 7;
+
+        // Dark window pane
+        g.beginFill(0x1a2030, 0.7);
+        g.moveTo(cx - hw, cy + hh - slope * hw);
+        g.lineTo(cx + hw, cy + hh + slope * hw);
+        g.lineTo(cx + hw, cy - hh + slope * hw);
+        g.lineTo(cx - hw, cy - hh - slope * hw);
+        g.closePath();
+        g.endFill();
+
+        // Warm interior glow (inset)
+        g.beginFill(0xFFE4B5, 0.15);
+        const iw = hw - 1, ih = hh - 1;
+        g.moveTo(cx - iw, cy + ih - slope * iw);
+        g.lineTo(cx + iw, cy + ih + slope * iw);
+        g.lineTo(cx + iw, cy - ih + slope * iw);
+        g.lineTo(cx - iw, cy - ih - slope * iw);
+        g.closePath();
+        g.endFill();
+    }
 
     _drawBuilding(label, startX, startY, w, h, frontCol, sideCol, roofCol, doorSide) {
         const g = new PIXI.Graphics();
@@ -264,13 +319,33 @@ export class Town {
         const bottomLeft  = this._gridToScreen(startX, startY + h);
         const bottomRight = this._gridToScreen(startX + w, startY + h);
 
-        // ---- Roof (top face) ----
+        // ---- Roof (top face with rounded corners via bezier) ----
+        const roofPts = [
+            { x: topLeft.x, y: topLeft.y - WALL_H },
+            { x: topRight.x, y: topRight.y - WALL_H },
+            { x: bottomRight.x, y: bottomRight.y - WALL_H },
+            { x: bottomLeft.x, y: bottomLeft.y - WALL_H },
+        ];
+
         g.beginFill(roofCol);
-        g.moveTo(topLeft.x, topLeft.y - WALL_H);
-        g.lineTo(topRight.x, topRight.y - WALL_H);
-        g.lineTo(bottomRight.x, bottomRight.y - WALL_H);
-        g.lineTo(bottomLeft.x, bottomLeft.y - WALL_H);
-        g.closePath();
+        const mid0 = {
+            x: (roofPts[0].x + roofPts[1].x) / 2,
+            y: (roofPts[0].y + roofPts[1].y) / 2,
+        };
+        g.moveTo(mid0.x, mid0.y);
+        for (let i = 0; i < 4; i++) {
+            const corner = roofPts[(i + 1) % 4];
+            const next = roofPts[(i + 2) % 4];
+            const mid = { x: (corner.x + next.x) / 2, y: (corner.y + next.y) / 2 };
+            g.quadraticCurveTo(corner.x, corner.y, mid.x, mid.y);
+        }
+        g.endFill();
+
+        // Roof dome highlight — subtle lighter center
+        const roofCX = (topLeft.x + bottomRight.x) / 2;
+        const roofCY = (topLeft.y + bottomRight.y) / 2 - WALL_H;
+        g.beginFill(0xffffff, 0.05);
+        g.drawEllipse(roofCX, roofCY, Math.abs(topRight.x - bottomLeft.x) * 0.25, 6);
         g.endFill();
 
         // ---- Left face (side visible from bottom-left) ----
@@ -295,11 +370,25 @@ export class Town {
         g.lineStyle(1, 0xffffff, 0.15);
         g.moveTo(bottomRight.x, bottomRight.y - WALL_H);
         g.lineTo(bottomRight.x, bottomRight.y);
-        g.moveTo(topLeft.x, topLeft.y - WALL_H);
-        g.lineTo(topRight.x, topRight.y - WALL_H);
-        g.lineTo(bottomRight.x, bottomRight.y - WALL_H);
-        g.lineTo(bottomLeft.x, bottomLeft.y - WALL_H);
-        g.closePath();
+        // Roof outline with rounded corners
+        g.moveTo(mid0.x, mid0.y);
+        for (let i = 0; i < 4; i++) {
+            const corner = roofPts[(i + 1) % 4];
+            const next = roofPts[(i + 2) % 4];
+            const mid = { x: (corner.x + next.x) / 2, y: (corner.y + next.y) / 2 };
+            g.quadraticCurveTo(corner.x, corner.y, mid.x, mid.y);
+        }
+        g.lineStyle(0);
+
+        // ---- Windows on both visible faces ----
+        // Right face: bottomRight → topRight
+        const rightDoor = doorSide === 'right';
+        this._drawFaceWindow(g, bottomRight, topRight, 0.25, 0.55);
+        this._drawFaceWindow(g, bottomRight, topRight, 0.75, 0.55);
+        // Left face: bottomLeft → bottomRight
+        const leftDoor = doorSide === 'left';
+        this._drawFaceWindow(g, bottomLeft, bottomRight, 0.25, 0.55);
+        this._drawFaceWindow(g, bottomLeft, bottomRight, 0.75, 0.55);
 
         // ---- Door ----
         const doorW = TILE_WIDTH * 0.3;
@@ -348,6 +437,15 @@ export class Town {
             g.endFill();
         }
 
+        // ---- Building-specific details ----
+        if (label === 'HOME') {
+            this._drawChimney(g, topLeft, topRight, bottomRight, bottomLeft);
+        } else if (label === 'CAFE') {
+            this._drawAwning(g, bottomLeft, bottomRight);
+        } else if (label === 'COWORK') {
+            this._drawAntenna(g, topLeft, topRight);
+        }
+
         this._buildingContainer.addChild(g);
 
         // ---- Label ----
@@ -362,6 +460,104 @@ export class Town {
         text.x = labelPos.x;
         text.y = labelPos.y - WALL_H - 14;
         this._labelContainer.addChild(text);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Building-specific details
+    // ─────────────────────────────────────────────
+
+    _drawChimney(g, topLeft, topRight, bottomRight, bottomLeft) {
+        // Small chimney on the roof near the back-right corner
+        const t = 0.75; // position along topLeft→topRight edge
+        const cx = topLeft.x + (topRight.x - topLeft.x) * t;
+        const cy = topLeft.y + (topRight.y - topLeft.y) * t - WALL_H;
+        const chimW = 6, chimH = 14;
+
+        // Chimney front face (warm brown)
+        g.beginFill(0x8B6B3A);
+        g.drawRect(cx - chimW / 2, cy - chimH, chimW, chimH);
+        g.endFill();
+
+        // Chimney side face (darker)
+        g.beginFill(0x7A5A2A);
+        g.moveTo(cx + chimW / 2, cy - chimH);
+        g.lineTo(cx + chimW / 2 + 3, cy - chimH + 1.5);
+        g.lineTo(cx + chimW / 2 + 3, cy + 1.5);
+        g.lineTo(cx + chimW / 2, cy);
+        g.closePath();
+        g.endFill();
+
+        // Chimney top cap
+        g.beginFill(0x5A4A2A);
+        g.drawRect(cx - chimW / 2 - 1, cy - chimH - 2, chimW + 4, 2);
+        g.endFill();
+    }
+
+    _drawAwning(g, bottomLeft, bottomRight) {
+        // Terracotta awning over the left-face door
+        const midX = (bottomLeft.x + bottomRight.x) / 2;
+        const midY = (bottomLeft.y + bottomRight.y) / 2;
+        const awningTop = midY - WALL_H * 0.45;
+        const awningW = TILE_WIDTH * 0.4;
+        const slope = (bottomRight.y - bottomLeft.y) / (bottomRight.x - bottomLeft.x);
+
+        // Awning top (flat part attached to wall)
+        g.beginFill(0xC85A4A, 0.9);
+        g.moveTo(midX - awningW / 2, awningTop - slope * (awningW / 2));
+        g.lineTo(midX + awningW / 2, awningTop + slope * (awningW / 2));
+        g.lineTo(midX + awningW / 2, awningTop + slope * (awningW / 2) + 12);
+        g.lineTo(midX - awningW / 2, awningTop - slope * (awningW / 2) + 12);
+        g.closePath();
+        g.endFill();
+
+        // Awning underside (darker)
+        g.beginFill(0xA04A3A, 0.7);
+        g.moveTo(midX - awningW / 2, awningTop - slope * (awningW / 2) + 12);
+        g.lineTo(midX + awningW / 2, awningTop + slope * (awningW / 2) + 12);
+        g.lineTo(midX + awningW / 2 - 4, awningTop + slope * (awningW / 2) + 16);
+        g.lineTo(midX - awningW / 2 + 4, awningTop - slope * (awningW / 2) + 16);
+        g.closePath();
+        g.endFill();
+
+        // Awning stripes
+        g.lineStyle(1, 0xF5F0E8, 0.2);
+        for (let i = 0; i < 3; i++) {
+            const sx = midX - awningW / 4 + (awningW / 4) * i;
+            const sy = awningTop + slope * (sx - midX);
+            g.moveTo(sx, sy);
+            g.lineTo(sx, sy + 11);
+        }
+        g.lineStyle(0);
+    }
+
+    _drawAntenna(g, topLeft, topRight) {
+        // Small antenna on the roof near the back-left corner
+        const t = 0.3;
+        const cx = topLeft.x + (topRight.x - topLeft.x) * t;
+        const cy = topLeft.y + (topRight.y - topLeft.y) * t - WALL_H;
+
+        // Antenna pole
+        g.beginFill(0x6A8A9C);
+        g.drawRect(cx - 1, cy - 18, 2, 18);
+        g.endFill();
+
+        // Satellite dish — small arc
+        g.lineStyle(1.5, 0x8AAAB8, 0.8);
+        g.arc(cx, cy - 14, 5, -Math.PI * 0.8, -Math.PI * 0.2, false);
+        g.lineStyle(0);
+
+        // Dish fill
+        g.beginFill(0x8AAAB8, 0.4);
+        g.moveTo(cx - 4, cy - 16);
+        g.quadraticCurveTo(cx, cy - 12, cx + 4, cy - 16);
+        g.lineTo(cx, cy - 18);
+        g.closePath();
+        g.endFill();
+
+        // Blinking light on top
+        g.beginFill(0xFF5050, 0.5);
+        g.drawCircle(cx, cy - 18, 1.5);
+        g.endFill();
     }
 
     // ─────────────────────────────────────────────
@@ -430,6 +626,76 @@ export class Town {
     }
 
     // ─────────────────────────────────────────────
+    //  Ambient details — flowers, mailbox
+    // ─────────────────────────────────────────────
+
+    _drawFlowerPatch(gx, gy) {
+        const { x, y } = this._gridToScreen(gx, gy);
+        const colors = [0xFF9A8C, 0xFFD66B, 0x9BDFFF, 0xFF9A8C];
+        const offsets = [[-4, -2], [3, 1], [-1, 3], [5, -1]];
+        const g = new PIXI.Graphics();
+        for (let i = 0; i < 4; i++) {
+            g.beginFill(colors[i], 0.6);
+            g.drawCircle(x + offsets[i][0], y + offsets[i][1], 1.5);
+            g.endFill();
+        }
+        // Small leaf beneath each flower
+        g.beginFill(0x5BA05C, 0.3);
+        for (let i = 0; i < 3; i++) {
+            g.drawEllipse(x + offsets[i][0] + 1, y + offsets[i][1] + 1.5, 2, 1);
+        }
+        g.endFill();
+        this._detailContainer.addChild(g);
+
+        // Optional plant sprite next to flowers
+        if (this._plantTex) {
+            const ps = new PIXI.Sprite(this._plantTex);
+            ps.anchor.set(0.5, 0.85);
+            ps.scale.set(0.25);
+            ps.x = x + 8;
+            ps.y = y;
+            ps.alpha = 0.7;
+            this._detailContainer.addChild(ps);
+        }
+    }
+
+    _drawFlowerPatches() {
+        // Near HOME
+        this._drawFlowerPatch(2.5, 3);
+        this._drawFlowerPatch(7.5, 7);
+        // Near CAFE
+        this._drawFlowerPatch(18.5, 3.5);
+        this._drawFlowerPatch(14, 7.5);
+        // Near COWORK
+        this._drawFlowerPatch(2.5, 14.5);
+        // Near PARK
+        this._drawFlowerPatch(18.5, 18);
+    }
+
+    _drawMailbox() {
+        // Mailbox near HOME building's right face (door area)
+        const { x, y } = this._gridToScreen(7.5, 7.5);
+        const g = new PIXI.Graphics();
+        // Post
+        g.beginFill(0x6B5B3E);
+        g.drawRect(x - 1.5, y - 16, 3, 16);
+        g.endFill();
+        // Box body
+        g.beginFill(0xC85A4A);
+        g.drawRoundedRect(x - 5, y - 22, 10, 7, 1);
+        g.endFill();
+        // Flag (raised)
+        g.beginFill(0xC85A4A);
+        g.drawRect(x + 5, y - 22, 2, 6);
+        g.endFill();
+        // Flag tip
+        g.beginFill(0xF5F0E8, 0.6);
+        g.drawRect(x + 5, y - 22, 2, 2);
+        g.endFill();
+        this._detailContainer.addChild(g);
+    }
+
+    // ─────────────────────────────────────────────
     //  Park (trees + bench)
     // ─────────────────────────────────────────────
 
@@ -469,27 +735,71 @@ export class Town {
             this._trees.push(tree);
         }
 
-        // Bench
+        // Bench — sprite or improved procedural
         const benchPos = this._gridToScreen(startX + 2, startY + 3.5);
-        const bench = new PIXI.Graphics();
-        // Seat
-        bench.beginFill(COL.bench);
-        const bw = 24, bh = 4;
-        // Isometric bench seat (slanted rectangle)
-        const bSlant = (TILE_HEIGHT / TILE_WIDTH) * (bw / 2);
-        bench.moveTo(benchPos.x - bw / 2, benchPos.y + bSlant);
-        bench.lineTo(benchPos.x + bw / 2, benchPos.y - bSlant);
-        bench.lineTo(benchPos.x + bw / 2, benchPos.y - bSlant - bh);
-        bench.lineTo(benchPos.x - bw / 2, benchPos.y + bSlant - bh);
-        bench.closePath();
-        bench.endFill();
-        // Legs — warm brown
-        bench.beginFill(COL.trunk, 0.8);
-        bench.drawRect(benchPos.x - bw / 2 + 2, benchPos.y + bSlant, 2, 5);
-        bench.drawRect(benchPos.x + bw / 2 - 4, benchPos.y - bSlant, 2, 5);
-        bench.endFill();
 
-        this._detailContainer.addChild(bench);
+        if (this._benchTex) {
+            const benchSprite = new PIXI.Sprite(this._benchTex);
+            benchSprite.anchor.set(0.5, 0.85);
+            benchSprite.scale.set(0.5);
+            benchSprite.x = benchPos.x;
+            benchSprite.y = benchPos.y;
+            this._detailContainer.addChild(benchSprite);
+        } else {
+            const bench = new PIXI.Graphics();
+            const bw = 24, bh = 4;
+            const bSlant = (TILE_HEIGHT / TILE_WIDTH) * (bw / 2);
+
+            // Seat
+            bench.beginFill(COL.bench);
+            bench.moveTo(benchPos.x - bw / 2, benchPos.y + bSlant);
+            bench.lineTo(benchPos.x + bw / 2, benchPos.y - bSlant);
+            bench.lineTo(benchPos.x + bw / 2, benchPos.y - bSlant - bh);
+            bench.lineTo(benchPos.x - bw / 2, benchPos.y + bSlant - bh);
+            bench.closePath();
+            bench.endFill();
+
+            // Wood plank lines on seat
+            bench.lineStyle(0.5, 0x8B7348, 0.4);
+            for (let p = 0.25; p <= 0.75; p += 0.25) {
+                const px1 = benchPos.x - bw / 2 + bw * p;
+                const py1 = benchPos.y + bSlant - bSlant * 2 * p;
+                bench.moveTo(px1, py1 - bh);
+                bench.lineTo(px1, py1);
+            }
+            bench.lineStyle(0);
+
+            // Backrest
+            bench.beginFill(COL.bench, 0.8);
+            bench.moveTo(benchPos.x - bw / 2, benchPos.y + bSlant - bh);
+            bench.lineTo(benchPos.x + bw / 2, benchPos.y - bSlant - bh);
+            bench.lineTo(benchPos.x + bw / 2, benchPos.y - bSlant - bh - 6);
+            bench.lineTo(benchPos.x - bw / 2, benchPos.y + bSlant - bh - 6);
+            bench.closePath();
+            bench.endFill();
+
+            // Backrest plank lines
+            bench.lineStyle(0.5, 0x8B7348, 0.3);
+            bench.moveTo(benchPos.x - bw / 2, benchPos.y + bSlant - bh - 3);
+            bench.lineTo(benchPos.x + bw / 2, benchPos.y - bSlant - bh - 3);
+            bench.lineStyle(0);
+
+            // Armrests
+            bench.beginFill(COL.trunk, 0.9);
+            // Left armrest
+            bench.drawRect(benchPos.x - bw / 2 - 1, benchPos.y + bSlant - bh - 8, 3, 8);
+            // Right armrest
+            bench.drawRect(benchPos.x + bw / 2 - 2, benchPos.y - bSlant - bh - 8, 3, 8);
+            bench.endFill();
+
+            // Legs — warm brown
+            bench.beginFill(COL.trunk, 0.8);
+            bench.drawRect(benchPos.x - bw / 2 + 2, benchPos.y + bSlant, 2, 5);
+            bench.drawRect(benchPos.x + bw / 2 - 4, benchPos.y - bSlant, 2, 5);
+            bench.endFill();
+
+            this._detailContainer.addChild(bench);
+        }
 
         // Park label
         const labelPos = this._gridToScreen(startX + w / 2, startY + h / 2);

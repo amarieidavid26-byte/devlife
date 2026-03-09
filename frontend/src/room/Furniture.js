@@ -62,6 +62,7 @@ export class Furniture extends EventEmitter {
     }
 
     _buildRoom() {
+        this._addDecorative('rug', 6, 6, 0.35);   // rug first so it renders behind everything
         this._addDesk(5, 2);
         this._addTerminal(7, 2);
         this._addSecondMonitor(2, 2);
@@ -72,9 +73,8 @@ export class Furniture extends EventEmitter {
         this._addSpeaker(8, 2);
         this._addChair(5, 4);
         this._addDoor(0, 10);
-        this._addDecorative('rug', 6, 6, 0.8);
-        this._addDecorative('lamp', 3, 3, 0.5);
-        this._addDecorative('trashcan', 8, 4, 0.5);
+        this._addDecorative('lamp', 3, 3, 0.45);
+        this._addDecorative('trashcan', 8, 4, 0.38);
         this._addCompetitionLabel();
     }
 
@@ -95,23 +95,25 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.desk) {
             const deskSprite = new PIXI.Sprite(Furniture._textures.desk);
-            deskSprite.anchor.set(0.5, 0.85);
-            deskSprite.scale.set(0.65);
+            deskSprite.anchor.set(0.5, 0.88);
+            deskSprite.scale.set(0.50);
             c.addChild(deskSprite);
 
             if (Furniture._textures?.monitor) {
                 const monSprite = new PIXI.Sprite(Furniture._textures.monitor);
                 monSprite.anchor.set(0.5, 0.85);
-                monSprite.scale.set(0.55);
-                monSprite.y = -20;
+                monSprite.scale.set(0.45);
+                monSprite.x = 2;
+                monSprite.y = -40;
                 c.addChild(monSprite);
             }
 
             if (Furniture._textures?.keyboard) {
                 const kbSprite = new PIXI.Sprite(Furniture._textures.keyboard);
                 kbSprite.anchor.set(0.5, 0.85);
-                kbSprite.scale.set(0.45);
-                kbSprite.y = 14;
+                kbSprite.scale.set(0.30);
+                kbSprite.x = 2;
+                kbSprite.y = -8;
                 c.addChild(kbSprite);
             }
         } else {
@@ -201,33 +203,36 @@ export class Furniture extends EventEmitter {
         monitorGlow.endFill();
         c.addChildAt(monitorGlow, 0); // behind everything in this container
 
-        // Monitor underglow (state-reactive, updated via setMonitorState)
-        this._monitorUnderglow = new PIXI.Graphics();
-        this._monitorUnderglow.beginFill(0x00c864, 0.04);
-        this._monitorUnderglow.drawRect(-22, -16, 44, 6);
-        this._monitorUnderglow.endFill();
-        c.addChild(this._monitorUnderglow);
+        // Procedural overlays (only when not using sprite textures)
+        if (!Furniture._textures?.desk) {
+            // Monitor underglow (state-reactive, updated via setMonitorState)
+            this._monitorUnderglow = new PIXI.Graphics();
+            this._monitorUnderglow.beginFill(0x00c864, 0.04);
+            this._monitorUnderglow.drawRect(-22, -16, 44, 6);
+            this._monitorUnderglow.endFill();
+            c.addChild(this._monitorUnderglow);
 
-        // LED strip along desk back edge (warm amber by default)
-        this._deskLedStrip = new PIXI.Graphics();
-        this._deskLedStrip.beginFill(0xE8A04C, 0.2);
-        this._deskLedStrip.drawRect(-38, -12, 76, 2);
-        this._deskLedStrip.endFill();
-        c.addChild(this._deskLedStrip);
+            // LED strip along desk back edge (warm amber by default)
+            this._deskLedStrip = new PIXI.Graphics();
+            this._deskLedStrip.beginFill(0xE8A04C, 0.2);
+            this._deskLedStrip.drawRect(-38, -12, 76, 2);
+            this._deskLedStrip.endFill();
+            c.addChild(this._deskLedStrip);
 
-        // State-reactive screen overlay (sits on top of static screen, under scan line)
-        this._deskScreenOverlay = new PIXI.Graphics();
-        this._drawMonitorContent(this._deskScreenOverlay, 'RELAXED');
-        c.addChild(this._deskScreenOverlay);
+            // State-reactive screen overlay (sits on top of static screen, under scan line)
+            this._deskScreenOverlay = new PIXI.Graphics();
+            this._drawMonitorContent(this._deskScreenOverlay, 'RELAXED');
+            c.addChild(this._deskScreenOverlay);
 
-        // Animated scan line (separate Graphics, animated in update())
-        const scanLine = new PIXI.Graphics();
-        scanLine.beginFill(0x00ff41, 0.28);
-        scanLine.drawRect(-14, 0, 30, 2);
-        scanLine.endFill();
-        scanLine.y = -43;
-        c.addChild(scanLine);
-        this._deskScanLine = scanLine;
+            // Animated scan line (separate Graphics, animated in update())
+            const scanLine = new PIXI.Graphics();
+            scanLine.beginFill(0x00ff41, 0.28);
+            scanLine.drawRect(-14, 0, 30, 2);
+            scanLine.endFill();
+            scanLine.y = -43;
+            c.addChild(scanLine);
+            this._deskScanLine = scanLine;
+        }
 
         this._placeItem(c, gx, gy, 'desk_computer', true, 'code');
     }
@@ -237,8 +242,8 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.laptop) {
             const sprite = new PIXI.Sprite(Furniture._textures.laptop);
-            sprite.anchor.set(0.5, 0.85);
-            sprite.scale.set(0.55);
+            sprite.anchor.set(0.5, 0.88);
+            sprite.scale.set(0.50);
             c.addChild(sprite);
         } else {
             const g = new PIXI.Graphics();
@@ -276,8 +281,8 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.televisionModern) {
             const sprite = new PIXI.Sprite(Furniture._textures.televisionModern);
-            sprite.anchor.set(0.5, 0.85);
-            sprite.scale.set(0.65);
+            sprite.anchor.set(0.5, 0.88);
+            sprite.scale.set(0.50);
             c.addChild(sprite);
         } else {
             const g = new PIXI.Graphics();
@@ -329,8 +334,8 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.bookcase) {
             const sprite = new PIXI.Sprite(Furniture._textures.bookcase);
-            sprite.anchor.set(0.5, 0.85);
-            sprite.scale.set(0.65);
+            sprite.anchor.set(0.5, 0.92);
+            sprite.scale.set(0.55);
             c.addChild(sprite);
         } else {
             const g = new PIXI.Graphics();
@@ -380,8 +385,8 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.radio) {
             const sprite = new PIXI.Sprite(Furniture._textures.radio);
-            sprite.anchor.set(0.5, 0.85);
-            sprite.scale.set(0.45);
+            sprite.anchor.set(0.5, 0.88);
+            sprite.scale.set(0.38);
             c.addChild(sprite);
         } else {
             const g = new PIXI.Graphics();
@@ -407,8 +412,8 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.coffee) {
             const sprite = new PIXI.Sprite(Furniture._textures.coffee);
-            sprite.anchor.set(0.5, 0.85);
-            sprite.scale.set(0.65);
+            sprite.anchor.set(0.5, 0.88);
+            sprite.scale.set(0.50);
             c.addChild(sprite);
         } else {
             const g = new PIXI.Graphics();
@@ -445,6 +450,7 @@ export class Furniture extends EventEmitter {
         c.addChildAt(coffeeGlow, 0);
 
         this._coffeeContainer = c; // track for steam particles
+        this._steamStartY = Furniture._textures?.coffee ? -16 : 5;
         this._placeItem(c, gx, gy, 'coffee_machine', true, null);
     }
 
@@ -453,8 +459,8 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.plant) {
             const sprite = new PIXI.Sprite(Furniture._textures.plant);
-            sprite.anchor.set(0.5, 0.85);
-            sprite.scale.set(0.65);
+            sprite.anchor.set(0.5, 0.92);
+            sprite.scale.set(0.50);
             c.addChild(sprite);
         } else {
             this._plantGraphics = new PIXI.Graphics();
@@ -529,8 +535,8 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.speaker) {
             const sprite = new PIXI.Sprite(Furniture._textures.speaker);
-            sprite.anchor.set(0.5, 0.85);
-            sprite.scale.set(0.65);
+            sprite.anchor.set(0.5, 0.92);
+            sprite.scale.set(0.42);
             c.addChild(sprite);
         } else {
             const g = new PIXI.Graphics();
@@ -549,9 +555,10 @@ export class Furniture extends EventEmitter {
         }
 
         // Pulsing power LED
+        const ledY = Furniture._textures?.speaker ? 2 : 8;
         this._speakerLED = new PIXI.Graphics();
         this._speakerLED.beginFill(0x50D890);
-        this._speakerLED.drawCircle(0, 8, 2);
+        this._speakerLED.drawCircle(0, ledY, 2);
         this._speakerLED.endFill();
         c.addChild(this._speakerLED);
 
@@ -563,8 +570,8 @@ export class Furniture extends EventEmitter {
 
         if (Furniture._textures?.chair) {
             const sprite = new PIXI.Sprite(Furniture._textures.chair);
-            sprite.anchor.set(0.5, 0.85);
-            sprite.scale.set(0.6);
+            sprite.anchor.set(0.5, 0.90);
+            sprite.scale.set(0.50);
             c.addChild(sprite);
         } else {
             const g = new PIXI.Graphics();
@@ -734,7 +741,7 @@ export class Furniture extends EventEmitter {
         const p = {
             gfx: g,
             x: (Math.random() - 0.5) * 6,
-            y: 5,
+            y: this._steamStartY ?? 5,
             vy: -(0.25 + Math.random() * 0.25),
             vx: (Math.random() - 0.5) * 0.12,
             alpha: 0.4,

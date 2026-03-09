@@ -1,10 +1,10 @@
 
 const STATES = [
-    { key: 1, label: 'FOCUS',   emoji: '🟣', color: '#8000ff', id: 'DEEP_FOCUS' },
-    { key: 2, label: 'STRESS',  emoji: '🔴', color: '#ff5050', id: 'STRESSED'   },
-    { key: 3, label: 'FATIGUE', emoji: '🟡', color: '#ffa000', id: 'FATIGUED'   },
-    { key: 4, label: 'RELAX',   emoji: '🟢', color: '#00c864', id: 'RELAXED'    },
-    { key: 5, label: 'WIRED',   emoji: '🔵', color: '#0096ff', id: 'WIRED'      },
+    { key: 1, label: 'FOCUS',   emoji: '🟣', color: '#9B6AFF', id: 'DEEP_FOCUS' },
+    { key: 2, label: 'STRESS',  emoji: '🔴', color: '#FF7A6A', id: 'STRESSED'   },
+    { key: 3, label: 'FATIGUE', emoji: '🟡', color: '#FFB84A', id: 'FATIGUED'   },
+    { key: 4, label: 'RELAX',   emoji: '🟢', color: '#6AD89A', id: 'RELAXED'    },
+    { key: 5, label: 'WIRED',   emoji: '🔵', color: '#6AB8FF', id: 'WIRED'      },
 ];
 
 export class DemoHotbar {
@@ -31,8 +31,8 @@ export class DemoHotbar {
                 }
                 .dh-key {
                     width: 56px;
-                    background: rgba(255,255,255,0.04);
-                    border: 1px solid rgba(255,255,255,0.08);
+                    background: rgba(255,228,181,0.04);
+                    border: 1px solid rgba(255,228,181,0.08);
                     border-radius: 10px;
                     padding: 7px 4px 8px;
                     display: flex;
@@ -43,13 +43,13 @@ export class DemoHotbar {
                     cursor: pointer;
                     user-select: none;
                 }
-                .dh-key:hover { background: rgba(255,255,255,0.09); }
+                .dh-key:hover { background: rgba(255,228,181,0.09); box-shadow: 0 0 8px rgba(232,160,76,0.2); }
                 .dh-key.dh-active {
                     animation: _hotbarPulse 1.6s ease-in-out infinite;
                 }
-                .dh-num  { font-size: 10px; font-family: monospace; color: rgba(255,255,255,0.4); font-weight: 700; }
+                .dh-num  { font-size: 10px; font-family: monospace; color: #B8A88C; font-weight: 700; }
                 .dh-icon { font-size: 15px; line-height: 1; }
-                .dh-name { font-size: 8px;  font-family: monospace; color: rgba(255,255,255,0.5); letter-spacing: 0.06em; }
+                .dh-name { font-size: 8px;  font-family: monospace; color: #B8A88C; letter-spacing: 0.06em; }
             `;
             document.head.appendChild(style);
         }
@@ -60,11 +60,11 @@ export class DemoHotbar {
             position: fixed;
             bottom: 24px;
             left: 24px;
-            background: rgba(10,10,25,0.78);
+            background: rgba(42,36,28,0.85);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 14px;
+            border: 1px solid rgba(255,228,181,0.12);
+            border-radius: 12px;
             padding: 10px 12px 10px;
             font-family: 'Segoe UI', monospace, sans-serif;
             z-index: 150;
@@ -75,7 +75,7 @@ export class DemoHotbar {
         const header = document.createElement('div');
         header.style.cssText = `
             font-size: 9px; letter-spacing: 0.14em;
-            color: rgba(255,255,255,0.3); text-align: center;
+            color: #B8A88C; text-align: center;
             margin-bottom: 8px; font-family: monospace;
             display: flex; align-items: center; justify-content: center; gap: 6px;
         `;
@@ -149,13 +149,13 @@ export class DemoHotbar {
             this._headerEl.appendChild(dot);
             const txt = document.createElement('span');
             txt.textContent = this._bleConnected ? ' WHOOP LIVE' : ' WHOOP API';
-            txt.style.color = '#00c864';
+            txt.style.color = '#6AD89A';
             this._headerEl.appendChild(txt);
             const toggle = document.createElement('span');
             toggle.textContent = 'Demo Mode';
             toggle.style.cssText = `
-                color: rgba(255,255,255,0.25); cursor: pointer; font-size: 7px;
-                border: 1px solid rgba(255,255,255,0.1); border-radius: 3px;
+                color: #B8A88C; cursor: pointer; font-size: 7px;
+                border: 1px solid rgba(255,228,181,0.15); border-radius: 3px;
                 padding: 1px 4px; margin-left: 2px;
             `;
             toggle.addEventListener('click', (e) => {
@@ -168,13 +168,13 @@ export class DemoHotbar {
         } else if (isLive && this._demoOverride) {
             const txt = document.createElement('span');
             txt.textContent = 'DEMO OVERRIDE';
-            txt.style.color = '#ffa000';
+            txt.style.color = '#FFB84A';
             this._headerEl.appendChild(txt);
             const toggle = document.createElement('span');
             toggle.textContent = 'Back to Live';
             toggle.style.cssText = `
-                color: #00c864; cursor: pointer; font-size: 7px;
-                border: 1px solid rgba(0,200,100,0.3); border-radius: 3px;
+                color: #6AD89A; cursor: pointer; font-size: 7px;
+                border: 1px solid rgba(106,216,154,0.3); border-radius: 3px;
                 padding: 1px 4px; margin-left: 2px;
             `;
             toggle.addEventListener('click', (e) => {
@@ -191,8 +191,8 @@ export class DemoHotbar {
             const btn = document.createElement('span');
             btn.textContent = '\uD83D\uDD17 PAIR WHOOP';
             btn.style.cssText = `
-                color: #0096ff; cursor: pointer; font-size: 8px;
-                border: 1px solid rgba(0,150,255,0.3); border-radius: 4px;
+                color: #6AD89A; cursor: pointer; font-size: 8px;
+                border: 1px solid rgba(106,216,154,0.3); border-radius: 4px;
                 padding: 1px 5px; letter-spacing: 0.05em;
             `;
             btn.addEventListener('click', (e) => {
@@ -209,8 +209,8 @@ export class DemoHotbar {
         if (this._active && this._keyEls[this._active]) {
             const prev = this._keyEls[this._active].el;
             prev.classList.remove('dh-active');
-            prev.style.background   = 'rgba(255,255,255,0.04)';
-            prev.style.borderColor  = 'rgba(255,255,255,0.08)';
+            prev.style.background   = 'rgba(255,228,181,0.04)';
+            prev.style.borderColor  = 'rgba(255,228,181,0.08)';
             prev.style.boxShadow    = '';
         }
 
