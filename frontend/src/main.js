@@ -7,7 +7,7 @@ import { Atmosphere } from './room/Atmosphere.js';
 import { Player } from './character/Player.js';
 import { Ghost } from './character/Ghost.js';
 import { HUD } from './hud/HUD.js';
-import { BeneathView } from './hud/BeneathView.js';
+import { DashboardOverlay } from './hud/DashboardOverlay.js';
 import { DemoHotbar } from './hud/DemoHotbar.js';
 import { CodeEditorApp } from './apps/CodeEditor.js';
 import { TerminalApp } from './apps/Terminal.js';
@@ -139,9 +139,15 @@ async function startGame(enableDemo = false) {
     ghost.setAtmosphere(atmosphere);
 
     hud = new HUD();
-    beneathView = new BeneathView();
+    beneathView = new DashboardOverlay();
     demoHotbar = new DemoHotbar();
-    demoHotbar.setClickHandler((key) => socket.sendMockState(key));
+    demoHotbar.setClickHandler((key) => {
+        if (!demoHotbar.manualEnabled) {
+            toastSystem.show('warning', '\uD83D\uDD12 Live Mode', 'WHOOP is streaming real data. Manual override disabled.', 3000);
+            return;
+        }
+        socket.sendMockState(key);
+    });
 
     // WHOOP BLE pairing — connects the PAIR WHOOP button to the Web Bluetooth API
     const whoop = new WHOOPBluetooth();
@@ -154,6 +160,9 @@ async function startGame(enableDemo = false) {
         if (connected && bpm > 0) {
             socket.send({ type: 'heart_rate', bpm });
             hud.update({ heart_rate: bpm });
+        }
+        if (!connected) {
+            toastSystem.show('warning', '\uD83D\uDCF4 WHOOP Disconnected', 'Falling back to demo states. Reconnecting...', 4000);
         }
     });
 
@@ -291,11 +300,12 @@ async function startGame(enableDemo = false) {
         }
     });
 
-    socket.on('connected', () => hud.setConnected(true));
-    socket.on('disconnected', () => hud.setConnected(false));
+    socket.on('connected', () => { hud.setConnected(true); beneathView.setConnected(true); });
+    socket.on('disconnected', () => { hud.setConnected(false); beneathView.setConnected(false); });
 
     socket.on('intervention', (data) => {
         ghost.showSpeechBubble(data);
+        beneathView.ddIntervention(data);
         if (data.priority === 'critical' || data.priority === 'warning') {
             soundManager.playGhostAlert();
         } else {
@@ -330,9 +340,13 @@ async function startGame(enableDemo = false) {
 
     // keyboard
     document.addEventListener('keydown', (e) => {
-        // 1-5: ALWAYS change mock biometric state, even inside app overlays
+        // 1-5: change mock biometric state (disabled when WHOOP BLE is streaming live data)
         if (e.key >= '1' && e.key <= '5') {
             e.preventDefault();
+            if (!demoHotbar.manualEnabled) {
+                toastSystem.show('warning', '\uD83D\uDD12 Live Mode', 'WHOOP is streaming real data. Manual override disabled.', 3000);
+                return;
+            }
             socket.sendMockState(parseInt(e.key));
             return;
         }

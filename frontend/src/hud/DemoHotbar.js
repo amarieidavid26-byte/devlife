@@ -96,6 +96,7 @@ export class DemoHotbar {
                 <span class="dh-name">${s.label}</span>
             `;
             box.addEventListener('click', () => {
+                if (!this.manualEnabled) return;
                 this.setActive(s.id);
                 if (this._onClick) this._onClick(s.key);
             });
