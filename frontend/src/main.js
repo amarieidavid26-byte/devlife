@@ -72,7 +72,9 @@ mainMenu.show(
 );
 
 // --- Game init (called when menu START or DEMO is clicked) ---
-function startGame(enableDemo = false) {
+async function startGame(enableDemo = false) {
+    await Furniture.preloadTextures();
+
     let socket, room, furniture, ghost, atmosphere, hud, beneathView, demoHotbar, apps, activeApp, ePrompt;
     let currentGameScene = 'room';
     let coffeeCount = 0;

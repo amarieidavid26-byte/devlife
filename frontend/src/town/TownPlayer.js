@@ -32,7 +32,7 @@ export class TownPlayer {
 
         // shadow (matches room Player exactly)
         this._shadow = new PIXI.Graphics();
-        this._shadow.beginFill(0x000000, 0.28);
+        this._shadow.beginFill(0x3C2A1A, 0.15);
         this._shadow.drawEllipse(0, 0, 16, 6);
         this._shadow.endFill();
         this._shadow.y = 20;
@@ -57,7 +57,7 @@ export class TownPlayer {
 
     _buildSprite() {
         const container = new PIXI.Container();
-        const OL_C = 0x0d0d1a;
+        const OL_C = 0x3C2A1A;
 
         this._legLeft  = new PIXI.Graphics();
         this._legRight = new PIXI.Graphics();
@@ -67,18 +67,18 @@ export class TownPlayer {
 
         const body = new PIXI.Graphics();
         body.lineStyle(1.8, OL_C, 0.88);
-        body.beginFill(0x4a6fa5);
+        body.beginFill(0x6AADCF);
         body.drawRoundedRect(-12, -28, 24, 28, 5);
         body.endFill();
         body.lineStyle(0);
-        body.beginFill(0x3a5588);
+        body.beginFill(0x5A9DBF);
         body.drawEllipse(0, -28, 8, 4.5);
         body.endFill();
         body.lineStyle(1, OL_C, 0.45);
-        body.beginFill(0x3a5588);
+        body.beginFill(0x5A9DBF);
         body.drawRoundedRect(-8, -14, 16, 10, 3);
         body.endFill();
-        body.lineStyle(1, 0x1e3060, 0.5);
+        body.lineStyle(1, 0x4A8DA8, 0.5);
         body.moveTo(0, -28); body.lineTo(0, -4);
         container.addChild(body);
 
@@ -90,7 +90,7 @@ export class TownPlayer {
 
         const head = new PIXI.Graphics();
         head.lineStyle(1.8, OL_C, 0.88);
-        head.beginFill(0xf8c9a0);
+        head.beginFill(0xFFDDB8);
         head.drawEllipse(0, -38, 13, 14);
         head.endFill();
         head.lineStyle(0);
@@ -98,7 +98,7 @@ export class TownPlayer {
         head.drawCircle(-4,   -39.5, 3.5);
         head.drawCircle( 4,   -39.5, 3.5);
         head.endFill();
-        head.beginFill(0x1a1440);
+        head.beginFill(0x3C2A1A);
         head.drawCircle(-3.5, -39.5, 2.0);
         head.drawCircle( 4.5, -39.5, 2.0);
         head.endFill();
@@ -106,22 +106,22 @@ export class TownPlayer {
         head.drawCircle(-2.8, -40.5, 0.85);
         head.drawCircle( 5.2, -40.5, 0.85);
         head.endFill();
-        head.lineStyle(1.5, 0xb8885a, 0.82);
+        head.lineStyle(1.5, 0xD4A070, 0.82);
         head.moveTo(-3, -32);
-        head.bezierCurveTo(-1, -30, 1, -30, 3, -32);
+        head.bezierCurveTo(-1, -29.5, 1, -29.5, 3, -32);
         head.lineStyle(0);
-        head.beginFill(0xd4a070, 0.45);
+        head.beginFill(0xE8B88A, 0.45);
         head.drawCircle(0, -35.5, 1.3);
         head.endFill();
         container.addChild(head);
 
         const hair = new PIXI.Graphics();
         hair.lineStyle(1.5, OL_C, 0.75);
-        hair.beginFill(0x2c1800);
+        hair.beginFill(0x6B3A1A);
         hair.drawEllipse(0, -52, 13, 5);
         hair.endFill();
         hair.lineStyle(0);
-        hair.beginFill(0x2c1800);
+        hair.beginFill(0x6B3A1A);
         hair.drawRect(-13, -52, 26, 8);
         hair.drawEllipse(-12, -47, 4, 5);
         hair.drawEllipse( 12, -47, 4, 5);
@@ -136,35 +136,35 @@ export class TownPlayer {
     _drawLegs(walkPhase) {
         const lOff =  Math.sin(walkPhase) * 5;
         const rOff = -Math.sin(walkPhase) * 5;
-        const OL_C = 0x0d0d1a;
+        const OL_C = 0x3C2A1A;
 
         this._legLeft.clear();
         this._legLeft.lineStyle(1.5, OL_C, 0.85);
-        this._legLeft.beginFill(0x2a4a7f);
+        this._legLeft.beginFill(0x4A6A50);
         this._legLeft.drawRoundedRect(-8, -2 + lOff, 7, 15, 2.5);
         this._legLeft.endFill();
 
         this._legRight.clear();
         this._legRight.lineStyle(1.5, OL_C, 0.85);
-        this._legRight.beginFill(0x2a4a7f);
+        this._legRight.beginFill(0x4A6A50);
         this._legRight.drawRoundedRect(1, -2 + rOff, 7, 15, 2.5);
         this._legRight.endFill();
 
         this._legLeft.lineStyle(1.2, OL_C, 0.8);
-        this._legLeft.beginFill(0xf0f0f8);
+        this._legLeft.beginFill(0xF5F0E8);
         this._legLeft.drawRoundedRect(-9.5, 13 + lOff, 10, 6, 2.5);
         this._legLeft.endFill();
         this._legLeft.lineStyle(0);
-        this._legLeft.beginFill(0xe94560);
+        this._legLeft.beginFill(0xC85A4A);
         this._legLeft.drawRect(-9, 16.5 + lOff, 9, 1.5);
         this._legLeft.endFill();
 
         this._legRight.lineStyle(1.2, OL_C, 0.8);
-        this._legRight.beginFill(0xf0f0f8);
+        this._legRight.beginFill(0xF5F0E8);
         this._legRight.drawRoundedRect(0, 13 + rOff, 10, 6, 2.5);
         this._legRight.endFill();
         this._legRight.lineStyle(0);
-        this._legRight.beginFill(0xe94560);
+        this._legRight.beginFill(0xC85A4A);
         this._legRight.drawRect(1, 16.5 + rOff, 9, 1.5);
         this._legRight.endFill();
     }
@@ -174,25 +174,25 @@ export class TownPlayer {
     _drawArms(walkPhase) {
         const lOff =  Math.sin(walkPhase + Math.PI) * 4;
         const rOff = -Math.sin(walkPhase + Math.PI) * 4;
-        const OL_C = 0x0d0d1a;
+        const OL_C = 0x3C2A1A;
 
         this._armLeft.clear();
         this._armLeft.lineStyle(1.5, OL_C, 0.85);
-        this._armLeft.beginFill(0x4a6fa5);
+        this._armLeft.beginFill(0x6AADCF);
         this._armLeft.drawRoundedRect(-19, -26 + lOff, 8, 16, 3);
         this._armLeft.endFill();
         this._armLeft.lineStyle(1, OL_C, 0.65);
-        this._armLeft.beginFill(0xf8c9a0);
+        this._armLeft.beginFill(0xFFDDB8);
         this._armLeft.drawEllipse(-15, -10 + lOff, 4.5, 3.5);
         this._armLeft.endFill();
 
         this._armRight.clear();
         this._armRight.lineStyle(1.5, OL_C, 0.85);
-        this._armRight.beginFill(0x4a6fa5);
+        this._armRight.beginFill(0x6AADCF);
         this._armRight.drawRoundedRect(11, -26 + rOff, 8, 16, 3);
         this._armRight.endFill();
         this._armRight.lineStyle(1, OL_C, 0.65);
-        this._armRight.beginFill(0xf8c9a0);
+        this._armRight.beginFill(0xFFDDB8);
         this._armRight.drawEllipse(15, -10 + rOff, 4.5, 3.5);
         this._armRight.endFill();
     }
