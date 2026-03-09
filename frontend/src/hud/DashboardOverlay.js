@@ -558,7 +558,7 @@ export class DashboardOverlay {
         const ctx = this._sparkCtx;
         const vals = this._hrvHistory;
         ctx.clearRect(0, 0, W, H);
-        ctx.fillStyle = 'rgba(0,0,0,0,2)'; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(0, 0, W, H);
         const min  = Math.max(0, Math.min(...vals) - 5);
         const max  = Math.max(...vals) + 5;
         const range = max - min || 1;
