@@ -1,0 +1,842 @@
+import * as PIXI from 'pixi.js';
+import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
+import { TownPlayer } from './TownPlayer.js';
+
+const GRID_SIZE = 12;
+const GAME_ZOOM = 1.5;
+const WALL_H = 100;
+
+// Offset player coordinates by +7 so TownPlayer's hardcoded BLOCKED_ZONES
+// (HOME 3.25-6.75 in both axes) don't create invisible walls inside the cafe.
+// Cafe (0,0) → TownPlayer (7,7), Cafe (12,12) → TownPlayer (19,19) — all clear.
+const COORD_OFFSET = 7;
+
+const COL = {
+    floorA:     0xB8956A,
+    floorB:     0xA8855A,
+    floorLine:  0x9A7A50,
+    wallLeft:   0xC87A4A,
+    wallRight:  0xB06A3A,
+    wallEdge:   0xD88A5A,
+    baseboard:  0x6B4A2A,
+    counter:    0x5A3A1A,
+    counterTop: 0x6B4A2A,
+    tableTop:   0xA0845C,
+    tableLeg:   0x7A5C3A,
+    chairSeat:  0x8B7348,
+    chairBack:  0x7A6338,
+    menuBoard:  0x2A1A10,
+    chalkboard: 0x2A3A2A,
+    cup:        0xF5F0E8,
+    coffee:     0x5A3A1A,
+    warm:       0xFFE4B5,
+    green:      0x6AD89A,
+};
+
+export class CafeScene {
+    constructor(pixiApp) {
+        this._app = pixiApp;
+        this._container = null;
+        this._player = null;
+        this._playerLayer = null;
+        this._steamSources = [];
+        this._dustMotes = [];
+        this._stringLights = [];
+        this._recoveryGraph = null;
+        this._recoveryDot = null;
+        this._recoveryProgress = 0;
+        this._elapsed = 0;
+        this._timers = [];
+        this._plantTex = null;
+        this._onKeyDown = null;
+
+        this.onGhostSay = null;
+        this.onExit = null;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Scene interface
+    // ─────────────────────────────────────────────
+
+    async enter() {
+        this._plantTex = await PIXI.Assets.load('/assets/Isometric/pottedPlant_SE.png').catch(() => null);
+
+        this._container = new PIXI.Container();
+        this._container.scale.set(GAME_ZOOM);
+        this._app.stage.addChild(this._container);
+
+        this._floorContainer = new PIXI.Container();
+        this._wallContainer = new PIXI.Container();
+        this._furnitureContainer = new PIXI.Container();
+        this._ambientContainer = new PIXI.Container();
+
+        this._container.addChild(this._floorContainer);
+        this._container.addChild(this._wallContainer);
+        this._container.addChild(this._furnitureContainer);
+
+        // Player layer — offset so TownPlayer's cartToIso aligns with _gridToScreen.
+        // The extra COORD_OFFSET*TILE_HEIGHT compensates for the coordinate shift.
+        this._playerLayer = new PIXI.Container();
+        this._playerLayer.x = (window.innerWidth / GAME_ZOOM) / 2;
+        this._playerLayer.y = (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2) - (COORD_OFFSET * TILE_HEIGHT);
+        this._container.addChild(this._playerLayer);
+
+        this._container.addChild(this._ambientContainer);
+
+        // Draw room
+        this._drawFloor();
+        this._drawWalls();
+        this._drawCounter();
+        this._drawMenuBoard();
+        this._drawChalkboard();
+        this._drawTable(2, 8, 2);
+        this._drawTable(7, 5, 2);
+        this._drawTable(5, 10, 2);
+        this._drawTable(9, 7, 1);
+        this._drawPlant(11, 1);
+        this._drawStringLights();
+        this._drawRecoveryDisplay();
+        this._drawDoorHint();
+        this._drawWarmOverlay();
+        this._initDustMotes();
+
+        // Player — spawn near door (6, 8) in cafe coords
+        this._player = new TownPlayer(this._playerLayer);
+        this._player.setPosition(6 + COORD_OFFSET, 8 + COORD_OFFSET);
+        this._player.enable();
+
+        // Snap camera to player (no lerp on first frame)
+        const initScreen = this._gridToScreen(6, 8);
+        this._container.x = window.innerWidth / 2 - initScreen.x * GAME_ZOOM;
+        this._container.y = window.innerHeight / 2 - initScreen.y * GAME_ZOOM;
+
+        // Ghost messages
+        this._timers.push(setTimeout(() => {
+            this.onGhostSay?.("See? Your HRV is already improving. Breaks work.", 4000);
+        }, 5000));
+
+        this._timers.push(setTimeout(() => {
+            this.onGhostSay?.("Recovery up 3%. Sometimes the best code is written after stepping away.", 5000);
+        }, 15000));
+
+        // ESC to leave
+        this._onKeyDown = (e) => {
+            if (e.key === 'Escape') this.onExit?.();
+        };
+        document.addEventListener('keydown', this._onKeyDown);
+    }
+
+    exit() {
+        for (const t of this._timers) clearTimeout(t);
+        this._timers = [];
+
+        if (this._onKeyDown) {
+            document.removeEventListener('keydown', this._onKeyDown);
+            this._onKeyDown = null;
+        }
+
+        if (this._player) {
+            this._player.disable();
+            this._player.destroy();
+            this._player = null;
+        }
+
+        for (const src of this._steamSources) {
+            for (const p of src.active) {
+                p.gfx.parent?.removeChild(p.gfx);
+                p.gfx.destroy();
+            }
+        }
+
+        if (this._container) {
+            this._app.stage.removeChild(this._container);
+            this._container.destroy({ children: true });
+            this._container = null;
+        }
+
+        this._steamSources = [];
+        this._dustMotes = [];
+        this._stringLights = [];
+        this._recoveryGraph = null;
+        this._recoveryDot = null;
+        this._recoveryProgress = 0;
+        this._elapsed = 0;
+        this._playerLayer = null;
+    }
+
+    update(delta) {
+        this._elapsed += delta;
+
+        if (this._player) {
+            this._player.update(delta);
+
+            // Clamp to cafe interior (convert from offset coords)
+            const pos = this._player.getPosition();
+            const cafeX = pos.x - COORD_OFFSET;
+            const cafeY = pos.y - COORD_OFFSET;
+            const clampedX = Math.max(0.5, Math.min(11.5, cafeX));
+            const clampedY = Math.max(2.5, Math.min(11.5, cafeY)); // y>=2.5 keeps player in front of counter
+            if (clampedX !== cafeX || clampedY !== cafeY) {
+                this._player.setPosition(clampedX + COORD_OFFSET, clampedY + COORD_OFFSET);
+            }
+
+            // Camera follow (lerp)
+            const sp = this._gridToScreen(clampedX, clampedY);
+            const camTargetX = window.innerWidth / 2 - sp.x * GAME_ZOOM;
+            const camTargetY = window.innerHeight / 2 - sp.y * GAME_ZOOM;
+            const camLerp = 0.07 * delta;
+            this._container.x += (camTargetX - this._container.x) * camLerp;
+            this._container.y += (camTargetY - this._container.y) * camLerp;
+        }
+
+        this._updateSteam(delta);
+        this._updateDust(delta);
+        this._updateStringLights();
+        this._updateRecoveryGraph(delta);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Coordinates
+    // ─────────────────────────────────────────────
+
+    _gridToScreen(gx, gy) {
+        const iso = cartToIso(gx, gy);
+        return {
+            x: iso.x + (window.innerWidth / GAME_ZOOM) / 2,
+            y: iso.y + (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2),
+        };
+    }
+
+    // ─────────────────────────────────────────────
+    //  Floor (12x12 warm wood checkerboard)
+    // ─────────────────────────────────────────────
+
+    _drawFloor() {
+        for (let gx = 0; gx < GRID_SIZE; gx++) {
+            for (let gy = 0; gy < GRID_SIZE; gy++) {
+                const tile = new PIXI.Graphics();
+                const { x, y } = this._gridToScreen(gx, gy);
+                const shade = (gx + gy) % 2 === 0 ? COL.floorA : COL.floorB;
+
+                tile.beginFill(shade);
+                tile.moveTo(x, y);
+                tile.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+                tile.lineTo(x, y + TILE_HEIGHT);
+                tile.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+                tile.closePath();
+                tile.endFill();
+
+                // wood grain
+                tile.lineStyle(0.5, COL.floorLine, 0.25);
+                tile.moveTo(x - TILE_WIDTH / 4, y + TILE_HEIGHT / 2);
+                tile.lineTo(x + TILE_WIDTH / 4, y + TILE_HEIGHT / 2);
+
+                // tile border
+                tile.lineStyle(0.5, 0x8A6A40, 0.2);
+                tile.moveTo(x, y);
+                tile.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+                tile.lineTo(x, y + TILE_HEIGHT);
+                tile.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+                tile.closePath();
+
+                this._floorContainer.addChild(tile);
+            }
+        }
+
+        // Doormat at (6, 11) — darker tile to indicate exit
+        const { x: dx, y: dy } = this._gridToScreen(6, 11);
+        const mat = new PIXI.Graphics();
+        mat.beginFill(0x7A5C3A, 0.6);
+        mat.moveTo(dx, dy);
+        mat.lineTo(dx + TILE_WIDTH / 2, dy + TILE_HEIGHT / 2);
+        mat.lineTo(dx, dy + TILE_HEIGHT);
+        mat.lineTo(dx - TILE_WIDTH / 2, dy + TILE_HEIGHT / 2);
+        mat.closePath();
+        mat.endFill();
+        this._floorContainer.addChild(mat);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Walls (per-tile panels)
+    // ─────────────────────────────────────────────
+
+    _drawWalls() {
+        const baseH = 6;
+
+        // left wall (x = 0)
+        for (let gy = 0; gy < GRID_SIZE; gy++) {
+            const { x, y } = this._gridToScreen(0, gy);
+            const panel = new PIXI.Graphics();
+
+            panel.beginFill(COL.wallLeft);
+            panel.moveTo(x, y);
+            panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+            panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - WALL_H);
+            panel.lineTo(x, y - WALL_H);
+            panel.closePath();
+            panel.endFill();
+
+            // baseboard
+            panel.beginFill(COL.baseboard);
+            panel.moveTo(x, y);
+            panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+            panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH);
+            panel.lineTo(x, y - baseH);
+            panel.closePath();
+            panel.endFill();
+
+            // edge line
+            panel.lineStyle(1, COL.wallEdge, 0.4);
+            panel.moveTo(x, y - WALL_H);
+            panel.lineTo(x, y);
+
+            this._wallContainer.addChild(panel);
+        }
+
+        // right wall (y = 0)
+        for (let gx = 0; gx < GRID_SIZE; gx++) {
+            const { x, y } = this._gridToScreen(gx, 0);
+            const panel = new PIXI.Graphics();
+
+            panel.beginFill(COL.wallRight);
+            panel.moveTo(x, y);
+            panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+            panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - WALL_H);
+            panel.lineTo(x, y - WALL_H);
+            panel.closePath();
+            panel.endFill();
+
+            // baseboard
+            panel.beginFill(COL.baseboard, 0.85);
+            panel.moveTo(x, y);
+            panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+            panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH);
+            panel.lineTo(x, y - baseH);
+            panel.closePath();
+            panel.endFill();
+
+            // edge line
+            panel.lineStyle(1, COL.wallEdge, 0.3);
+            panel.moveTo(x, y - WALL_H);
+            panel.lineTo(x, y);
+
+            this._wallContainer.addChild(panel);
+        }
+
+        // corner edge
+        const { x: cx, y: cy } = this._gridToScreen(0, 0);
+        const corner = new PIXI.Graphics();
+        corner.lineStyle(2, COL.wallEdge, 0.6);
+        corner.moveTo(cx, cy - WALL_H);
+        corner.lineTo(cx, cy);
+        this._wallContainer.addChild(corner);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Coffee counter (back wall, y=1, x=2 to x=6)
+    // ─────────────────────────────────────────────
+
+    _drawCounter() {
+        const counterH = 24;
+        const g = new PIXI.Graphics();
+
+        for (let gx = 2; gx <= 6; gx++) {
+            const { x, y } = this._gridToScreen(gx, 1);
+
+            // front face
+            g.beginFill(COL.counter);
+            g.moveTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+            g.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
+            g.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - counterH);
+            g.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - counterH);
+            g.closePath();
+            g.endFill();
+
+            // top surface (isometric diamond)
+            g.beginFill(COL.counterTop);
+            g.moveTo(x, y - counterH);
+            g.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - counterH);
+            g.lineTo(x, y + TILE_HEIGHT - counterH);
+            g.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - counterH);
+            g.closePath();
+            g.endFill();
+
+            // edge highlight
+            g.lineStyle(0.5, 0x8B7A5A, 0.3);
+            g.moveTo(x, y - counterH);
+            g.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - counterH);
+            g.lineStyle(0);
+        }
+
+        this._furnitureContainer.addChild(g);
+
+        // 3 coffee cups spread across the counter
+        const cupPositions = [2.5, 4.0, 5.5];
+        for (const cgx of cupPositions) {
+            const { x, y } = this._gridToScreen(cgx, 1);
+            const cup = new PIXI.Graphics();
+            const cupY = y - counterH;
+
+            // cup body
+            cup.beginFill(COL.cup);
+            cup.drawRect(x - 3, cupY - 8, 6, 8);
+            cup.endFill();
+            // coffee surface
+            cup.beginFill(COL.coffee);
+            cup.drawRect(x - 2, cupY - 6, 4, 4);
+            cup.endFill();
+            // handle
+            cup.lineStyle(1, COL.cup, 0.8);
+            cup.arc(x + 3, cupY - 4, 2.5, -Math.PI / 2, Math.PI / 2, false);
+            cup.lineStyle(0);
+
+            this._furnitureContainer.addChild(cup);
+            this._steamSources.push({ x, baseY: cupY - 9, spawnAccum: Math.random() * 20, active: [] });
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Menu board (right wall at gx=4, y=0)
+    // ─────────────────────────────────────────────
+
+    _drawMenuBoard() {
+        const { x: wx, y: wy } = this._gridToScreen(4, 0);
+        const bx = wx + TILE_WIDTH / 4;
+        const by = wy + TILE_HEIGHT / 4 - WALL_H * 0.65;
+
+        const board = new PIXI.Graphics();
+        board.beginFill(COL.menuBoard);
+        board.drawRoundedRect(-24, -16, 48, 32, 3);
+        board.endFill();
+
+        // menu item lines
+        const lineColors = [COL.warm, COL.green, COL.warm, 0xFF7A6A, COL.warm];
+        for (let i = 0; i < 5; i++) {
+            board.lineStyle(1.5, lineColors[i], 0.5);
+            const ly = -10 + i * 6;
+            const lw = 12 + (i % 3) * 6;
+            board.moveTo(-18, ly);
+            board.lineTo(-18 + lw, ly);
+            board.lineStyle(0);
+            board.beginFill(lineColors[i], 0.4);
+            board.drawCircle(18, ly, 1);
+            board.endFill();
+        }
+
+        const menuContainer = new PIXI.Container();
+        menuContainer.addChild(board);
+        menuContainer.x = bx;
+        menuContainer.y = by;
+        menuContainer.skew.y = Math.atan2(TILE_HEIGHT / 2, TILE_WIDTH / 2);
+        this._wallContainer.addChild(menuContainer);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Chalkboard (left wall at x=0, gy=5)
+    // ─────────────────────────────────────────────
+
+    _drawChalkboard() {
+        const { x: wx, y: wy } = this._gridToScreen(0, 5);
+        const bx = wx - TILE_WIDTH / 4;
+        const by = wy + TILE_HEIGHT / 4 - WALL_H * 0.55;
+
+        const board = new PIXI.Graphics();
+        // wooden frame
+        board.beginFill(COL.baseboard);
+        board.drawRoundedRect(-28, -20, 56, 40, 3);
+        board.endFill();
+        // green surface
+        board.beginFill(COL.chalkboard);
+        board.drawRoundedRect(-25, -17, 50, 34, 2);
+        board.endFill();
+
+        // chalk text lines
+        const chalkColors = [0xF5F0E8, 0xFFD66B, 0xF5F0E8, 0xFF9A8C, 0xF5F0E8];
+        for (let i = 0; i < 5; i++) {
+            board.lineStyle(1.2, chalkColors[i], 0.45);
+            const ly = -12 + i * 7;
+            const lw = 10 + (i * 7 % 15);
+            board.moveTo(-20, ly);
+            board.lineTo(-20 + lw, ly);
+        }
+
+        const chalkContainer = new PIXI.Container();
+        chalkContainer.addChild(board);
+        chalkContainer.x = bx;
+        chalkContainer.y = by;
+        chalkContainer.skew.y = -Math.atan2(TILE_HEIGHT / 2, TILE_WIDTH / 2);
+        this._wallContainer.addChild(chalkContainer);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Tables + chairs
+    // ─────────────────────────────────────────────
+
+    _drawTable(gx, gy, chairCount) {
+        const { x, y } = this._gridToScreen(gx, gy);
+        const tileCenter = y + TILE_HEIGHT / 2;
+        const g = new PIXI.Graphics();
+
+        // shadow
+        g.beginFill(0x3C2A1A, 0.08);
+        g.drawEllipse(x, tileCenter, 18, 8);
+        g.endFill();
+
+        // single pedestal leg
+        g.beginFill(COL.tableLeg);
+        g.drawRect(x - 2, tileCenter - 18, 4, 18);
+        g.endFill();
+
+        // round top (isometric ellipse, r≈15)
+        g.beginFill(COL.tableTop);
+        g.drawEllipse(x, tileCenter - 20, 15, 9);
+        g.endFill();
+
+        // highlight
+        g.beginFill(0xBFA072, 0.3);
+        g.drawEllipse(x - 2, tileCenter - 22, 8, 4);
+        g.endFill();
+
+        this._furnitureContainer.addChild(g);
+
+        // chairs — one on each side of the table
+        if (chairCount >= 1) this._drawChair(gx + 0.8, gy + 0.6);
+        if (chairCount >= 2) this._drawChair(gx - 0.7, gy - 0.4);
+    }
+
+    _drawChair(gx, gy) {
+        const { x, y } = this._gridToScreen(gx, gy);
+        const base = y + TILE_HEIGHT / 2;
+        const g = new PIXI.Graphics();
+
+        // legs
+        g.beginFill(COL.tableLeg);
+        g.drawRect(x - 5, base - 2, 2, 8);
+        g.drawRect(x + 3, base - 3, 2, 8);
+        g.endFill();
+
+        // seat
+        g.beginFill(COL.chairSeat);
+        g.drawEllipse(x, base - 4, 7, 5);
+        g.endFill();
+
+        // backrest
+        g.beginFill(COL.chairBack);
+        g.drawRect(x - 5, base - 14, 2, 10);
+        g.drawRect(x + 3, base - 12, 2, 8);
+        g.endFill();
+        g.beginFill(COL.chairBack);
+        g.drawRect(x - 5, base - 14, 10, 2);
+        g.endFill();
+
+        this._furnitureContainer.addChild(g);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Plant (corner, Kenney sprite with fallback)
+    // ─────────────────────────────────────────────
+
+    _drawPlant(gx, gy) {
+        const { x, y } = this._gridToScreen(gx, gy);
+        const tileCenter = y + TILE_HEIGHT / 2;
+
+        if (this._plantTex) {
+            const sprite = new PIXI.Sprite(this._plantTex);
+            sprite.anchor.set(0.5, 0.92);
+            sprite.scale.set(0.50);
+            sprite.x = x;
+            sprite.y = tileCenter;
+            this._furnitureContainer.addChild(sprite);
+        } else {
+            const g = new PIXI.Graphics();
+            // pot
+            g.beginFill(0xC87A4A);
+            g.moveTo(x - 6, tileCenter - 4);
+            g.lineTo(x + 6, tileCenter - 4);
+            g.lineTo(x + 8, tileCenter + 10);
+            g.lineTo(x - 8, tileCenter + 10);
+            g.closePath();
+            g.endFill();
+            // soil
+            g.beginFill(0x6B4A2A);
+            g.drawEllipse(x, tileCenter - 4, 6, 3);
+            g.endFill();
+            // leaves
+            g.beginFill(0x5BA05C);
+            g.drawEllipse(x - 6, tileCenter - 12, 6, 5);
+            g.drawEllipse(x + 5, tileCenter - 14, 6, 5);
+            g.drawEllipse(x, tileCenter - 20, 5, 4);
+            g.endFill();
+            this._furnitureContainer.addChild(g);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  String lights across ceiling
+    // ─────────────────────────────────────────────
+
+    _drawStringLights() {
+        const wire = new PIXI.Graphics();
+        this._stringLights = [];
+
+        // string from right wall to left wall near ceiling
+        const start = this._gridToScreen(2, 0);
+        const end = this._gridToScreen(0, 10);
+        const sx = start.x + TILE_WIDTH / 4;
+        const sy = start.y + TILE_HEIGHT / 4 - WALL_H * 0.85;
+        const ex = end.x - TILE_WIDTH / 4;
+        const ey = end.y + TILE_HEIGHT / 4 - WALL_H * 0.85;
+
+        // wire with sag
+        const mx = (sx + ex) / 2;
+        const my = (sy + ey) / 2 + 12;
+        wire.lineStyle(0.8, 0x4A3A2A, 0.4);
+        wire.moveTo(sx, sy);
+        wire.quadraticCurveTo(mx, my, ex, ey);
+        wire.lineStyle(0);
+        this._wallContainer.addChild(wire);
+
+        // 10 bulbs along the bezier
+        const bulbCount = 10;
+        for (let i = 0; i < bulbCount; i++) {
+            const t = (i + 0.5) / bulbCount;
+            const bx = (1 - t) * (1 - t) * sx + 2 * (1 - t) * t * mx + t * t * ex;
+            const by = (1 - t) * (1 - t) * sy + 2 * (1 - t) * t * my + t * t * ey;
+
+            const bulb = new PIXI.Graphics();
+            bulb.beginFill(COL.warm, 0.5);
+            bulb.drawCircle(0, 0, 2);
+            bulb.endFill();
+            bulb.beginFill(COL.warm, 0.06);
+            bulb.drawCircle(0, 0, 10);
+            bulb.endFill();
+            bulb.x = bx;
+            bulb.y = by;
+
+            this._ambientContainer.addChild(bulb);
+            this._stringLights.push({ gfx: bulb, phase: i * 0.9 });
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Recovery display (right wall at gx=8, y=0)
+    // ─────────────────────────────────────────────
+
+    _drawRecoveryDisplay() {
+        const { x: wx, y: wy } = this._gridToScreen(8, 0);
+        const bx = wx + TILE_WIDTH / 4;
+        const by = wy + TILE_HEIGHT / 4 - WALL_H * 0.6;
+
+        const displayContainer = new PIXI.Container();
+
+        // screen background
+        const bg = new PIXI.Graphics();
+        bg.beginFill(0x0A0A14, 0.9);
+        bg.drawRoundedRect(-30, -22, 60, 44, 4);
+        bg.endFill();
+        bg.lineStyle(1, COL.baseboard, 0.7);
+        bg.drawRoundedRect(-30, -22, 60, 44, 4);
+        bg.lineStyle(0);
+        displayContainer.addChild(bg);
+
+        // label
+        const label = new PIXI.Text('RECOVERY BOOST', {
+            fontFamily: "'Fredoka', monospace, sans-serif",
+            fontSize: 6,
+            fill: COL.green,
+            fontWeight: '600',
+            letterSpacing: 1,
+        });
+        label.anchor.set(0.5, 0);
+        label.y = -18;
+        displayContainer.addChild(label);
+
+        // graph — updated each frame
+        this._recoveryGraph = new PIXI.Graphics();
+        displayContainer.addChild(this._recoveryGraph);
+
+        // pulsing "ACTIVE" dot
+        this._recoveryDot = new PIXI.Graphics();
+        this._recoveryDot.beginFill(COL.green, 0.7);
+        this._recoveryDot.drawCircle(22, -18, 2);
+        this._recoveryDot.endFill();
+        displayContainer.addChild(this._recoveryDot);
+
+        displayContainer.x = bx;
+        displayContainer.y = by;
+        displayContainer.skew.y = Math.atan2(TILE_HEIGHT / 2, TILE_WIDTH / 2);
+        this._wallContainer.addChild(displayContainer);
+    }
+
+    _updateRecoveryGraph(delta) {
+        if (!this._recoveryGraph) return;
+
+        this._recoveryProgress = Math.min(1, this._recoveryProgress + delta * 0.0003);
+
+        const g = this._recoveryGraph;
+        g.clear();
+
+        const gx = -24, gy = -6, gw = 48, gh = 22;
+        const points = 20;
+
+        // grid lines
+        g.lineStyle(0.5, 0xffffff, 0.05);
+        for (let i = 0; i <= 4; i++) {
+            const ly = gy + (gh / 4) * i;
+            g.moveTo(gx, ly);
+            g.lineTo(gx + gw, ly);
+        }
+
+        // recovery line — curves upward
+        const drawnPoints = Math.floor(points * this._recoveryProgress);
+        if (drawnPoints > 0) {
+            g.lineStyle(1.5, COL.green, 0.8);
+            for (let i = 0; i <= drawnPoints; i++) {
+                const t = i / points;
+                const px = gx + t * gw;
+                const progress = Math.pow(t, 0.6);
+                const py = gy + gh - progress * gh * 0.8 + Math.sin(t * 8) * 1.5;
+                if (i === 0) g.moveTo(px, py);
+                else g.lineTo(px, py);
+            }
+        }
+
+        // pulsing dot
+        if (this._recoveryDot) {
+            this._recoveryDot.alpha = 0.4 + Math.sin(this._elapsed * 0.05) * 0.3;
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Door hint (bottom center, grid 6,11)
+    // ─────────────────────────────────────────────
+
+    _drawDoorHint() {
+        const { x, y } = this._gridToScreen(6, 11);
+        const hint = new PIXI.Text('Press ESC to leave', {
+            fontFamily: 'monospace',
+            fontSize: 9,
+            fill: 0xc0b8a8,
+            fontWeight: '600',
+            letterSpacing: 0.5,
+        });
+        hint.anchor.set(0.5, 0);
+        hint.x = x;
+        hint.y = y + TILE_HEIGHT + 4;
+        this._furnitureContainer.addChild(hint);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Warm ambient overlay
+    // ─────────────────────────────────────────────
+
+    _drawWarmOverlay() {
+        const vw = window.innerWidth / GAME_ZOOM;
+        const vh = window.innerHeight / GAME_ZOOM;
+        const overlay = new PIXI.Graphics();
+        overlay.beginFill(COL.warm, 0.03);
+        overlay.drawRect(-vw, -vh, vw * 3, vh * 3);
+        overlay.endFill();
+        this._ambientContainer.addChild(overlay);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Dust motes
+    // ─────────────────────────────────────────────
+
+    _initDustMotes() {
+        const vw = window.innerWidth / GAME_ZOOM;
+        const vh = window.innerHeight / GAME_ZOOM;
+
+        for (let i = 0; i < 12; i++) {
+            const g = new PIXI.Graphics();
+            const alpha = 0.03 + Math.random() * 0.04;
+            g.beginFill(COL.warm, alpha);
+            g.drawCircle(0, 0, 1.5);
+            g.endFill();
+            g.x = Math.random() * vw;
+            g.y = Math.random() * vh;
+
+            this._ambientContainer.addChild(g);
+            this._dustMotes.push({
+                gfx: g,
+                vx: 0.04 + Math.random() * 0.08,
+                baseY: g.y,
+                sineAmp: 4,
+                sinePeriod: 4 + Math.random() * 3,
+                phase: Math.random() * Math.PI * 2,
+            });
+        }
+    }
+
+    _updateDust(delta) {
+        const vw = window.innerWidth / GAME_ZOOM;
+        const vh = window.innerHeight / GAME_ZOOM;
+
+        for (const d of this._dustMotes) {
+            d.phase += (delta / 60) * (Math.PI * 2 / d.sinePeriod);
+            d.gfx.x += d.vx * delta;
+            d.gfx.y = d.baseY + Math.sin(d.phase) * d.sineAmp;
+            if (d.gfx.x > vw + 10) {
+                d.gfx.x = -10;
+                d.baseY = Math.random() * vh;
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Steam particles (coffee cups)
+    // ─────────────────────────────────────────────
+
+    _updateSteam(delta) {
+        for (const source of this._steamSources) {
+            source.spawnAccum += delta;
+            if (source.spawnAccum > 20 + Math.random() * 12) {
+                source.spawnAccum = 0;
+                const g = new PIXI.Graphics();
+                const r = 1 + Math.random() * 1.5;
+                g.beginFill(0xb0b8cc, 0.25);
+                g.drawCircle(0, 0, r);
+                g.endFill();
+                const p = {
+                    gfx: g,
+                    x: source.x + (Math.random() - 0.5) * 4,
+                    y: source.baseY,
+                    vy: -(0.15 + Math.random() * 0.2),
+                    vx: (Math.random() - 0.5) * 0.08,
+                    alpha: 0.3,
+                };
+                g.x = p.x;
+                g.y = p.y;
+                this._furnitureContainer.addChild(g);
+                source.active.push(p);
+            }
+
+            for (let i = source.active.length - 1; i >= 0; i--) {
+                const p = source.active[i];
+                p.x += p.vx * delta;
+                p.y += p.vy * delta;
+                p.alpha -= 0.004 * delta;
+                p.gfx.x = p.x;
+                p.gfx.y = p.y;
+                p.gfx.alpha = Math.max(0, p.alpha);
+                if (p.alpha <= 0) {
+                    p.gfx.parent?.removeChild(p.gfx);
+                    p.gfx.destroy();
+                    source.active.splice(i, 1);
+                }
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  String light pulse
+    // ─────────────────────────────────────────────
+
+    _updateStringLights() {
+        const t = this._elapsed * 0.015;
+        for (const light of this._stringLights) {
+            light.gfx.alpha = 0.85 + Math.sin(t + light.phase) * 0.15;
+        }
+    }
+}

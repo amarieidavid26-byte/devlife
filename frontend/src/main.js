@@ -21,6 +21,8 @@ import { ToastSystem } from './hud/ToastSystem.js';
 import { SettingsMenu } from './menu/SettingsMenu.js';
 import { SceneManager } from './scenes/SceneManager.js';
 import { Town } from './town/Town.js';
+import { CafeScene } from './town/CafeScene.js';
+import { CoworkScene } from './town/CoworkScene.js';
 import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
 import { CONFIG } from './config.js';
 
@@ -216,6 +218,7 @@ async function startGame(enableDemo = false) {
     // door → town transition
     furniture.onDoorInteract = () => {
         if (sceneManager && sceneManager.getCurrentScene() === 'room') {
+            town.setSpawnPoint(7, 7);
             currentGameScene = 'town';
             sceneManager.transitionTo('town', { duration: 800 });
         }
@@ -462,8 +465,38 @@ async function startGame(enableDemo = false) {
     town.onEnterHome = () => {
         sceneManager.transitionTo('room', { duration: 800 });
     };
+    town.onEnterCafe = () => {
+        currentGameScene = 'cafe';
+        sceneManager.transitionTo('cafe', { duration: 800 });
+    };
+    town.onEnterCowork = () => {
+        currentGameScene = 'cowork';
+        sceneManager.transitionTo('cowork', { duration: 800 });
+    };
+
+    const cafeScene = new CafeScene(pixiApp);
+    cafeScene.onGhostSay = (msg) => ghost.showSpeechBubble?.({
+        message: msg, priority: 'low', state: ghost._state, buttons: ['Nice'], biometric: {},
+    }) || console.log('[ghost]', msg);
+    cafeScene.onExit = () => {
+        town.setSpawnPoint(16, 7);
+        currentGameScene = 'town';
+        sceneManager.transitionTo('town', { duration: 800 });
+    };
+
+    const coworkScene = new CoworkScene(pixiApp);
+    coworkScene.onGhostSay = (msg) => ghost.showSpeechBubble?.({
+        message: msg, priority: 'low', state: ghost._state, buttons: ['Nice'], biometric: {},
+    }) || console.log('[ghost]', msg);
+    coworkScene.onExit = () => {
+        town.setSpawnPoint(7, 16);
+        currentGameScene = 'town';
+        sceneManager.transitionTo('town', { duration: 800 });
+    };
 
     sceneManager.registerScene('room', roomScene);
     sceneManager.registerScene('town', town);
+    sceneManager.registerScene('cafe', cafeScene);
+    sceneManager.registerScene('cowork', coworkScene);
     sceneManager.transitionTo('room', { duration: 0 });
 }

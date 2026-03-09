@@ -140,7 +140,7 @@ def _simulate_hr(state):
     global _sim_hr
     lo, hi = _SIM_HR_RANGES.get(state, (62, 72))
     mid = (lo + hi) / 2
-    _sim_hr += (mid - sim_hr) * 0.15 + random.uniform(-3, 3)
+    _sim_hr += (mid - _sim_hr) * 0.15 + random.uniform(-3, 3)
     _sim_hr = max(lo, min(hi, _sim_hr))
     return round(_sim_hr)
 

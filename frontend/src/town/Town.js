@@ -64,6 +64,15 @@ export class Town {
 
         this._benchTex = null;
         this._plantTex = null;
+        this._spawnPoint = null;
+
+        this.onEnterHome = null;
+        this.onEnterCafe = null;
+        this.onEnterCowork = null;
+    }
+
+    setSpawnPoint(gridX, gridY) {
+        this._spawnPoint = { gx: gridX, gy: gridY };
     }
 
     // ─────────────────────────────────────────────
@@ -113,9 +122,14 @@ export class Town {
         this._entityContainer.y = (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2);
         this._container.addChild(this._entityContainer);
 
-        // Player — spawn near HOME door (HOME is at grid 3,3 size 4x4, door on right face at ~grid 7,5)
+        // Player — spawn near the building they exited, or HOME by default
         this._player = new TownPlayer(this._entityContainer);
-        this._player.setPosition(8, 5);
+        if (this._spawnPoint) {
+            this._player.setPosition(this._spawnPoint.gx, this._spawnPoint.gy);
+            this._spawnPoint = null;
+        } else {
+            this._player.setPosition(8, 5);
+        }
         this._player.enable();
 
         // Ghost — follows player
@@ -155,9 +169,11 @@ export class Town {
                 if (this._isNearHome()) {
                     if (this.onEnterHome) this.onEnterHome();
                 } else if (this._isNearCafe()) {
-                    this._showBuildingMessage('cafe');
+                    if (this.onEnterCafe) this.onEnterCafe();
+                    else this._showBuildingMessage('cafe');
                 } else if (this._isNearCowork()) {
-                    this._showBuildingMessage('cowork');
+                    if (this.onEnterCowork) this.onEnterCowork();
+                    else this._showBuildingMessage('cowork');
                 }
             }
         };

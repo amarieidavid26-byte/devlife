@@ -57,7 +57,7 @@ export class Plant {
             this._draw();
         }
         if (this._stage == 'blooming' && Math.random() < 0.03 * delta) {
-            this.spawnSparkle();
+            this._spawnSparkle();
 
         }
         if ((this._stage == 'withering' || this._stage == 'dead') && Math.random() < 0.02 * delta) {
@@ -96,7 +96,7 @@ export class Plant {
         const stemH = 16 + t * 8;
         g.beginFill(0x8B7530);
         g.drawRect(-1, -stemH + 10, 2, stemH);
-        g.endFill;
+        g.endFill();
         g.beginFill(0xA89030, 0.7);
         g.drawEllipse(-7, -stemH + 18, 6, 3);
         g.endFill();
@@ -114,7 +114,7 @@ export class Plant {
         g.beginFill(0x66dd55);
         g.drawEllipse(-3, 10 - nubH, 3 + t * 2, 2);
         g.drawEllipse(3, 10 - nubH + 1, 3 + t, 2);
-        g.endFill;
+        g.endFill();
     }
 
     _drawSprout(g, h) {
@@ -143,20 +143,20 @@ export class Plant {
         g.drawEllipse(9, 10 - stemH * 0.5, 7, 4.5);
         g.drawEllipse(-7, 10 - stemH * 0.72, 7, 4);
         g.endFill();
-        if (t < 0.5) {
+        if (t > 0.5) {
             g.beginFill(0x35b830);
             g.drawEllipse(7, 10 - stemH * 0.88, 5, 3);
             g.endFill();
         }
 
-        g.endFill(0x55dd55);
+        g.beginFill(0x55dd55);
         g.drawCircle(1, 10 - stemH, 3 + t * 2);
         g.endFill();
     }
 
     _drawBlooming(g, h) {
         const stemH = 40;
-        const t = g(h - 86) / 14;
+        const t = (h - 86) / 14;
         const sway = Math.sin(this._tick * 0.015) * 1.5;
 
         g.beginFill(0x1a7a15);
@@ -173,12 +173,12 @@ export class Plant {
         g.drawEllipse(-6 + sway, 10 - stemH * 0.87, 6, 3.5);
         g.endFill();
 
-        const flowerY = 10 - stem - 5 + Math.sin(this._tick * 0.02) * 1;
+        const flowerY = 10 - stemH - 5 + Math.sin(this._tick * 0.02) * 1;
         const petalSize = 5 + t * 3;
 
         g.beginFill(this._flowerColor, 0.9);
         for (let i = 0; i < 6; i++) {
-            const angle = (i/6) * Math.PI * 2 + this._thick * 0.005;
+            const angle = (i/6) * Math.PI * 2 + this._tick * 0.005;
             const px = sway + Math.cos(angle) * petalSize;
             const py = flowerY + Math.sin(angle) * petalSize * 0.7;
             g.drawEllipse(px, py, 4.5, 3.5);
