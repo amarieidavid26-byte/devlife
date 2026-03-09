@@ -5,6 +5,19 @@ const SPEED = 0.08;
 const WALK_CYCLE = 40;
 const BOUNDS_TILES = 20;
 
+const BLOCKED_ZONES = [
+    { x1: 3.25, y1: 3.25, x2: 6.75, y2: 6.75 },   // HOME
+    { x1: 14.25, y1: 3.25, x2: 17.75, y2: 6.75 },  // CAFE
+    { x1: 3.25, y1: 14.25, x2: 6.75, y2: 17.75 },  // COWORK
+];
+
+function isBlocked(cx, cy) {
+    for (const z of BLOCKED_ZONES) {
+        if (cx >= z.x1 && cx <= z.x2 && cy >= z.y1 && cy <= z.y2) return true;
+    }
+    return false;
+}
+
 export class TownPlayer {
     constructor(container) {
         this._parentContainer = container;
@@ -235,12 +248,22 @@ export class TownPlayer {
 
         if (this._walking) {
             const speed = SPEED * delta;
-            this._cx += dx * speed;
-            this._cy += dy * speed;
+            const newCx = this._cx + dx * speed;
+            const newCy = this._cy + dy * speed;
 
-            // clamp to bounds
-            this._cx = Math.max(0, Math.min(BOUNDS_TILES, this._cx));
-            this._cy = Math.max(0, Math.min(BOUNDS_TILES, this._cy));
+            // collision: try full move, then slide along each axis
+            if (!isBlocked(newCx, newCy)) {
+                this._cx = newCx;
+                this._cy = newCy;
+            } else if (!isBlocked(newCx, this._cy)) {
+                this._cx = newCx;
+            } else if (!isBlocked(this._cx, newCy)) {
+                this._cy = newCy;
+            }
+
+            // clamp to grid bounds
+            this._cx = Math.max(0.5, Math.min(19.5, this._cx));
+            this._cy = Math.max(0.5, Math.min(19.5, this._cy));
 
             // walk animation (matches room Player exactly)
             this._walkTick += delta;
