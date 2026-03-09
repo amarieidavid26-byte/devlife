@@ -199,10 +199,13 @@ ghost.setApplyFixHandler((code) => {
     }
 });
 
-socket.on('connected', () => hud.setConnected(true));
-socket.on('disconnected', () => hud.setConnected(false));
+socket.on('connected', () => { hud.setConnected(true); beneathView.setConnected(true); });
+socket.on('disconnected', () => { hud.setConnected(false); beneathView.setConnected(false); });
 
-socket.on('intervention',     (data) => ghost.showSpeechBubble(data));
+socket.on('intervention',     (data) => {
+    ghost.showSpeechBubble(data);
+    beneathView.ddIntervention(data);
+});
 
 socket.on('biometric_update', (data) => {
     hud.update(data);
@@ -232,6 +235,7 @@ document.addEventListener('keydown', (e) => {
     // Escape always works (closes apps/bubbles even while typing)
     if (e.key === 'Escape') {
         if (ghost._bubble) { ghost.dismissBubble(true); return; }
+        beneathView.hide();
         closeAllApps();
         return;
     }
@@ -273,19 +277,7 @@ pixiApp.ticker.add((delta) => {
     // Screen shake (critical interventions — Fatigue Firewall)
     atmosphere.applyScreenShake(gameContainer);
 
-    // Beneath the Surface: feed screen-space positions for rings + particles
-    if (beneathView._visible) {
-        beneathView.setPositions(
-            {
-                x: gameContainer.x + player.container.x * GAME_ZOOM,
-                y: gameContainer.y + player.container.y * GAME_ZOOM,
-            },
-            {
-                x: gameContainer.x + ghost.container.x * GAME_ZOOM,
-                y: gameContainer.y + ghost.container.y * GAME_ZOOM,
-            }
-        );
-    }
+    // DashboardOverlay is HTML-based, no screen-space position feed needed
 
     // z-sorting — higher screen Y = closer to camera
     furniture._items.forEach(item => { item.container.zIndex = item.container.y; });

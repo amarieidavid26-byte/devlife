@@ -729,7 +729,7 @@ export class DashboardOverlay {
         this._visible = false;
     }
 
-    _escapeHtml(t) {const d = document.createElement('div'); d.textContent = t; return d.internalHTML;}
+    _escapeHtml(t) {const d = document.createElement('div'); d.textContent = t; return d.innerHTML;}
 
 }
 
