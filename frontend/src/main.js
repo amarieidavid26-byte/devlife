@@ -139,6 +139,7 @@ async function startGame(enableDemo = false) {
     ghost.setAtmosphere(atmosphere);
 
     hud = new HUD();
+    hud.setSleepData({ hours: 5.8, efficiency: 72, rem_pct: 18, deep_pct: 14, score: 55 });
     beneathView = new DashboardOverlay();
     demoHotbar = new DemoHotbar();
     demoHotbar.setClickHandler((key) => {
@@ -324,6 +325,19 @@ async function startGame(enableDemo = false) {
         ghost.setStateTint(data.state);
         furniture.setMonitorState(data.state);
         soundManager.setState(data.state);
+
+        // CQI — weighted composite of recovery, HRV, and inverse stress
+        const recovery = data.recovery || 50;
+        const hrv = data.hrv || 40;
+        const stress = data.estimated_stress || 0;
+        const cqi = Math.round((Math.min(recovery / 100, 1) * 0.4 + Math.min(hrv / 80, 1) * 0.35 + Math.max(0, 1 - stress / 3) * 0.25) * 100);
+        hud.updateCQI(cqi);
+
+        // Recovery velocity toast
+        if (data.recovery_velocity && data.recovery_velocity > 0) {
+            const mins = (data.recovery_velocity / 60).toFixed(1);
+            toastSystem.show('info', '💓 Recovery Complete', `HR returned to baseline in ${mins} minutes`, 4000);
+        }
     });
 
     socket.on('state_change', (data) => {
