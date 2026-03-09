@@ -233,15 +233,18 @@ async function startGame(enableDemo = false) {
                 message = "Good idea — coffee fuels great code. Don't forget to hydrate too! ☕";
                 priority = 'low';
                 buttons = ['Thanks!'];
+                toastSystem.show('info', '☕ Caffeine Boost', 'HR +5bpm, Alertness +15%, Recovery -3%', 4000);
             } else if (coffeeCount === 3) {
                 message = "That's coffee #3... maybe slow down a bit? Your heart rate doesn't need the help. ☕⚠️";
                 priority = 'warning';
                 buttons = ['I\'m fine', 'You\'re right'];
                 toastSystem.triggerAchievement('coffee_addict');
+                toastSystem.show('warning', '☕ Overcaffeinated', 'HR +12bpm, Anxiety +20%, Ghost is judging you', 4000);
             } else {
                 message = `Coffee #${coffeeCount}. I'm genuinely worried now. Hydrate. Please. 💀`;
                 priority = 'warning';
                 buttons = ['Ok ok...', 'One more won\'t hurt'];
+                toastSystem.show('warning', '☕ Overcaffeinated', 'HR +12bpm, Anxiety +20%, Ghost is judging you', 4000);
             }
             ghost.showSpeechBubble({
                 message,
@@ -251,6 +254,12 @@ async function startGame(enableDemo = false) {
                 biometric: {},
             });
             return;
+        }
+        if (name === 'whiteboard') {
+            toastSystem.show('info', '📋 Sprint Board', 'Tasks remaining: Ship DevLife, Win ROG Challenge, Sleep (optional)', 4000);
+        }
+        if (name === 'desk_terminal') {
+            toastSystem.show('ghost', '💻 Terminal', 'Ghost is watching your commands...', 3000);
         }
         if (name === 'speaker') {
             toggleMusic();

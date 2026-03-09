@@ -52,6 +52,19 @@ export class CafeScene {
 
         this.onGhostSay = null;
         this.onExit = null;
+
+        this._tables = [];
+        this._usedTables = new Set();
+        this._brewing = false;
+        this._brewElapsed = 0;
+        this._brewTarget = null;
+        this._brewCupGfx = null;
+        this._brewBarContainer = null;
+        this._brewBarFill = null;
+        this._brewSteamSource = null;
+        this._ePrompt = null;
+        this._recoveryPanel = null;
+        this._recoveryIntervals = [];
     }
 
     // ─────────────────────────────────────────────
@@ -119,9 +132,34 @@ export class CafeScene {
             this.onGhostSay?.("Recovery up 3%. Sometimes the best code is written after stepping away.", 5000);
         }, 15000));
 
-        // ESC to leave
+        // [E] interaction prompt
+        this._ePrompt = new PIXI.Text('[E]', {
+            fontFamily: 'monospace',
+            fontSize: 13,
+            fill: 0xe94560,
+            fontWeight: 'bold',
+            dropShadow: true,
+            dropShadowColor: '#000000',
+            dropShadowBlur: 4,
+            dropShadowAlpha: 0.6,
+            dropShadowDistance: 0,
+        });
+        this._ePrompt.anchor.set(0.5, 1);
+        this._ePrompt.visible = false;
+        this._ePrompt.zIndex = 10000;
+        this._furnitureContainer.addChild(this._ePrompt);
+
+        // Keyboard: ESC (exit/cancel), E (interact)
         this._onKeyDown = (e) => {
-            if (e.key === 'Escape') this.onExit?.();
+            if (e.key === 'Escape') {
+                if (this._recoveryPanel) { this._closeRecoveryPanel(); return; }
+                if (this._brewing) { this._cancelBrewing(); return; }
+                this.onExit?.();
+                return;
+            }
+            if (e.key.toLowerCase() === 'e' && !this._brewing && !this._recoveryPanel) {
+                this._handleInteraction();
+            }
         };
         document.addEventListener('keydown', this._onKeyDown);
     }
@@ -134,6 +172,14 @@ export class CafeScene {
             document.removeEventListener('keydown', this._onKeyDown);
             this._onKeyDown = null;
         }
+
+        this._cancelBrewing();
+        if (this._recoveryPanel) {
+            this._recoveryPanel.remove();
+            this._recoveryPanel = null;
+        }
+        for (const id of this._recoveryIntervals) clearInterval(id);
+        this._recoveryIntervals = [];
 
         if (this._player) {
             this._player.disable();
@@ -162,6 +208,16 @@ export class CafeScene {
         this._recoveryProgress = 0;
         this._elapsed = 0;
         this._playerLayer = null;
+        this._tables = [];
+        this._usedTables = new Set();
+        this._brewing = false;
+        this._brewElapsed = 0;
+        this._brewTarget = null;
+        this._brewCupGfx = null;
+        this._brewBarContainer = null;
+        this._brewBarFill = null;
+        this._brewSteamSource = null;
+        this._ePrompt = null;
     }
 
     update(delta) {
@@ -189,6 +245,8 @@ export class CafeScene {
             this._container.y += (camTargetY - this._container.y) * camLerp;
         }
 
+        this._updateInteractionPrompt();
+        this._updateBrewing(delta);
         this._updateSteam(delta);
         this._updateDust(delta);
         this._updateStringLights();
@@ -498,6 +556,9 @@ export class CafeScene {
         g.endFill();
 
         this._furnitureContainer.addChild(g);
+
+        // Track table for interactions
+        this._tables.push({ gx, gy, screenX: x, screenY: tileCenter, chairGx: gx + 0.8, chairGy: gy + 0.6 });
 
         // chairs — one on each side of the table
         if (chairCount >= 1) this._drawChair(gx + 0.8, gy + 0.6);
@@ -838,5 +899,344 @@ export class CafeScene {
         for (const light of this._stringLights) {
             light.gfx.alpha = 0.85 + Math.sin(t + light.phase) * 0.15;
         }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Interaction system
+    // ─────────────────────────────────────────────
+
+    _getPlayerCafePos() {
+        if (!this._player) return null;
+        const pos = this._player.getPosition();
+        return { x: pos.x - COORD_OFFSET, y: pos.y - COORD_OFFSET };
+    }
+
+    _screenDist(gx1, gy1, gx2, gy2) {
+        const a = cartToIso(gx1, gy1);
+        const b = cartToIso(gx2, gy2);
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    _getNearestTable(cafeX, cafeY, maxDist) {
+        let best = -1;
+        let bestDist = Infinity;
+        for (let i = 0; i < this._tables.length; i++) {
+            const t = this._tables[i];
+            const d = this._screenDist(cafeX, cafeY, t.gx, t.gy);
+            if (d < bestDist && d < maxDist) {
+                best = i;
+                bestDist = d;
+            }
+        }
+        return best;
+    }
+
+    _isNearCounter(cafeX, cafeY) {
+        return cafeX >= 1.5 && cafeX <= 6.5 && cafeY <= 3.5;
+    }
+
+    _updateInteractionPrompt() {
+        if (!this._ePrompt || this._brewing || this._recoveryPanel) {
+            if (this._ePrompt) this._ePrompt.visible = false;
+            return;
+        }
+
+        const pos = this._getPlayerCafePos();
+        if (!pos) { this._ePrompt.visible = false; return; }
+
+        // Check tables (80px threshold for prompt)
+        const nearTable = this._getNearestTable(pos.x, pos.y, 80);
+        if (nearTable >= 0 && !this._usedTables.has(nearTable)) {
+            const t = this._tables[nearTable];
+            this._ePrompt.visible = true;
+            this._ePrompt.x = t.screenX;
+            this._ePrompt.y = t.screenY - 55 + Math.sin(Date.now() / 280) * 4;
+            return;
+        }
+
+        // Check counter
+        if (this._isNearCounter(pos.x, pos.y)) {
+            const nearX = Math.max(2, Math.min(6, Math.round(pos.x)));
+            const cs = this._gridToScreen(nearX, 1);
+            this._ePrompt.visible = true;
+            this._ePrompt.x = cs.x;
+            this._ePrompt.y = cs.y + TILE_HEIGHT / 2 - 55 + Math.sin(Date.now() / 280) * 4;
+            return;
+        }
+
+        this._ePrompt.visible = false;
+    }
+
+    _handleInteraction() {
+        const pos = this._getPlayerCafePos();
+        if (!pos) return;
+
+        // Tables (60px threshold for interaction)
+        const nearTable = this._getNearestTable(pos.x, pos.y, 60);
+        if (nearTable >= 0 && !this._usedTables.has(nearTable)) {
+            this._startBrewing(nearTable);
+            return;
+        }
+
+        // Counter
+        if (this._isNearCounter(pos.x, pos.y)) {
+            this._interactWithCounter();
+        }
+    }
+
+    _interactWithCounter() {
+        this.onGhostSay?.("The barista recommends herbal tea for your stress levels. Smart ghost, smart barista.", 5000);
+    }
+
+    // ── Brewing ──
+
+    _startBrewing(tableIdx) {
+        const table = this._tables[tableIdx];
+        this._brewing = true;
+        this._brewElapsed = 0;
+        this._brewTarget = tableIdx;
+        this._usedTables.add(tableIdx);
+
+        // Disable player and snap to chair
+        this._player.disable();
+        this._player.setPosition(table.chairGx + COORD_OFFSET, table.chairGy + COORD_OFFSET);
+
+        // Coffee cup on table top
+        const cx = table.screenX + 5;
+        const cy = table.screenY - 22;
+        this._brewCupGfx = new PIXI.Graphics();
+        this._brewCupGfx.beginFill(COL.cup);
+        this._brewCupGfx.drawRect(cx - 3, cy - 8, 6, 8);
+        this._brewCupGfx.endFill();
+        this._brewCupGfx.beginFill(COL.coffee);
+        this._brewCupGfx.drawRect(cx - 2, cy - 6, 4, 4);
+        this._brewCupGfx.endFill();
+        this._brewCupGfx.lineStyle(1, COL.cup, 0.8);
+        this._brewCupGfx.arc(cx + 3, cy - 4, 2.5, -Math.PI / 2, Math.PI / 2, false);
+        this._brewCupGfx.lineStyle(0);
+        this._furnitureContainer.addChild(this._brewCupGfx);
+
+        // Steam source for this cup
+        this._brewSteamSource = { x: cx, baseY: cy - 9, spawnAccum: 0, active: [] };
+        this._steamSources.push(this._brewSteamSource);
+
+        // Progress bar
+        this._brewBarContainer = new PIXI.Container();
+        this._brewBarContainer.x = table.screenX;
+        this._brewBarContainer.y = table.screenY - 50;
+
+        const barBg = new PIXI.Graphics();
+        barBg.lineStyle(1, 0x8B6A3A, 0.8);
+        barBg.beginFill(0x2A1A10, 0.7);
+        barBg.drawRoundedRect(-22, 0, 44, 6, 2);
+        barBg.endFill();
+        this._brewBarContainer.addChild(barBg);
+
+        this._brewBarFill = new PIXI.Graphics();
+        this._brewBarContainer.addChild(this._brewBarFill);
+
+        const brewLabel = new PIXI.Text('Brewing...', {
+            fontFamily: "'Nunito', monospace, sans-serif",
+            fontSize: 8,
+            fill: COL.warm,
+            fontWeight: '600',
+        });
+        brewLabel.anchor.set(0.5, 1);
+        brewLabel.y = -2;
+        this._brewBarContainer.addChild(brewLabel);
+
+        this._furnitureContainer.addChild(this._brewBarContainer);
+    }
+
+    _updateBrewing(delta) {
+        if (!this._brewing) return;
+
+        this._brewElapsed += delta;
+        const progress = Math.min(1, this._brewElapsed / 180); // 3 seconds at 60fps
+
+        if (this._brewBarFill) {
+            this._brewBarFill.clear();
+            this._brewBarFill.beginFill(0x6AD89A, 0.9);
+            this._brewBarFill.drawRoundedRect(-20, 1, Math.max(0, progress * 40), 4, 1);
+            this._brewBarFill.endFill();
+        }
+
+        if (progress >= 1) this._finishBrewing();
+    }
+
+    _finishBrewing() {
+        this._brewing = false;
+
+        // Remove progress bar (keep the cup as a visual marker)
+        if (this._brewBarContainer) {
+            this._brewBarContainer.parent?.removeChild(this._brewBarContainer);
+            this._brewBarContainer.destroy({ children: true });
+            this._brewBarContainer = null;
+            this._brewBarFill = null;
+        }
+
+        this.onGhostSay?.("Fresh coffee. Your cortisol levels are already dropping.", 4000);
+        this._timers.push(setTimeout(() => this._showRecoveryPanel(), 800));
+    }
+
+    _cancelBrewing() {
+        if (!this._brewing) return;
+        this._brewing = false;
+        this._brewElapsed = 0;
+
+        if (this._brewBarContainer) {
+            this._brewBarContainer.parent?.removeChild(this._brewBarContainer);
+            this._brewBarContainer.destroy({ children: true });
+            this._brewBarContainer = null;
+            this._brewBarFill = null;
+        }
+
+        if (this._brewCupGfx) {
+            this._brewCupGfx.parent?.removeChild(this._brewCupGfx);
+            this._brewCupGfx.destroy();
+            this._brewCupGfx = null;
+        }
+
+        if (this._brewSteamSource) {
+            const idx = this._steamSources.indexOf(this._brewSteamSource);
+            if (idx >= 0) this._steamSources.splice(idx, 1);
+            for (const p of this._brewSteamSource.active) {
+                p.gfx.parent?.removeChild(p.gfx);
+                p.gfx.destroy();
+            }
+            this._brewSteamSource = null;
+        }
+
+        // Allow table reuse since it was cancelled
+        if (this._brewTarget !== null) {
+            this._usedTables.delete(this._brewTarget);
+            this._brewTarget = null;
+        }
+
+        if (this._player) this._player.enable();
+    }
+
+    // ── Recovery Panel (DOM overlay) ──
+
+    _showRecoveryPanel() {
+        if (this._recoveryPanel) return;
+
+        const panel = document.createElement('div');
+        panel.style.cssText = [
+            'position:fixed;top:0;left:0;width:100vw;height:100vh',
+            'display:flex;align-items:center;justify-content:center',
+            'z-index:5000;background:rgba(0,0,0,0.3)',
+        ].join(';');
+
+        const card = document.createElement('div');
+        card.style.cssText = [
+            'background:rgba(42,36,28,0.92);border-radius:12px;padding:24px',
+            'max-width:350px;width:90%;color:#F5F0E8',
+            "font-family:'Nunito',sans-serif;box-shadow:0 8px 32px rgba(0,0,0,0.5)",
+            'border:1px solid rgba(184,168,140,0.2)',
+        ].join(';');
+
+        // Title
+        const title = document.createElement('div');
+        title.textContent = '\u2615 Coffee Break Recovery';
+        title.style.cssText = "font-family:'Fredoka',sans-serif;font-size:18px;margin-bottom:18px;color:#F5F0E8;font-weight:600";
+        card.appendChild(title);
+
+        // Stats
+        const stats = [
+            { label: 'Heart Rate', from: 95, to: 72, unit: ' bpm', decimals: 0 },
+            { label: 'HRV', from: 35, to: 52, unit: 'ms', decimals: 0 },
+            { label: 'Stress', from: 2.1, to: 0.8, unit: '', decimals: 1 },
+            { label: 'Recovery', from: 45, to: 68, unit: '%', decimals: 0 },
+        ];
+
+        const statEls = [];
+        for (const s of stats) {
+            const row = document.createElement('div');
+            row.style.cssText = 'margin-bottom:10px;font-size:14px;line-height:1.5';
+
+            const labelSpan = document.createElement('span');
+            labelSpan.textContent = s.label + ': ';
+            labelSpan.style.color = '#B8A88C';
+
+            const fromSpan = document.createElement('span');
+            fromSpan.textContent = s.decimals ? s.from.toFixed(s.decimals) : String(s.from);
+            fromSpan.style.color = '#FF7A6A';
+
+            const arrow = document.createElement('span');
+            arrow.textContent = ' \u2192 ';
+            arrow.style.color = '#B8A88C';
+
+            const toSpan = document.createElement('span');
+            toSpan.textContent = s.decimals ? s.from.toFixed(s.decimals) : String(s.from);
+            toSpan.style.color = '#6AD89A';
+
+            const unitSpan = document.createElement('span');
+            unitSpan.textContent = s.unit;
+            unitSpan.style.color = '#6AD89A';
+
+            row.appendChild(labelSpan);
+            row.appendChild(fromSpan);
+            row.appendChild(arrow);
+            row.appendChild(toSpan);
+            row.appendChild(unitSpan);
+            card.appendChild(row);
+
+            statEls.push({ el: toSpan, from: s.from, to: s.to, decimals: s.decimals });
+        }
+
+        // Animate stat numbers over 2 seconds
+        let step = 0;
+        const totalSteps = 40;
+        const intervalId = setInterval(() => {
+            step++;
+            const t = Math.min(1, step / totalSteps);
+            const eased = 1 - Math.pow(1 - t, 2);
+            for (const se of statEls) {
+                const val = se.from + (se.to - se.from) * eased;
+                se.el.textContent = se.decimals ? val.toFixed(se.decimals) : String(Math.round(val));
+            }
+            if (step >= totalSteps) clearInterval(intervalId);
+        }, 50);
+        this._recoveryIntervals.push(intervalId);
+
+        // Ghost quote
+        const quote = document.createElement('div');
+        quote.textContent = '\u201CSometimes the best code is written after stepping away.\u201D';
+        quote.style.cssText = 'font-style:italic;font-size:13px;color:#B8A88C;margin-top:16px;line-height:1.5';
+        card.appendChild(quote);
+
+        // Continue button
+        const btn = document.createElement('button');
+        btn.textContent = 'Continue';
+        btn.style.cssText = [
+            "font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600",
+            'background:rgba(106,168,154,0.25);color:#6AD89A;border:1px solid rgba(106,216,154,0.4)',
+            'border-radius:8px;padding:8px 28px;margin-top:18px;cursor:pointer',
+            'transition:background 0.2s',
+        ].join(';');
+        btn.addEventListener('mouseenter', () => { btn.style.background = 'rgba(106,168,154,0.4)'; });
+        btn.addEventListener('mouseleave', () => { btn.style.background = 'rgba(106,168,154,0.25)'; });
+        btn.addEventListener('click', () => this._closeRecoveryPanel());
+        card.appendChild(btn);
+
+        panel.appendChild(card);
+        document.body.appendChild(panel);
+        this._recoveryPanel = panel;
+    }
+
+    _closeRecoveryPanel() {
+        if (!this._recoveryPanel) return;
+
+        this._recoveryPanel.remove();
+        this._recoveryPanel = null;
+
+        for (const id of this._recoveryIntervals) clearInterval(id);
+        this._recoveryIntervals = [];
+
+        if (this._player) this._player.enable();
+        this.onGhostSay?.("Recovery +8%. Back to work?", 3000);
     }
 }

@@ -56,6 +56,16 @@ const GHOST_LINES = [
     { t: 45, msg: 'This is what DevLife looks like at scale. Every developer, understood.' },
 ];
 
+const INTERACT_ZONES = [
+    { id: 'alex',       gx: 3, gy: 4,  type: 'npc',        npcIdx: 0 },
+    { id: 'sam',        gx: 9, gy: 4,  type: 'npc',        npcIdx: 1 },
+    { id: 'mia',        gx: 3, gy: 9,  type: 'npc',        npcIdx: 2 },
+    { id: 'empty',      gx: 9, gy: 9,  type: 'empty' },
+    { id: 'whiteboard', gx: 6, gy: 1,  type: 'whiteboard' },
+];
+
+const INTERACT_DIST = 80;
+
 export class CoworkScene {
     constructor(pixiApp) {
         this._app = pixiApp;
@@ -68,6 +78,10 @@ export class CoworkScene {
         this._notifTimer = 0;
         this._notifSprites = [];
         this._onKeyDown = null;
+        this._ePrompts = [];
+        this._activePanel = null;
+        this._panelBackdrop = null;
+        this._nearInteractable = null;
         this.onExit = null;
         this.onGhostSay = null;
     }
@@ -118,9 +132,37 @@ export class CoworkScene {
         this._container.addChild(tint);
 
         this._onKeyDown = (e) => {
-            if (e.key === 'Escape' && this.onExit) this.onExit();
+            if (e.key === 'Escape') {
+                if (this._activePanel) { this._closePanel(); return; }
+                if (this.onExit) this.onExit();
+                return;
+            }
+            if ((e.key === 'e' || e.key === 'E') && !this._activePanel && this._nearInteractable) {
+                this._openPanel(this._nearInteractable);
+            }
         };
         document.addEventListener('keydown', this._onKeyDown);
+
+        // [E] interaction prompts
+        for (const zone of INTERACT_ZONES) {
+            const pos = this._tileCenter(zone.gx, zone.gy);
+            const yOff = zone.type === 'whiteboard' ? 72 : 56;
+            const prompt = new PIXI.Text('[E]', {
+                fontFamily: "'Fredoka', sans-serif",
+                fontSize: 11,
+                fill: '#FFFFFF',
+                fontWeight: '600',
+                stroke: '#000000',
+                strokeThickness: 3,
+            });
+            prompt.anchor.set(0.5, 1);
+            prompt.x = pos.x;
+            prompt.y = pos.y - yOff;
+            prompt.visible = false;
+            prompt.zIndex = 8000;
+            this._container.addChild(prompt);
+            this._ePrompts.push({ sprite: prompt, zone, baseY: pos.y - yOff });
+        }
 
         this._elapsed = 0;
         this._ghostLineIdx = 0;
@@ -136,6 +178,9 @@ export class CoworkScene {
             this._player.destroy();
             this._player = null;
         }
+        this._closePanel();
+        this._ePrompts.forEach(ep => { if (ep.sprite.parent) ep.sprite.parent.removeChild(ep.sprite); ep.sprite.destroy(); });
+        this._ePrompts = [];
         this._notifSprites.forEach(n => { if (n.parent) n.parent.removeChild(n); n.destroy(); });
         this._notifSprites = [];
         this._npcs = [];
@@ -154,6 +199,16 @@ export class CoworkScene {
 
         // player
         if (this._player) this._player.update(delta);
+
+        // proximity check for [E] interactions
+        this._checkProximity();
+
+        // [E] prompt bob
+        for (const ep of this._ePrompts) {
+            if (ep.sprite.visible) {
+                ep.sprite.y = ep.baseY + Math.sin(this._elapsed * 3) * 2;
+            }
+        }
 
         // ghost commentary
         if (this._ghostLineIdx < GHOST_LINES.length) {
@@ -803,5 +858,162 @@ export class CoworkScene {
         toast.life = 0;
         this._container.addChild(toast);
         this._notifSprites.push(toast);
+    }
+
+    // ── interactions ───────────────────────────────────────────────────
+
+    _checkProximity() {
+        if (!this._player || this._activePanel) return;
+        const pos = this._player.getPosition();
+        const pScreen = this._tileCenter(pos.x, pos.y);
+
+        let nearest = null;
+        let nearestDist = Infinity;
+
+        for (const zone of INTERACT_ZONES) {
+            const zScreen = this._tileCenter(zone.gx, zone.gy);
+            const dx = (pScreen.x - zScreen.x) * ZOOM;
+            const dy = (pScreen.y - zScreen.y) * ZOOM;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < INTERACT_DIST && dist < nearestDist) {
+                nearest = zone;
+                nearestDist = dist;
+            }
+        }
+
+        this._nearInteractable = nearest;
+        for (const ep of this._ePrompts) {
+            ep.sprite.visible = (ep.zone === nearest);
+        }
+    }
+
+    _openPanel(zone) {
+        if (this._activePanel) return;
+        if (this._player) this._player.disable();
+
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:4999;';
+        backdrop.addEventListener('click', () => this._closePanel());
+        document.body.appendChild(backdrop);
+        this._panelBackdrop = backdrop;
+
+        const color = this._getPanelColor(zone);
+        const panel = document.createElement('div');
+        panel.style.cssText = `position:fixed;right:5%;top:15%;width:320px;background:rgba(42,36,28,0.92);border-radius:12px;padding:20px;z-index:5000;border-left:3px solid ${color};font-family:'Fredoka',sans-serif;color:#D4CFC8;box-shadow:0 8px 32px rgba(0,0,0,0.5);`;
+        panel.innerHTML = this._buildPanelHTML(zone);
+        document.body.appendChild(panel);
+        this._activePanel = panel;
+
+        for (const ep of this._ePrompts) ep.sprite.visible = false;
+    }
+
+    _closePanel() {
+        if (this._activePanel) {
+            this._activePanel.remove();
+            this._activePanel = null;
+        }
+        if (this._panelBackdrop) {
+            this._panelBackdrop.remove();
+            this._panelBackdrop = null;
+        }
+        if (this._player) this._player.enable();
+    }
+
+    _getPanelColor(zone) {
+        if (zone.type === 'npc') return STATE_HEX[NPCS[zone.npcIdx].state] || '#888';
+        if (zone.type === 'empty') return '#8AAAB8';
+        return '#F5F0E8';
+    }
+
+    _ghostSVG(color) {
+        return `<svg width="20" height="24" viewBox="0 0 20 24" style="flex-shrink:0;margin-top:2px;"><path d="M10 1C15 1 19 5 19 11C19 21 15 23 13 17C12 21 8 21 7 17C5 23 1 21 1 11C1 5 5 1 10 1Z" fill="${color}" opacity="0.7"/><circle cx="7" cy="9" r="1.5" fill="white" opacity="0.9"/><circle cx="13" cy="9" r="1.5" fill="white" opacity="0.9"/></svg>`;
+    }
+
+    _buildPanelHTML(zone) {
+        if (zone.type === 'npc') return this._buildNPCPanel(zone);
+        if (zone.type === 'empty') return this._buildEmptyPanel();
+        if (zone.type === 'whiteboard') return this._buildWhiteboardPanel();
+        return '';
+    }
+
+    _buildNPCPanel(zone) {
+        const npc = NPCS[zone.npcIdx];
+        const color = STATE_HEX[npc.state];
+        const bio = this._getBioData(zone.id);
+        const bpmColor = npc.state === 'STRESSED' ? '#FF5A4A' : color;
+        const bpmStyle = npc.state === 'STRESSED' ? 'animation:dlPulse 1s infinite;' : '';
+
+        return `<style>@keyframes dlPulse{0%,100%{opacity:1}50%{opacity:0.4}}@keyframes dlBlink{0%,100%{opacity:1}50%{opacity:0}}</style>` +
+            `<h3 style="font-size:16px;color:${color};margin:0 0 14px 0;font-weight:500;">${bio.title}</h3>` +
+            `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:12px;margin-bottom:14px;">` +
+                `<div>\u2764\uFE0F <span style="color:${bpmColor};${bpmStyle}">${bio.bpm} bpm</span></div>` +
+                `<div>Recovery: <span style="color:${color}">${bio.recovery}%</span></div>` +
+                `<div>Strain: <span style="color:${color}">${bio.strain}</span></div>` +
+                `<div>HRV: <span style="color:${color}">${bio.hrv}ms</span></div>` +
+                `<div style="grid-column:1/-1">State: <span style="color:${color};font-weight:600">${npc.state.replace('_', ' ')}</span></div>` +
+            `</div>` +
+            `<div style="background:#1E2D3D;border-radius:6px;padding:10px 12px;font-family:'Courier New',monospace;font-size:11px;line-height:1.7;color:#D4D4D4;margin-bottom:14px;white-space:pre;">${this._getCodeBlock(zone.id)}</div>` +
+            `<div style="display:flex;align-items:flex-start;gap:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">` +
+                this._ghostSVG(color) +
+                `<div style="font-style:italic;color:#A8A098;font-size:12px;line-height:1.5;">${this._getGhostMsg(zone.id)}</div>` +
+            `</div>`;
+    }
+
+    _getBioData(id) {
+        switch (id) {
+            case 'alex': return { title: 'Alex \u2014 Backend Developer',  bpm: '112', recovery: '35', strain: '19.2', hrv: '22' };
+            case 'sam':  return { title: 'Sam \u2014 Frontend Developer',  bpm: '68',  recovery: '82', strain: '11.5', hrv: '65' };
+            case 'mia':  return { title: 'Mia \u2014 Data Scientist',      bpm: '55',  recovery: '22', strain: '21.0', hrv: '18' };
+            default:     return { title: '', bpm: '0', recovery: '0', strain: '0', hrv: '0' };
+        }
+    }
+
+    _getCodeBlock(id) {
+        switch (id) {
+            case 'alex':
+                return `<span style="color:#569CD6">async</span> <span style="color:#DCDCAA">processQueue</span>(<span style="color:#9CDCFE">items</span>) {\n` +
+                    `  <span style="color:#569CD6">const</span> <span style="color:#9CDCFE">lock</span> = <span style="color:#569CD6">await</span> <span style="color:#DCDCAA">acquireLock</span>();\n` +
+                    `  <span style="color:#C586C0">for</span> (<span style="color:#569CD6">const</span> <span style="color:#9CDCFE">item</span> <span style="color:#C586C0">of</span> <span style="color:#9CDCFE">items</span>) {\n` +
+                    `    <span style="color:#569CD6">await</span> <span style="text-decoration:underline wavy #F44747;color:#DCDCAA">procss</span>(<span style="color:#9CDCFE">item</span>); <span style="color:#F44747">// \u2190 TypeError</span>\n` +
+                    `  }`;
+            case 'sam':
+                return `<span style="color:#569CD6">export function</span> <span style="color:#DCDCAA">Dashboard</span>() {\n` +
+                    `  <span style="color:#569CD6">const</span> [<span style="color:#9CDCFE">data</span>] = <span style="color:#DCDCAA">useBio</span>(); <span style="color:#6A9955">\u2713</span>\n` +
+                    `  <span style="color:#C586C0">return</span> &lt;<span style="color:#4EC9B0">Grid</span> <span style="color:#9CDCFE">cols</span>={3}&gt;\n` +
+                    `    &lt;<span style="color:#4EC9B0">Card</span> <span style="color:#9CDCFE">metric</span>=<span style="color:#CE9178">"hrv"</span> /&gt; <span style="color:#6A9955">\u2713</span>\n` +
+                    `  &lt;/<span style="color:#4EC9B0">Grid</span>&gt;`;
+            case 'mia':
+                return `<span style="color:#569CD6">def</span> <span style="color:#DCDCAA">train_model</span>(<span style="color:#9CDCFE">df</span>):\n` +
+                    `    <span style="color:#9CDCFE">X</span> = <span style="color:#9CDCFE">df</span>.<span style="color:#DCDCAA">drop</span>(<span style="color:#CE9178">"target"</span>)\n` +
+                    `    <span style="color:#9CDCFE">model</span> = <span style="color:#4EC9B0">XGBoost</span>().<span style="color:#DCDCAA">fit</span>(<span style="color:#9CDCFE">X</span>,\n` +
+                    `    <span style="color:#9CDCFE;animation:dlBlink 1s infinite">\u2502</span>\n` +
+                    ` `;
+            default: return '';
+        }
+    }
+
+    _getGhostMsg(id) {
+        switch (id) {
+            case 'alex': return "Alex has been debugging a race condition for 4 hours. His cortisol is through the roof. I\u2019ve blocked his git push twice already.";
+            case 'sam':  return "Sam entered flow state 47 minutes ago. Optimal HRV. I haven\u2019t said a word \u2014 that\u2019s how you know it\u2019s going well.";
+            case 'mia':  return "Mia\u2019s been here since 6am. Her sleep score was 42% last night. I\u2019ve been dimming her screen gradually \u2014 she hasn\u2019t noticed yet.";
+            default:     return '';
+        }
+    }
+
+    _buildEmptyPanel() {
+        return `<div style="display:flex;align-items:flex-start;gap:10px;">` +
+            this._ghostSVG('#8AAAB8') +
+            `<div style="font-style:italic;color:#A8A098;font-size:13px;line-height:1.6;">` +
+                `That desk is free. In the future, other players could sit here and you\u2019d see their real biometrics. Imagine that.` +
+            `</div></div>`;
+    }
+
+    _buildWhiteboardPanel() {
+        return `<div style="display:flex;align-items:flex-start;gap:10px;">` +
+            this._ghostSVG('#F5F0E8') +
+            `<div style="font-style:italic;color:#A8A098;font-size:13px;line-height:1.6;">` +
+                `Sprint board says: \u2018Ship DevLife by March 22.\u2019 Sounds familiar.` +
+            `</div></div>`;
     }
 }

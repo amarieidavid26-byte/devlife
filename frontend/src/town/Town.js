@@ -65,6 +65,9 @@ export class Town {
         this._benchTex = null;
         this._plantTex = null;
         this._spawnPoint = null;
+        this._meditationOverlay = null;
+        this._meditationActive = false;
+        this._treeQuoteIndex = 0;
 
         this.onEnterHome = null;
         this.onEnterCafe = null;
@@ -174,13 +177,22 @@ export class Town {
                 } else if (this._isNearCowork()) {
                     if (this.onEnterCowork) this.onEnterCowork();
                     else this._showBuildingMessage('cowork');
+                } else if (this._isNearBench()) {
+                    this._openMeditation();
+                } else if (this._getNearbyTree()) {
+                    this._treeInteract();
                 }
+            }
+            if (e.key === 'Escape' && this._meditationActive) {
+                this._closeMeditation();
             }
         };
         document.addEventListener('keydown', this._onTownKeyDown);
     }
 
     exit() {
+        this._closeMeditation();
+
         if (this._dialogue) {
             this._dialogue.stopAmbient();
             this._dialogue.destroy();
@@ -993,9 +1005,13 @@ export class Town {
     _getNearbyDoor(range) {
         if (!this._player) return null;
         const doors = [
-            { gx: 7,  gy: 5,  name: 'home' },
-            { gx: 16, gy: 7,  name: 'cafe' },
-            { gx: 7,  gy: 16, name: 'cowork' },
+            { gx: 7,    gy: 5,    name: 'home' },
+            { gx: 16,   gy: 7,    name: 'cafe' },
+            { gx: 7,    gy: 16,   name: 'cowork' },
+            { gx: 16.5, gy: 16.5, name: 'bench' },
+            { gx: 14.8, gy: 14.8, name: 'tree' },
+            { gx: 17.2, gy: 15.2, name: 'tree' },
+            { gx: 15.5, gy: 17.5, name: 'tree' },
         ];
         for (const door of doors) {
             const iso = cartToIso(door.gx, door.gy);
@@ -1004,6 +1020,184 @@ export class Town {
             if (dx * dx + dy * dy < range * range) return door;
         }
         return null;
+    }
+
+    _isNearBench() {
+        if (!this._player) return false;
+        const iso = cartToIso(16.5, 16.5);
+        const dx = this._player.container.x - iso.x;
+        const dy = this._player.container.y - iso.y;
+        return (dx * dx + dy * dy) < 80 * 80;
+    }
+
+    _getNearbyTree() {
+        if (!this._player) return false;
+        const treePositions = [[14.8, 14.8], [17.2, 15.2], [15.5, 17.5]];
+        for (const [tx, ty] of treePositions) {
+            const iso = cartToIso(tx, ty);
+            const dx = this._player.container.x - iso.x;
+            const dy = this._player.container.y - iso.y;
+            if (dx * dx + dy * dy < 80 * 80) return true;
+        }
+        return false;
+    }
+
+    _treeInteract() {
+        if (!this._dialogue) return;
+        const quotes = [
+            "Fun fact: looking at trees reduces cortisol levels. Even procedurally generated ones.",
+            "These trees grow based on the town's collective developer health. Someday.",
+        ];
+        this._dialogue.say(quotes[this._treeQuoteIndex % quotes.length], 4000);
+        this._treeQuoteIndex++;
+    }
+
+    // ─────────────────────────────────────────────
+    //  Meditation overlay (DOM)
+    // ─────────────────────────────────────────────
+
+    _openMeditation() {
+        if (this._meditationActive) return;
+        this._meditationActive = true;
+        if (this._player) this._player.disable();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'meditation-overlay';
+        overlay.innerHTML = `
+            <style>
+                #meditation-overlay {
+                    position: fixed; inset: 0; z-index: 5000;
+                    background: rgba(20, 30, 20, 0.7);
+                    display: flex; flex-direction: column;
+                    align-items: center; justify-content: center;
+                    font-family: 'Fredoka', sans-serif;
+                    animation: medFadeIn 0.6s ease;
+                }
+                @keyframes medFadeIn {
+                    from { opacity: 0; } to { opacity: 1; }
+                }
+                #med-title {
+                    font-size: 36px; color: #6AD89A;
+                    margin-bottom: 32px; letter-spacing: 2px;
+                }
+                #med-circle-wrap {
+                    width: 160px; height: 160px;
+                    display: flex; align-items: center; justify-content: center;
+                    margin-bottom: 28px;
+                }
+                #med-circle {
+                    width: 100px; height: 100px;
+                    border: 2px solid #6AD89A; border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    animation: breathe 10s ease-in-out infinite;
+                }
+                @keyframes breathe {
+                    0%   { transform: scale(1.0); }
+                    40%  { transform: scale(1.8); }
+                    60%  { transform: scale(1.8); }
+                    100% { transform: scale(1.0); }
+                }
+                #med-phase {
+                    color: #6AD89A; font-size: 16px;
+                    letter-spacing: 1px; opacity: 0.9;
+                }
+                #med-quote {
+                    color: #a8d8a8; font-size: 14px;
+                    max-width: 400px; text-align: center;
+                    margin-top: 24px; line-height: 1.5;
+                    min-height: 42px; opacity: 0.8;
+                }
+                #med-hr {
+                    color: #FFE4B5; font-size: 15px;
+                    margin-top: 20px; opacity: 0.7;
+                    font-variant-numeric: tabular-nums;
+                }
+                #med-complete {
+                    color: #6AD89A; font-size: 18px;
+                    margin-top: 16px; opacity: 0;
+                    transition: opacity 0.8s ease;
+                }
+                #med-close {
+                    margin-top: 24px; padding: 10px 28px;
+                    background: rgba(106, 216, 154, 0.15);
+                    border: 1px solid #6AD89A; border-radius: 8px;
+                    color: #6AD89A; font-family: 'Fredoka', sans-serif;
+                    font-size: 15px; cursor: pointer;
+                    transition: background 0.2s;
+                }
+                #med-close:hover { background: rgba(106, 216, 154, 0.3); }
+            </style>
+            <div id="med-title">Breathe</div>
+            <div id="med-circle-wrap">
+                <div id="med-circle">
+                    <span id="med-phase">Inhale...</span>
+                </div>
+            </div>
+            <div id="med-quote"></div>
+            <div id="med-hr">Simulated HR: 75 bpm</div>
+            <div id="med-complete"></div>
+            <button id="med-close">Return to park</button>
+        `;
+        document.body.appendChild(overlay);
+        this._meditationOverlay = overlay;
+
+        // Close button
+        overlay.querySelector('#med-close').addEventListener('click', () => this._closeMeditation());
+
+        // Breathing phase text cycle (10s per full cycle: 4s inhale, 2s hold, 4s exhale)
+        const phaseEl = overlay.querySelector('#med-phase');
+        const quotes = [
+            "Your HRV improves 15% with just 5 minutes of breathing exercises.",
+            "Box breathing: the cheapest performance hack in tech.",
+            "Even your ghost needs a break sometimes.",
+        ];
+        const quoteEl = overlay.querySelector('#med-quote');
+        const hrEl = overlay.querySelector('#med-hr');
+        const completeEl = overlay.querySelector('#med-complete');
+
+        let cycle = 0;
+        let hr = 75;
+        quoteEl.textContent = quotes[0];
+
+        // Phase text updates
+        const phaseInterval = setInterval(() => {
+            if (!this._meditationActive) return;
+            const t = (Date.now() % 10000) / 10000;
+            if (t < 0.4) phaseEl.textContent = 'Inhale...';
+            else if (t < 0.6) phaseEl.textContent = 'Hold...';
+            else phaseEl.textContent = 'Exhale...';
+        }, 200);
+
+        // Cycle counter — every 10 seconds = 1 breath cycle
+        const cycleInterval = setInterval(() => {
+            if (!this._meditationActive) return;
+            cycle++;
+            quoteEl.textContent = quotes[cycle % quotes.length];
+            hr = Math.max(62, hr - Math.floor(Math.random() * 3 + 3));
+            hrEl.textContent = `Simulated HR: 75 → ${hr} bpm`;
+
+            if (cycle >= 3) {
+                completeEl.textContent = 'Session complete. Stress reduced by 24%.';
+                completeEl.style.opacity = '1';
+            }
+        }, 10000);
+
+        this._meditationTimers = [phaseInterval, cycleInterval];
+    }
+
+    _closeMeditation() {
+        if (!this._meditationActive) return;
+        this._meditationActive = false;
+
+        if (this._meditationTimers) {
+            for (const t of this._meditationTimers) clearInterval(t);
+            this._meditationTimers = null;
+        }
+        if (this._meditationOverlay) {
+            this._meditationOverlay.remove();
+            this._meditationOverlay = null;
+        }
+        if (this._player) this._player.enable();
     }
 
     _showBuildingMessage(building) {
