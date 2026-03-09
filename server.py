@@ -63,6 +63,13 @@ ble_disconnected_timer = None
 last_coding_activity = 0
 main_event_loop: asyncio.AbstractEventLoop = None
 
+# recovery velocity tracking — derived from HR data
+_hr_history = []            # list of (timestamp, hr) tuples
+_last_stress_peak = None    # timestamp of last HR spike
+_recovery_velocity = None   # seconds to recover after spike
+_baseline_hr = 68.0         # rolling average resting HR
+_prev_hr = None             # previous HR for trend detection
+
 # electron broadcast 
 async def broadcast(message: dict):
     """ sending message to the connected electron clients""" 
@@ -86,18 +93,30 @@ def broadcast_sync (message: dict):
 def build_biometric_msg(data, state):
     ble_active = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
     source = "whoop" if bio.access_token and time.time() >= mock_override_until else "mock"
+
+    # hr trend from recent history
+    if len(_hr_history) >= 2:
+        recent = _hr_history[-1][1]
+        prev = _hr_history[-2][1]
+        hr_trend = "rising" if recent > prev + 1 else "falling" if recent < prev - 1 else "stable"
+    else:
+        hr_trend = "stable"
+
     return {
         "type": "biometric_update",
         "source": "ble" if ble_active else source,
         "heartRate": round(data.get("heartRate", 0)),
         "recovery": round(data.get("recovery", 0)),
         "strain": round(data.get("strain", 0), 1),
-        "state": state, 
-        "sleepPerformance": round(data.get("sleepPerformance", 0), 2), 
+        "state": state,
+        "sleepPerformance": round(data.get("sleepPerformance", 0), 2),
         "hrv": round(data.get("hrv", 0), 1),
         "estimated_stress": round(data.get("estimated_stress", 0), 2),
         "spo2": round(data.get("spo2", 0), 1),
-        "skinTemp": round(data.get("skinTemp", 0), 1)
+        "skinTemp": round(data.get("skinTemp", 0), 1),
+        "recovery_velocity": round(_recovery_velocity, 1) if _recovery_velocity is not None else None,
+        "baseline_hr": round(_baseline_hr),
+        "hr_trend": hr_trend,
     }
 
 # stalking the biometric state change 
@@ -143,6 +162,20 @@ def _simulate_hr(state):
     _sim_hr += (mid - _sim_hr) * 0.15 + random.uniform(-3, 3)
     _sim_hr = max(lo, min(hi, _sim_hr))
     return round(_sim_hr)
+
+def _update_baseline(new_avg):
+    global _baseline_hr
+    # smooth toward the new average so it doesn't jump around
+    _baseline_hr += (new_avg - _baseline_hr) * 0.1
+
+def _mark_stress_peak():
+    global _last_stress_peak
+    _last_stress_peak = time.time()
+
+def _mark_recovery():
+    global _recovery_velocity, _last_stress_peak
+    _recovery_velocity = time.time() - _last_stress_peak
+    _last_stress_peak = None
 
 def _on_ble_disconnect_timeout():
     global sleep_mode_active
@@ -204,6 +237,27 @@ def biometric_loop():
                 pre_state = bio.classify(data)
                 data["heartRate"] = _simulate_hr(pre_state)
             state = bio.classify(data)
+
+            # ── recovery velocity tracking ──
+            hr = data.get("heartRate", 0)
+            if hr > 0:
+                _hr_history.append((time.time(), hr))
+                if len(_hr_history) > 120:
+                    del _hr_history[:-120]
+
+                # baseline = rolling average of lowest 20% of recent HR values
+                if len(_hr_history) >= 5:
+                    sorted_hrs = sorted(h for _, h in _hr_history)
+                    low_count = max(1, len(sorted_hrs) // 5)
+                    _update_baseline(sum(sorted_hrs[:low_count]) / low_count)
+
+                # detect stress peak: HR spikes above baseline + 20
+                if hr > _baseline_hr + 20 and _last_stress_peak is None:
+                    _mark_stress_peak()
+
+                # detect recovery: HR drops back near baseline
+                if _last_stress_peak is not None and hr < _baseline_hr + 5:
+                    _mark_recovery()
 
             if is_whoop:
                 src = "ble" if ble_fresh else "whoop"

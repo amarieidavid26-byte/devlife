@@ -118,6 +118,20 @@ function injectStyles() {
 #dov-root .stress-track { width:100%;height:8px;background:rgba(255,228,181,0.06);border-radius:4px;overflow:hidden; }
 #dov-root .stress-fill { height:100%;border-radius:4px;transition:width 0.6s ease,background 0.6s ease; }
 
+#dov-root .cqi-section { display:flex;flex-direction:column; }
+#dov-root .cqi-row { display:flex;align-items:center;gap:14px;margin-bottom:6px; }
+#dov-root .cqi-val { font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;transition:color 0.4s; }
+#dov-root .cqi-track { width:200px;height:8px;background:rgba(255,228,181,0.06);border-radius:4px;overflow:hidden; }
+#dov-root .cqi-fill { height:100%;border-radius:4px;transition:width 0.6s ease,background 0.6s ease; }
+#dov-root .cqi-hint { font-family:'Nunito',sans-serif;font-size:12px;color:#B8A88C;line-height:1.4;transition:color 0.3s; }
+
+#dov-root .ans-section { display:flex;flex-direction:column; }
+#dov-root .ans-bars { display:flex;align-items:flex-end;gap:8px;height:48px;margin-bottom:6px; }
+#dov-root .ans-bar-group { display:flex;flex-direction:column;align-items:center;gap:3px; }
+#dov-root .ans-bar { width:28px;border-radius:3px 3px 0 0;transition:height 0.6s ease;min-height:2px; }
+#dov-root .ans-bar-lbl { font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:1px;color:#8A7E6A; }
+#dov-root .ans-status { font-family:'Nunito',sans-serif;font-size:12px;color:#B8A88C;transition:color 0.3s; }
+
 #dov-root .hrv-spark-canvas { width:100%;height:80px;display:block;border-radius:6px;background:rgba(30,24,16,0.3); }
 #dov-root .gauges-row { display:flex;gap:48px;align-items:flex-start; }
 #dov-root .gauge-box { text-align:center; }
@@ -212,6 +226,9 @@ export class DashboardOverlay {
         this._targetRec = 0; this._displayRec = 0;
         this._targetStrain = 0; this._displayStrain = 0;
         this._targetStress = 0; this._displayStress = 0;
+        this._targetCQI = 0; this._displayCQI = 0;
+        this._targetSNS = 0; this._displaySNS = 0;
+        this._targetPNS = 0; this._displayPNS = 0;
 
         this._curState      = 'RELAXED';
         this._interventions = [];
@@ -283,6 +300,30 @@ export class DashboardOverlay {
             <div class="stress-track">
                 <div class="stress-fill" id="dov-stress-bar" style="width:0%;background:#6AD89A"></div>
             </div>
+        </div>
+
+        <div class="cqi-section">
+            <div class="sec-hdr" style="font-family:'Fredoka',sans-serif;font-size:12px">Code Quality Index</div>
+            <div class="cqi-row">
+                <div class="cqi-track"><div class="cqi-fill" id="dov-cqi-bar" style="width:0%;background:#6AD89A"></div></div>
+                <span class="cqi-val" id="dov-cqi-val" style="color:#6AD89A">CQI: --%</span>
+            </div>
+            <div class="cqi-hint" id="dov-cqi-hint">Awaiting biometric data...</div>
+        </div>
+
+        <div class="ans-section">
+            <div class="sec-hdr">Autonomic Balance</div>
+            <div class="ans-bars">
+                <div class="ans-bar-group">
+                    <div class="ans-bar" id="dov-ans-sns" style="background:#FF7A6A;height:2px"></div>
+                    <span class="ans-bar-lbl">SNS</span>
+                </div>
+                <div class="ans-bar-group">
+                    <div class="ans-bar" id="dov-ans-pns" style="background:#6AD89A;height:2px"></div>
+                    <span class="ans-bar-lbl">PNS</span>
+                </div>
+            </div>
+            <div class="ans-status" id="dov-ans-status">Awaiting data...</div>
         </div>
 
         <div class="hrv-section">
@@ -386,6 +427,12 @@ export class DashboardOverlay {
             threat:       this._el.querySelector('#dov-threat'),
             threatVal:    this._el.querySelector('#dov-threat-val'),
             intCount:     this._el.querySelector('#dov-int-count'),
+            cqiBar:       this._el.querySelector('#dov-cqi-bar'),
+            cqiVal:       this._el.querySelector('#dov-cqi-val'),
+            cqiHint:      this._el.querySelector('#dov-cqi-hint'),
+            ansSns:       this._el.querySelector('#dov-ans-sns'),
+            ansPns:       this._el.querySelector('#dov-ans-pns'),
+            ansStatus:    this._el.querySelector('#dov-ans-status'),
         };
 
         this._ecgCtx   = this._$.ecgCanvas.getContext('2d');
@@ -503,6 +550,35 @@ export class DashboardOverlay {
             $.cogFill.setAttribute('stroke-dashoffset', (COG_CIRC * (1 - cogPct / 100)).toFixed(2));
             $.cogFill.setAttribute('stroke', cogPct > 66 ? '#FF7A6A' : cogPct > 33 ? '#FFB84A' : '#6AB8FF');
             $.cogVal.textContent = Math.round(cogPct) + '%';
+
+            // CQI
+            this._displayCQI += (this._targetCQI - this._displayCQI) * 0.12;
+            const cqi = Math.round(this._displayCQI);
+            const cqiColor = cqi > 66 ? '#6AD89A' : cqi > 33 ? '#FFB84A' : '#FF7A6A';
+            $.cqiBar.style.width = cqi + '%';
+            $.cqiBar.style.background = cqiColor;
+            $.cqiVal.textContent = 'CQI: ' + (this._targetCQI > 0 ? cqi + '%' : '--%');
+            $.cqiVal.style.color = cqiColor;
+            if (this._targetCQI > 0) {
+                $.cqiHint.textContent = cqi <= 25 ? '\u26A0\uFE0F High bug risk. Consider stepping away.'
+                    : cqi <= 50 ? '\u26A1 Below baseline. Stick to simple tasks.'
+                    : cqi <= 75 ? '\u2713 Decent. Good for routine work.'
+                    : '\uD83D\uDD25 Peak performance. Ship features now.';
+            }
+
+            // ANS Balance
+            this._displaySNS += (this._targetSNS - this._displaySNS) * 0.12;
+            this._displayPNS += (this._targetPNS - this._displayPNS) * 0.12;
+            const snsH = Math.max(2, this._displaySNS * 46);
+            const pnsH = Math.max(2, this._displayPNS * 46);
+            $.ansSns.style.height = snsH + 'px';
+            $.ansPns.style.height = pnsH + 'px';
+            if (this._targetSNS > 0 || this._targetPNS > 0) {
+                const diff = this._displaySNS - this._displayPNS;
+                $.ansStatus.textContent = diff > 0.1 ? 'Fight-or-flight dominant'
+                    : diff < -0.1 ? 'Rest-and-digest dominant'
+                    : 'Balanced autonomic state';
+            }
 
             this._drawSparkline();
             this._updateThreat();
@@ -662,6 +738,19 @@ export class DashboardOverlay {
         if (data.strain) this._targetStrain = data.strain;
         if (data.estimated_stress !== undefined) this._targetStress = data.estimated_stress;
         if (data.state) this._applyState(data.state);
+
+        // Code Quality Index
+        const rec = data.recovery || this._targetRec || 50;
+        const hrv = data.hrv || this._targetHRV || 40;
+        const stress = data.estimated_stress !== undefined ? data.estimated_stress : this._targetStress;
+        const recFactor     = Math.min(rec / 100, 1);
+        const hrvFactor     = Math.min(hrv / 80, 1);
+        const stressPenalty = Math.max(0, 1 - stress / 3);
+        this._targetCQI = Math.round((recFactor * 0.4 + hrvFactor * 0.35 + stressPenalty * 0.25) * 100);
+
+        // ANS Balance — SNS driven by stress, PNS driven by HRV
+        this._targetSNS = Math.min(stress / 3, 1);
+        this._targetPNS = Math.min(hrv / 80, 1);
     }
 
     setState(s) {

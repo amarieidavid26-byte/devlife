@@ -44,6 +44,8 @@ export class HUD {
 
         this._sleepMode = false;
         this._lastHR = '—';
+        this._sleepData = null;
+        this._cqi = null;
 
         this._injectStyles();
         this._el = this._createEl();
@@ -252,12 +254,42 @@ export class HUD {
         this._el.style.display = visible ? '' : 'none';
     }
 
+    setSleepData(data) {
+        this._sleepData = data;
+        this._render();
+    }
+
+    updateCQI(value) {
+        this._cqi = value;
+        this._render();
+    }
+
     setSleepMode(active) {
         this._sleepMode = active;
         if (active) {
             this._ecgColor = '#4444aa';
         }
         this._render();
+    }
+
+    _renderSleep() {
+        const s = this._sleepData;
+        if (!s) return '';
+        const score = s.score || 0;
+        let icon, label, color;
+        if (score > 80) { icon = '\u{1F634}'; label = 'Well rested'; color = '#6AD89A'; }
+        else if (score >= 50) { icon = '\u{1F610}'; label = 'Fair sleep'; color = '#FFB84A'; }
+        else { icon = '\u{1F635}'; label = 'Sleep deprived'; color = '#FF7A6A'; }
+        return `
+            <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,228,181,0.08)">
+                <div style="font-size:10px;color:#B8A88C;margin-bottom:2px">
+                    Last Night: ${s.hours.toFixed(1)}h · ${s.efficiency}% eff
+                </div>
+                <div style="font-size:10px;color:${color}">
+                    ${icon} ${label}
+                </div>
+            </div>
+        `;
     }
 
     // TODO: make this responsive
@@ -295,7 +327,7 @@ export class HUD {
                 <span>HRV: <strong style="font-family:monospace">${hrvFmt}</strong></span>
             </div>
             <div style="margin:6px 0 4px">
-                State: <strong style="color:${stateColor};font-family:'Fredoka',sans-serif;font-weight:600">${stateLabel}</strong>
+                State: <strong style="color:${stateColor};font-family:'Fredoka',sans-serif;font-weight:600">${stateLabel}</strong>${this._cqi != null ? ` · <span style="font-size:11px;color:${this._cqi >= 80 ? '#6AD89A' : this._cqi >= 50 ? '#FFB84A' : '#FF7A6A'}">CQI: ${Math.round(this._cqi)}%</span>` : ''}
             </div>
             <div style="font-size:11px;color:#B8A88C;margin-bottom:4px">
                 Stress ${stress.toFixed(1)}/3.0
@@ -309,6 +341,7 @@ export class HUD {
                     transition: width 0.5s ease, background 0.5s ease;
                 "></div>
             </div>
+            ${this._sleepData ? this._renderSleep() : ''}
         `;
     }
 }

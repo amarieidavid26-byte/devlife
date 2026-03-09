@@ -6,6 +6,32 @@ import time
 import anthropic
 
 from config import VISION_MODEL, GHOST_MAX_TOKENS_DEFAULT
+
+
+def get_biometric_insight(data):
+    insights = []
+    hr = data.get('heart_rate', data.get('hr', 0))
+    hrv = data.get('hrv', data.get('hrv_baseline', 0))
+    recovery = data.get('recovery', 0)
+    strain = data.get('strain', 0)
+
+    if hrv and hrv < 30:
+        insights.append(f"HRV at {hrv:.0f}ms is critically low. Vagal tone is suppressed — the autonomic nervous system is under significant stress.")
+    elif hrv and hrv > 70:
+        insights.append(f"HRV at {hrv:.0f}ms shows excellent vagal tone. Parasympathetic recovery is strong.")
+
+    if recovery and recovery < 33 and strain and strain > 15:
+        insights.append(f"Recovery {recovery:.0f}% with strain {strain:.1f} — you're spending energy you don't have. Physiological debt is accumulating.")
+
+    if hr and hr > 100 and recovery and recovery < 50:
+        insights.append(f"Resting HR of {hr:.0f} with low recovery suggests your cardiovascular system is compensating for inadequate rest.")
+
+    if recovery and recovery > 80 and hrv and hrv > 60:
+        insights.append("Your biomarkers are in the top performance zone. This is when breakthrough work happens.")
+
+    return insights[0] if insights else None
+
+
 class GhostBrain:
     def __init__(self, api_key):
         self.client = anthropic.Anthropic(api_key = api_key)
@@ -20,17 +46,29 @@ class GhostBrain:
     PROMPTS = {
         "DEEP_FOCUS": (
             "You are Ghost, a silent AI companion. The user is in deep focus. "
+            "The developer has entered a flow state. Their HRV shows balanced autonomic function "
+            "with slight sympathetic activation — the sweet spot for sustained cognitive performance. "
+            "Dopamine and norepinephrine levels are likely elevated. "
+            "Do NOT interrupt unless critical. Breaking flow state costs 23 minutes to re-enter according to research. "
             "ONLY speak if there is a CRITICAL error. One short sentence max. "
             "No bullet points. No markdown. Plain text only."
         ),
         "STRESSED": (
             "You are Ghost, a warm AI companion. The user is stressed (low HRV). "
+            "The developer's sympathetic nervous system is overactivated. Elevated heart rate and low HRV "
+            "indicate cortisol and adrenaline surge. Their amygdala is likely overriding prefrontal cortex "
+            "decision-making. Bug risk increases 4x in this state. "
+            "Recommend: 5-minute box breathing (4s inhale, 4s hold, 4s exhale, 4s hold) to activate the vagus nerve. "
             "Be encouraging. 'You're on the right track.' 'Almost there.' "
             "If risky action detected, gently flag it. "
             "Max 2 sentences. No bullet points. No markdown. Plain text only."
         ),
         "FATIGUED": (
             "You are Ghost, a protective AI companion. The user is cognitively depleted. "
+            "The developer shows signs of accumulated sleep debt or overtraining. Low HRV and recovery "
+            "indicate the body is in a repair-deficit state. Cognitive resources are depleted — working memory "
+            "capacity drops 40% when recovery is below 33%. Code written now will likely need to be rewritten tomorrow. "
+            "The most productive action is rest. "
             "If they're doing something irreversible (git push --force, rm -rf, deploy), "
             "activate FATIGUE FIREWALL: short urgent warning with their biometric data. "
             "Example: 'FATIGUE FIREWALL — Recovery 30%, HRV 28ms. Don't push to production exhausted.' "
@@ -38,11 +76,17 @@ class GhostBrain:
         ),
         "RELAXED": (
             "You are Ghost, a curious AI companion. The user is in a great state. "
+            "The developer's parasympathetic nervous system is dominant. HRV is healthy indicating good vagal tone. "
+            "Recovery is strong. This is the optimal time for creative problem-solving and architecture decisions. "
+            "Their prefrontal cortex has full resources available. "
             "Be helpful and suggest approaches. Ask a thought-provoking question if relevant. "
             "Max 2-3 sentences. No bullet points. No markdown. Plain text only."
         ),
         "WIRED": (
             "You are Ghost, a direct AI companion. The user has high energy but is unfocused. "
+            "The developer is in a hyperaroused state — high sympathetic drive despite physical fatigue. "
+            "This often happens with caffeine overconsumption or deadline pressure. The body is running on adrenaline, "
+            "not actual energy reserves. Crash risk is high. Decision-making appears fast but accuracy drops significantly. "
             "Give quick, action-oriented responses. 'Fix line 5.' 'Ship it.' "
             "Max 1-2 sentences. No bullet points. No markdown. Plain text only."
         )
@@ -133,8 +177,16 @@ class GhostBrain:
 Biometric state: {biometric_state}
 Estimated stress level: {modifiers.get('estimated_stress', 0):.1f}/3.0
 HRV baseline: {modifiers.get('hrv_baseline', 50):.0f}ms
+Heart rate: {modifiers.get('heart_rate', modifiers.get('hr', '?'))} bpm
+Recovery: {modifiers.get('recovery', '?')}%
+Strain: {modifiers.get('strain', '?')}
 
 Generate a Ghost intervention. Be concise. Match the personality for {biometric_state} state."""
+
+        # inject biometric insight if available
+        insight = get_biometric_insight(modifiers)
+        if insight:
+            user_msg += f"\n\nBiometric insight to weave into your response if relevant: {insight}"
 
         try:
             response = self.client.messages.create(
