@@ -272,7 +272,6 @@ export class CafeScene {
     // ─────────────────────────────────────────────
 
     _drawFloor() {
-        const tones = [COL.floorA, COL.floorB, COL.floorC];
         const hw = TILE_WIDTH / 2;
         const hh = TILE_HEIGHT / 2;
 
@@ -281,8 +280,9 @@ export class CafeScene {
                 const tile = new PIXI.Graphics();
                 const { x, y } = this._gridToScreen(gx, gy);
 
-                // Base fill
-                tile.beginFill(tones[(gx + gy) % 3]);
+                // Simple warm checkerboard
+                const color = (gx + gy) % 2 === 0 ? COL.floorA : COL.floorB;
+                tile.beginFill(color);
                 tile.moveTo(x, y);
                 tile.lineTo(x + hw, y + hh);
                 tile.lineTo(x, y + TILE_HEIGHT);
@@ -290,69 +290,13 @@ export class CafeScene {
                 tile.closePath();
                 tile.endFill();
 
-                // Herringbone: 4 narrow plank pairs angled in opposite directions
-                const planks = 4;
-                for (let p = 0; p < planks; p++) {
-                    const t0 = p / planks;
-                    const t1 = (p + 1) / planks;
-                    const tMid = (t0 + t1) / 2;
-
-                    // Interpolate along the diamond edges for sub-tile slicing
-                    // Left edge point at t
-                    const lx0 = x + (-hw) * (1 - t0) + 0 * t0;
-                    const ly0 = y + hh * (1 - t0) + TILE_HEIGHT * t0;
-                    const lx1 = x + (-hw) * (1 - t1) + 0 * t1;
-                    const ly1 = y + hh * (1 - t1) + TILE_HEIGHT * t1;
-                    // Right edge point at t
-                    const rx0 = x + hw * (1 - t0) + 0 * t0;
-                    const ry0 = y + hh * (1 - t0) + TILE_HEIGHT * t0;
-                    const rx1 = x + hw * (1 - t1) + 0 * t1;
-                    const ry1 = y + hh * (1 - t1) + TILE_HEIGHT * t1;
-                    // Mid points
-                    const mx0 = (lx0 + rx0) / 2;
-                    const my0 = (ly0 + ry0) / 2;
-                    const mx1 = (lx1 + rx1) / 2;
-                    const my1 = (ly1 + ry1) / 2;
-
-                    // Alternate tones per plank-half
-                    const toneA = tones[(gx * 3 + gy + p) % 3];
-                    const toneB = tones[(gx * 3 + gy + p + 1) % 3];
-
-                    // Left half plank
-                    tile.beginFill(toneA);
-                    tile.moveTo(lx0, ly0);
-                    tile.lineTo(mx0, my0);
-                    tile.lineTo(mx1, my1);
-                    tile.lineTo(lx1, ly1);
-                    tile.closePath();
-                    tile.endFill();
-
-                    // Right half plank
-                    tile.beginFill(toneB);
-                    tile.moveTo(mx0, my0);
-                    tile.lineTo(rx0, ry0);
-                    tile.lineTo(rx1, ry1);
-                    tile.lineTo(mx1, my1);
-                    tile.closePath();
-                    tile.endFill();
-
-                    // Gap line between planks
-                    tile.lineStyle(0.5, COL.floorGap, 0.15);
-                    tile.moveTo(lx1, ly1);
-                    tile.lineTo(rx1, ry1);
-                    tile.lineStyle(0);
-
-                    // Center gap (herringbone angle change)
-                    tile.lineStyle(0.5, COL.floorGap, 0.12);
-                    tile.moveTo(mx0, my0);
-                    tile.lineTo(mx1, my1);
-                    tile.lineStyle(0);
-                }
-
-                // Subtle grain lines
-                tile.lineStyle(0.4, COL.floorLine, 0.15);
-                tile.moveTo(x - hw * 0.5, y + hh);
-                tile.lineTo(x + hw * 0.5, y + hh);
+                // Thin gap lines between tiles
+                tile.lineStyle(0.5, COL.floorGap, 0.15);
+                tile.moveTo(x, y);
+                tile.lineTo(x + hw, y + hh);
+                tile.lineTo(x, y + TILE_HEIGHT);
+                tile.lineTo(x - hw, y + hh);
+                tile.closePath();
                 tile.lineStyle(0);
 
                 this._floorContainer.addChild(tile);
@@ -455,17 +399,17 @@ export class CafeScene {
         const shelf = new PIXI.Graphics();
         // Shelf bracket
         shelf.beginFill(COL.baseboard);
-        shelf.drawRect(-22, 0, 44, 3);
+        shelf.drawRect(-33, 0, 66, 4);
         shelf.endFill();
         // 3 coffee bags
         const bagColors = [0x6B4A2A, 0x3A2A1A, 0xD4C8B0];
         for (let i = 0; i < 3; i++) {
             shelf.beginFill(bagColors[i]);
-            shelf.drawRoundedRect(-18 + i * 14, -12, 10, 12, 1);
+            shelf.drawRoundedRect(-27 + i * 21, -18, 15, 18, 1);
             shelf.endFill();
             // bag label
             shelf.beginFill(0xF5F0E8, 0.3);
-            shelf.drawRect(-16 + i * 14, -8, 6, 4);
+            shelf.drawRect(-24 + i * 21, -12, 9, 6);
             shelf.endFill();
         }
         shelfContainer.addChild(shelf);
@@ -482,22 +426,22 @@ export class CafeScene {
         const pic = new PIXI.Graphics();
         // Frame
         pic.beginFill(0xA0845C);
-        pic.drawRect(-12, -9, 24, 18);
+        pic.drawRect(-18, -13, 36, 27);
         pic.endFill();
         // Inner canvas
         pic.beginFill(0x7AB8D4);
-        pic.drawRect(-10, -7, 20, 14);
+        pic.drawRect(-15, -10, 30, 21);
         pic.endFill();
         // Abstract landscape: sky (already filled), hills, ground
         pic.beginFill(0x6A9A5A);
-        pic.drawRect(-10, 1, 20, 6);
+        pic.drawRect(-15, 1, 30, 9);
         pic.endFill();
         pic.beginFill(0x8AB86A);
-        pic.drawRect(-10, -1, 20, 4);
+        pic.drawRect(-15, -2, 30, 6);
         pic.endFill();
         // Sun
         pic.beginFill(0xFFE4B5, 0.7);
-        pic.drawCircle(5, -3, 2.5);
+        pic.drawCircle(7, -4, 3.75);
         pic.endFill();
         picContainer.addChild(pic);
         picContainer.x = picX;
@@ -513,31 +457,31 @@ export class CafeScene {
         const clock = new PIXI.Graphics();
         // Face
         clock.beginFill(0xF5F0E8);
-        clock.drawCircle(0, 0, 8);
+        clock.drawCircle(0, 0, 12);
         clock.endFill();
         // Rim
         clock.lineStyle(1, COL.baseboard, 0.8);
-        clock.drawCircle(0, 0, 8);
+        clock.drawCircle(0, 0, 12);
         clock.lineStyle(0);
         // Hour marks
         for (let h = 0; h < 12; h++) {
             const angle = (h / 12) * Math.PI * 2 - Math.PI / 2;
             clock.beginFill(0x4A3A2A);
-            clock.drawCircle(Math.cos(angle) * 6, Math.sin(angle) * 6, 0.6);
+            clock.drawCircle(Math.cos(angle) * 9, Math.sin(angle) * 9, 0.9);
             clock.endFill();
         }
         // Hour hand
-        clock.lineStyle(1.2, 0x2A1A10, 0.9);
+        clock.lineStyle(1.8, 0x2A1A10, 0.9);
         clock.moveTo(0, 0);
-        clock.lineTo(-2, -4);
+        clock.lineTo(-3, -6);
         // Minute hand
-        clock.lineStyle(0.8, 0x2A1A10, 0.7);
+        clock.lineStyle(1.2, 0x2A1A10, 0.7);
         clock.moveTo(0, 0);
-        clock.lineTo(4, -3);
+        clock.lineTo(6, -4.5);
         clock.lineStyle(0);
         // Center dot
         clock.beginFill(0x2A1A10);
-        clock.drawCircle(0, 0, 1);
+        clock.drawCircle(0, 0, 1.5);
         clock.endFill();
         clockContainer.addChild(clock);
         clockContainer.x = clockX;
@@ -551,7 +495,7 @@ export class CafeScene {
     // ─────────────────────────────────────────────
 
     _drawCounter() {
-        const counterH = 24;
+        const counterH = 36;
         const g = new PIXI.Graphics();
 
         for (let gx = 2; gx <= 6; gx++) {
@@ -592,114 +536,109 @@ export class CafeScene {
 
         this._furnitureContainer.addChild(g);
 
-        // Counter details
+        // Counter details — items sit ON the counter surface
         const details = new PIXI.Graphics();
-        // Napkin holder (small rectangle stack at gx=3)
-        const np = this._gridToScreen(3, 1);
-        const npy = np.y - counterH;
+
+        // Napkin holder at gx=2.8
+        const np = this._gridToScreen(2.8, 1);
+        const npSurf = np.y + TILE_HEIGHT / 2 - counterH;
         details.beginFill(0xD4C8B0);
-        details.drawRect(np.x - 4, npy - 6, 8, 2);
-        details.drawRect(np.x - 4, npy - 4, 8, 2);
-        details.drawRect(np.x - 4, npy - 2, 8, 2);
+        details.drawRect(np.x - 4, npSurf - 6, 8, 2);
+        details.drawRect(np.x - 4, npSurf - 4, 8, 2);
+        details.drawRect(np.x - 4, npSurf - 2, 8, 2);
         details.endFill();
         details.beginFill(0x8B7A5A);
-        details.drawRect(np.x - 5, npy - 7, 10, 1);
-        details.drawRect(np.x - 5, npy, 10, 1);
+        details.drawRect(np.x - 5, npSurf - 7, 10, 1);
+        details.drawRect(np.x - 5, npSurf, 10, 1);
         details.endFill();
 
-        // Tip jar (small cylinder at gx=4.5)
-        const tp = this._gridToScreen(4.5, 1);
-        const tpy = tp.y - counterH;
+        // Tip jar at gx=4.0
+        const tp = this._gridToScreen(4.0, 1);
+        const tpSurf = tp.y + TILE_HEIGHT / 2 - counterH;
         details.beginFill(0xC8D8E8, 0.5);
-        details.drawRect(tp.x - 3, tpy - 10, 6, 10);
+        details.drawRect(tp.x - 3, tpSurf - 10, 6, 10);
         details.endFill();
         details.lineStyle(0.5, 0xA0B0C0, 0.4);
-        details.drawRect(tp.x - 3, tpy - 10, 6, 10);
+        details.drawRect(tp.x - 3, tpSurf - 10, 6, 10);
         details.lineStyle(0);
         // coins inside
         details.beginFill(0xD4AA50, 0.6);
-        details.drawCircle(tp.x - 1, tpy - 3, 1.5);
-        details.drawCircle(tp.x + 1, tpy - 5, 1.5);
+        details.drawCircle(tp.x - 1, tpSurf - 3, 1.5);
+        details.drawCircle(tp.x + 1, tpSurf - 5, 1.5);
         details.endFill();
 
-        // Menu stand (small triangle at gx=5.8)
-        const mp = this._gridToScreen(5.8, 1);
-        const mpy = mp.y - counterH;
+        // Menu stand at gx=5.2
+        const mp = this._gridToScreen(5.2, 1);
+        const mpSurf = mp.y + TILE_HEIGHT / 2 - counterH;
         details.beginFill(0x5A3A1A);
-        details.moveTo(mp.x, mpy - 12);
-        details.lineTo(mp.x + 5, mpy);
-        details.lineTo(mp.x - 5, mpy);
+        details.moveTo(mp.x, mpSurf - 12);
+        details.lineTo(mp.x + 5, mpSurf);
+        details.lineTo(mp.x - 5, mpSurf);
         details.closePath();
         details.endFill();
         details.beginFill(0xF5F0E8, 0.5);
-        details.drawRect(mp.x - 3, mpy - 9, 6, 6);
+        details.drawRect(mp.x - 3, mpSurf - 9, 6, 6);
         details.endFill();
 
         this._furnitureContainer.addChild(details);
 
-        // Espresso machine (at gx=2, behind counter on wall)
+        // Espresso machine (at gx=2.2, behind counter on wall)
         const ep = this._gridToScreen(2.2, 0.5);
-        const epy = ep.y + TILE_HEIGHT / 2;
+        const epSurf = ep.y + TILE_HEIGHT / 2;
         const machine = new PIXI.Graphics();
         // Main body
         machine.beginFill(0x4A4A4A);
-        machine.drawRoundedRect(ep.x - 10, epy - 30, 20, 22, 2);
+        machine.drawRoundedRect(ep.x - 15, epSurf - 40, 30, 30, 3);
         machine.endFill();
         // Chrome top
         machine.beginFill(0x6A6A6A);
-        machine.drawRect(ep.x - 11, epy - 32, 22, 4);
+        machine.drawRect(ep.x - 16, epSurf - 42, 32, 4);
         machine.endFill();
         // Two buttons
         machine.beginFill(0xE05040);
-        machine.drawCircle(ep.x - 4, epy - 22, 1.5);
+        machine.drawCircle(ep.x - 5, epSurf - 30, 2);
         machine.endFill();
         machine.beginFill(0x50E060);
-        machine.drawCircle(ep.x + 2, epy - 22, 1.5);
+        machine.drawCircle(ep.x + 5, epSurf - 30, 2);
         machine.endFill();
-        // Drip tray (small rectangle below)
+        // Drip tray
         machine.beginFill(0x3A3A3A);
-        machine.drawRect(ep.x - 8, epy - 8, 16, 3);
+        machine.drawRect(ep.x - 12, epSurf - 10, 24, 3);
         machine.endFill();
-        // Grate lines on drip tray
-        machine.lineStyle(0.5, 0x5A5A5A, 0.5);
-        for (let i = 0; i < 4; i++) {
-            machine.moveTo(ep.x - 6 + i * 4, epy - 8);
-            machine.lineTo(ep.x - 6 + i * 4, epy - 5);
-        }
-        // Steam wand (tiny diagonal line on right side)
+        // Steam wand
         machine.lineStyle(1.5, 0x8A8A8A, 0.8);
-        machine.moveTo(ep.x + 8, epy - 18);
-        machine.lineTo(ep.x + 12, epy - 10);
+        machine.moveTo(ep.x + 13, epSurf - 26);
+        machine.lineTo(ep.x + 17, epSurf - 16);
         machine.lineStyle(0);
         // Gauge circle
-        machine.lineStyle(0.8, 0xB0B0B0, 0.6);
-        machine.drawCircle(ep.x, epy - 16, 3);
+        machine.lineStyle(1, 0xB0B0B0, 0.6);
+        machine.drawCircle(ep.x, epSurf - 22, 4);
         machine.lineStyle(0);
 
         this._furnitureContainer.addChild(machine);
 
-        // 3 coffee cups spread across the counter
-        const cupPositions = [2.5, 4.0, 5.5];
+        // 3 small coffee cups evenly spaced on counter surface
+        const cupPositions = [3.2, 4.4, 5.6];
         for (const cgx of cupPositions) {
             const { x, y } = this._gridToScreen(cgx, 1);
             const cup = new PIXI.Graphics();
-            const cupY = y - counterH;
+            const surf = y + TILE_HEIGHT / 2 - counterH;
 
-            // cup body
+            // cup body (small 5px tall)
             cup.beginFill(COL.cup);
-            cup.drawRect(x - 3, cupY - 8, 6, 8);
+            cup.drawRect(x - 4, surf - 7, 8, 7);
             cup.endFill();
             // coffee surface
             cup.beginFill(COL.coffee);
-            cup.drawRect(x - 2, cupY - 6, 4, 4);
+            cup.drawRect(x - 2, surf - 4, 4, 2);
             cup.endFill();
             // handle
             cup.lineStyle(1, COL.cup, 0.8);
-            cup.arc(x + 3, cupY - 4, 2.5, -Math.PI / 2, Math.PI / 2, false);
+            cup.arc(x + 3, surf - 3, 2, -Math.PI / 2, Math.PI / 2, false);
             cup.lineStyle(0);
 
             this._furnitureContainer.addChild(cup);
-            this._steamSources.push({ x, baseY: cupY - 9, spawnAccum: Math.random() * 20, active: [] });
+            this._steamSources.push({ x, baseY: surf - 6, spawnAccum: Math.random() * 20, active: [] });
         }
     }
 
@@ -714,20 +653,20 @@ export class CafeScene {
 
         const board = new PIXI.Graphics();
         board.beginFill(COL.menuBoard);
-        board.drawRoundedRect(-24, -16, 48, 32, 3);
+        board.drawRoundedRect(-36, -24, 72, 48, 4);
         board.endFill();
 
         // menu item lines
         const lineColors = [COL.warm, COL.green, COL.warm, 0xFF7A6A, COL.warm];
         for (let i = 0; i < 5; i++) {
             board.lineStyle(1.5, lineColors[i], 0.5);
-            const ly = -10 + i * 6;
-            const lw = 12 + (i % 3) * 6;
-            board.moveTo(-18, ly);
-            board.lineTo(-18 + lw, ly);
+            const ly = -15 + i * 9;
+            const lw = 18 + (i % 3) * 9;
+            board.moveTo(-27, ly);
+            board.lineTo(-27 + lw, ly);
             board.lineStyle(0);
             board.beginFill(lineColors[i], 0.4);
-            board.drawCircle(18, ly, 1);
+            board.drawCircle(27, ly, 1.5);
             board.endFill();
         }
 
@@ -751,21 +690,21 @@ export class CafeScene {
         const board = new PIXI.Graphics();
         // wooden frame
         board.beginFill(COL.baseboard);
-        board.drawRoundedRect(-28, -20, 56, 40, 3);
+        board.drawRoundedRect(-42, -30, 84, 60, 4);
         board.endFill();
         // green surface
         board.beginFill(COL.chalkboard);
-        board.drawRoundedRect(-25, -17, 50, 34, 2);
+        board.drawRoundedRect(-37, -25, 75, 51, 3);
         board.endFill();
 
         // chalk text lines
         const chalkColors = [0xF5F0E8, 0xFFD66B, 0xF5F0E8, 0xFF9A8C, 0xF5F0E8];
         for (let i = 0; i < 5; i++) {
             board.lineStyle(1.2, chalkColors[i], 0.45);
-            const ly = -12 + i * 7;
-            const lw = 10 + (i * 7 % 15);
-            board.moveTo(-20, ly);
-            board.lineTo(-20 + lw, ly);
+            const ly = -18 + i * 10;
+            const lw = 15 + (i * 7 % 15);
+            board.moveTo(-30, ly);
+            board.lineTo(-30 + lw, ly);
         }
 
         const chalkContainer = new PIXI.Container();
@@ -786,33 +725,43 @@ export class CafeScene {
         const g = new PIXI.Graphics();
 
         // shadow
-        g.beginFill(0x3C2A1A, 0.08);
-        g.drawEllipse(x, tileCenter, 18, 8);
+        g.beginFill(0x3C2A1A, 0.06);
+        g.drawEllipse(x, tileCenter, 35, 18);
+        g.endFill();
+
+        // table base
+        g.beginFill(COL.tableLeg);
+        g.drawEllipse(x, tileCenter, 10, 6);
         g.endFill();
 
         // single pedestal leg
         g.beginFill(COL.tableLeg);
-        g.drawRect(x - 2, tileCenter - 18, 4, 18);
+        g.drawRect(x - 3, tileCenter - 25, 6, 25);
         g.endFill();
 
-        // round top (isometric ellipse, r≈15)
+        // round top (isometric ellipse)
         g.beginFill(COL.tableTop);
-        g.drawEllipse(x, tileCenter - 20, 15, 9);
+        g.drawEllipse(x, tileCenter - 30, 30, 18);
         g.endFill();
+
+        // edge outline
+        g.lineStyle(1, 0xBFA072, 0.4);
+        g.drawEllipse(x, tileCenter - 30, 30, 18);
+        g.lineStyle(0);
 
         // highlight
         g.beginFill(0xBFA072, 0.3);
-        g.drawEllipse(x - 2, tileCenter - 22, 8, 4);
+        g.drawEllipse(x - 4, tileCenter - 34, 16, 8);
         g.endFill();
+
+        // chairs FIRST (so they render BEHIND the table top)
+        if (chairCount >= 1) this._drawChair(gx - 1.0, gy - 0.3);
+        if (chairCount >= 2) this._drawChair(gx + 1.0, gy + 0.3);
 
         this._furnitureContainer.addChild(g);
 
         // Track table for interactions
-        this._tables.push({ gx, gy, screenX: x, screenY: tileCenter, chairGx: gx + 0.8, chairGy: gy + 0.6 });
-
-        // chairs — one on each side of the table
-        if (chairCount >= 1) this._drawChair(gx + 0.8, gy + 0.6);
-        if (chairCount >= 2) this._drawChair(gx - 0.7, gy - 0.4);
+        this._tables.push({ gx, gy, screenX: x, screenY: tileCenter, chairGx: gx - 1.0, chairGy: gy - 0.3 });
     }
 
     _drawChair(gx, gy) {
@@ -820,29 +769,26 @@ export class CafeScene {
         const base = y + TILE_HEIGHT / 2;
         const g = new PIXI.Graphics();
 
-        // legs (thinner 1.5px)
-        g.beginFill(COL.tableLeg);
-        g.drawRect(x - 5, base - 2, 1.5, 8);
-        g.drawRect(x + 3.5, base - 3, 1.5, 8);
+        // back legs
+        g.beginFill(0x8B6B3A);
+        g.drawRect(x - 8, base - 12, 2, 12);
+        g.drawRect(x + 6, base - 14, 2, 12);
         g.endFill();
 
-        // seat
-        g.beginFill(COL.chairSeat);
-        g.drawEllipse(x, base - 4, 7, 5);
-        g.endFill();
-
-        // cushion (warm red rounded rect on seat)
-        g.beginFill(0xC87A5A, 0.6);
-        g.drawRoundedRect(x - 5, base - 7, 10, 5, 2);
+        // front legs (shorter)
+        g.beginFill(0x8B6B3A);
+        g.drawRect(x - 8, base - 4, 2, 8);
+        g.drawRect(x + 6, base - 6, 2, 8);
         g.endFill();
 
         // backrest
-        g.beginFill(COL.chairBack);
-        g.drawRect(x - 5, base - 14, 1.5, 10);
-        g.drawRect(x + 3.5, base - 12, 1.5, 8);
+        g.beginFill(0x8B6B3A);
+        g.drawRoundedRect(x - 9, base - 20, 18, 8, 2);
         g.endFill();
-        g.beginFill(COL.chairBack);
-        g.drawRect(x - 5, base - 14, 10, 2);
+
+        // seat (warm leather brown)
+        g.beginFill(0xA07050);
+        g.drawEllipse(x, base - 6, 14, 8);
         g.endFill();
 
         this._furnitureContainer.addChild(g);
@@ -954,10 +900,10 @@ export class CafeScene {
         // screen background
         const bg = new PIXI.Graphics();
         bg.beginFill(0x0A0A14, 0.9);
-        bg.drawRoundedRect(-30, -22, 60, 44, 4);
+        bg.drawRoundedRect(-45, -33, 90, 66, 6);
         bg.endFill();
         bg.lineStyle(1, COL.baseboard, 0.7);
-        bg.drawRoundedRect(-30, -22, 60, 44, 4);
+        bg.drawRoundedRect(-45, -33, 90, 66, 6);
         bg.lineStyle(0);
         displayContainer.addChild(bg);
 
@@ -970,7 +916,7 @@ export class CafeScene {
             letterSpacing: 1,
         });
         label.anchor.set(0.5, 0);
-        label.y = -18;
+        label.y = -27;
         displayContainer.addChild(label);
 
         // graph — updated each frame
@@ -980,7 +926,7 @@ export class CafeScene {
         // pulsing "ACTIVE" dot
         this._recoveryDot = new PIXI.Graphics();
         this._recoveryDot.beginFill(COL.green, 0.7);
-        this._recoveryDot.drawCircle(22, -18, 2);
+        this._recoveryDot.drawCircle(33, -27, 3);
         this._recoveryDot.endFill();
         displayContainer.addChild(this._recoveryDot);
 
@@ -1315,7 +1261,7 @@ export class CafeScene {
         // Progress bar
         this._brewBarContainer = new PIXI.Container();
         this._brewBarContainer.x = table.screenX;
-        this._brewBarContainer.y = table.screenY - 50;
+        this._brewBarContainer.y = table.screenY - 30;
 
         const barBg = new PIXI.Graphics();
         barBg.lineStyle(1, 0x8B6A3A, 0.8);

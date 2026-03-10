@@ -19,7 +19,14 @@ RISKY_COMMAND_PATTERNS = [
     (r'DROP\s+(TABLE|DATABASE|INDEX)', 'Database destructive command'),
     (r'chmod\s+777\b', 'Overly permissive file permissions'),
     (r'sudo\s+rm\b', 'Elevated destructive command'),
-    # TODO: add more patterns
+    (r'git\s+reset\s+--hard', 'Hard reset — discards all uncommitted changes'),
+    (r'DELETE\s+FROM\s+\w+', 'Database row deletion'),
+    (r':\(\)\{\s*:\|:&\s*\};:', 'Fork bomb — crashes the system'),
+    (r'mkfs\b', 'Disk format command'),
+    (r'kubectl\s+delete', 'Kubernetes resource deletion'),
+    (r'docker\s+rm\s+-f', 'Force remove running container'),
+    (r'npm\s+publish\b', 'Publishing package to npm registry'),
+    (r'\benv\b', 'Environment variable dump — may expose secrets'),
 ]
 
 class ContentAnalyzer:

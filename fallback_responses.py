@@ -23,7 +23,7 @@ FALLBACKS = {
         "Try rubber ducking it. Explain the problem out loud"
     ],
     "FATIGUED": [
-        "Decision quality trops when you are this tired",
+        "Decision quality drops when you are this tired",
         "Consider picking this up tomorrow with fresh eyes.",
         "Maybe grab some water? Small break, big difference.",
         "Save your work. Just in case.",

@@ -231,7 +231,7 @@ export class CoworkScene {
             // ghost bob
             const bobY = Math.sin(npc.tick * 0.03) * 3;
             npc.ghostContainer.y = npc.ghostBaseY + bobY;
-            npc.badge.y = npc.ghostContainer.y - 28;
+            npc.badge.y = npc.badgeBaseY;
 
             // typing — arm wiggle
             const typeSpeed = npc.def.state === 'STRESSED' ? 0.12 :
@@ -453,6 +453,7 @@ export class CoworkScene {
     // ── furniture ─────────────────────────────────────────────────────
 
     _drawFurniture() {
+        this._deskFrontPanels = [];
         // 4 desk stations in a wide 2x2 arrangement
         const stations = [
             { gx: 3, gy: 3 },  // Alex
@@ -464,105 +465,106 @@ export class CoworkScene {
         const screenColors = [0x3A5A2A, 0x2A4A6A, 0x4A3A5A, 0x2A4A5A]; // different app tints per desk
         for (let i = 0; i < stations.length; i++) this._drawDeskStation(stations[i].gx, stations[i].gy, i, screenColors[i]);
 
-        // cubicle dividers — vertical center and horizontal center
-        this._drawDivider(6, 1, 6, 11);
-        this._drawDivider(1, 6, 11, 6);
     }
 
     _drawDeskStation(gx, gy, stationIdx, screenColor) {
         const c = this._tileCenter(gx, gy);
         const g = new PIXI.Graphics();
 
-        // desk top (iso diamond)
+        // desk top (iso diamond) — 1.8x scale
         g.beginFill(COL.desk);
-        g.moveTo(c.x, c.y - 18);
-        g.lineTo(c.x + 24, c.y - 10);
-        g.lineTo(c.x, c.y - 2);
-        g.lineTo(c.x - 24, c.y - 10);
+        g.moveTo(c.x, c.y - 32);
+        g.lineTo(c.x + 43, c.y - 18);
+        g.lineTo(c.x, c.y - 4);
+        g.lineTo(c.x - 43, c.y - 18);
         g.closePath();
         g.endFill();
         // front face
         g.beginFill(COL.deskTop);
-        g.moveTo(c.x, c.y - 2);
-        g.lineTo(c.x + 24, c.y - 10);
-        g.lineTo(c.x + 24, c.y + 4);
-        g.lineTo(c.x, c.y + 12);
+        g.moveTo(c.x, c.y - 4);
+        g.lineTo(c.x + 43, c.y - 18);
+        g.lineTo(c.x + 43, c.y + 10);
+        g.lineTo(c.x, c.y + 18);
         g.closePath();
         g.endFill();
         // side face
         g.beginFill(COL.deskSide);
-        g.moveTo(c.x, c.y - 2);
-        g.lineTo(c.x - 24, c.y - 10);
-        g.lineTo(c.x - 24, c.y + 4);
-        g.lineTo(c.x, c.y + 12);
-        g.closePath();
-        g.endFill();
-        // front panel (modesty panel below desktop)
-        g.beginFill(0x7A6A4A);
-        g.moveTo(c.x - 20, c.y - 8);
-        g.lineTo(c.x + 20, c.y - 8);
-        g.lineTo(c.x + 20, c.y + 6);
-        g.lineTo(c.x - 20, c.y + 6);
+        g.moveTo(c.x, c.y - 4);
+        g.lineTo(c.x - 43, c.y - 18);
+        g.lineTo(c.x - 43, c.y + 10);
+        g.lineTo(c.x, c.y + 18);
         g.closePath();
         g.endFill();
 
-        // monitor
+        // monitor — sits on desk surface (back edge at c.y - 32)
+        const monY = c.y - 32;
         g.beginFill(COL.monFrame);
-        g.drawRoundedRect(c.x - 11, c.y - 34, 22, 16, 2);
+        g.drawRoundedRect(c.x - 16, monY - 24, 33, 24, 3);
         g.endFill();
         g.beginFill(COL.monitor);
-        g.drawRect(c.x - 9, c.y - 32, 18, 12);
+        g.drawRect(c.x - 14, monY - 21, 27, 18);
         g.endFill();
         // screen glow (different color per desk)
         const glow = new PIXI.Graphics();
         glow.beginFill(screenColor, 0.8);
-        glow.drawRect(c.x - 9, c.y - 32, 18, 12);
+        glow.drawRect(c.x - 14, monY - 21, 27, 18);
         glow.endFill();
         this._screenGlows.push({ gfx: glow, phase: Math.random() * Math.PI * 2 });
         // stand
         g.beginFill(0x4A4A52);
-        g.drawRect(c.x - 2, c.y - 18, 4, 5);
+        g.drawRect(c.x - 3, monY, 6, 5);
         g.endFill();
 
         // desk items per station
         if (stationIdx === 0) {
             // Alex: coffee mug (stressed, lots of coffee)
             g.beginFill(0xE8E0D0);
-            g.drawRoundedRect(c.x + 12, c.y - 18, 5, 6, 1);
+            g.drawRoundedRect(c.x + 20, c.y - 30, 5, 6, 1);
             g.endFill();
             // mug handle
             g.lineStyle(1, 0xE8E0D0, 0.8);
-            g.moveTo(c.x + 17, c.y - 16);
-            g.bezierCurveTo(c.x + 20, c.y - 16, c.x + 20, c.y - 13, c.x + 17, c.y - 13);
+            g.moveTo(c.x + 25, c.y - 28);
+            g.bezierCurveTo(c.x + 28, c.y - 28, c.x + 28, c.y - 25, c.x + 25, c.y - 25);
             g.lineStyle(0);
             // coffee fill
             g.beginFill(0x4A2A10, 0.7);
-            g.drawRect(c.x + 13, c.y - 17, 3, 2);
+            g.drawRect(c.x + 21, c.y - 29, 3, 2);
             g.endFill();
         } else if (stationIdx === 1) {
-            // Sam: water bottle (healthy focused developer)
+            // Sam: water bottle (small detail)
             g.beginFill(0x6AB8FF, 0.6);
-            g.drawRoundedRect(c.x + 13, c.y - 20, 4, 8, 2);
+            g.drawRoundedRect(c.x + 22, c.y - 28, 2, 4, 1);
             g.endFill();
             // bottle cap
             g.beginFill(0x4A8ACC);
-            g.drawRect(c.x + 14, c.y - 21, 2, 2);
+            g.drawRect(c.x + 22, c.y - 29, 2, 1);
             g.endFill();
         }
         // stationIdx === 2 (Mia): nothing — just her head resting on desk
         // stationIdx === 3 (empty): nothing
 
-        // chair (in front of desk — positive gy direction)
-        const chairC = this._tileCenter(gx, gy + 1);
+        // Front panel (modesty panel — hides NPC legs) — stored separately
+        // Added AFTER NPC in _spawnNPCs for correct z-order
+        const panelG = new PIXI.Graphics();
+        panelG.beginFill(0x7A6A4A);
+        panelG.moveTo(c.x - 36, c.y - 14);
+        panelG.lineTo(c.x + 36, c.y - 14);
+        panelG.lineTo(c.x + 36, c.y + 12);
+        panelG.lineTo(c.x - 36, c.y + 12);
+        panelG.closePath();
+        panelG.endFill();
+        this._deskFrontPanels.push(panelG);
+
+        // chair (at desk center, pixel offset toward camera)
         const chairG = new PIXI.Graphics();
         chairG.beginFill(COL.chair);
-        chairG.drawRoundedRect(chairC.x - 7, chairC.y - 6, 14, 5, 2);
+        chairG.drawRoundedRect(c.x - 10, c.y + 4, 20, 6, 2);
         chairG.endFill();
         chairG.beginFill(COL.chairSeat);
-        chairG.drawEllipse(chairC.x, chairC.y - 6, 8, 4);
+        chairG.drawEllipse(c.x, c.y + 6, 12, 6);
         chairG.endFill();
         chairG.beginFill(COL.chair);
-        chairG.drawRoundedRect(chairC.x - 6, chairC.y - 12, 12, 5, 2);
+        chairG.drawRoundedRect(c.x - 9, c.y - 2, 18, 6, 2);
         chairG.endFill();
 
         this._container.addChild(chairG);
@@ -570,49 +572,6 @@ export class CoworkScene {
         this._container.addChild(glow);
     }
 
-    _drawDivider(gx1, gy1, gx2, gy2) {
-        const p1 = this._tileCenter(gx1, gy1);
-        const p2 = this._tileCenter(gx2, gy2);
-        const g = new PIXI.Graphics();
-        const dx = p2.x - p1.x, dy = p2.y - p1.y;
-        const len = Math.sqrt(dx * dx + dy * dy);
-        const nx = -dy / len * 2, ny = dx / len * 2; // 2px wide
-
-        // main panel face
-        g.beginFill(0xC8C0B4, 0.4);
-        g.moveTo(p1.x + nx, p1.y + ny - 28);
-        g.lineTo(p2.x + nx, p2.y + ny - 28);
-        g.lineTo(p2.x - nx, p2.y - ny - 28);
-        g.lineTo(p1.x - nx, p1.y - ny - 28);
-        g.closePath();
-        g.endFill();
-        // top highlight edge
-        g.lineStyle(1, 0xD8D0C8, 0.5);
-        g.moveTo(p1.x + nx, p1.y + ny - 28);
-        g.lineTo(p2.x + nx, p2.y + ny - 28);
-        g.lineStyle(0);
-        // bottom edge (gives depth)
-        g.beginFill(0xC8C0B4, 0.25);
-        g.moveTo(p1.x - nx, p1.y - ny - 28);
-        g.lineTo(p2.x - nx, p2.y - ny - 28);
-        g.lineTo(p2.x - nx, p2.y - ny);
-        g.lineTo(p1.x - nx, p1.y - ny);
-        g.closePath();
-        g.endFill();
-
-        // pinned items on dividers (tiny colored squares — photos/notes)
-        const pinColors = [0xFFD66B, 0x9BDFFF, 0xFF9A8C, 0x6AD89A];
-        for (let i = 0; i < 2; i++) {
-            const t = 0.2 + i * 0.55; // position along the divider
-            const px = p1.x + dx * t;
-            const py = p1.y + dy * t - 20 - i * 6;
-            g.beginFill(pinColors[(gx1 + i) % pinColors.length], 0.6);
-            g.drawRect(px - 2, py - 2, 4, 4);
-            g.endFill();
-        }
-
-        this._container.addChild(g);
-    }
 
     _drawWaterCooler() {
         const c = this._tileCenter(11, 1);
@@ -635,15 +594,21 @@ export class CoworkScene {
     _drawDoor() {
         const c = this._tileCenter(6, 11);
         const g = new PIXI.Graphics();
-        g.beginFill(0x6B5B3E);
-        g.drawRect(c.x - 8, c.y - 30, 16, 30);
+        // door frame (darker wood)
+        g.beginFill(0x5A4A30);
+        g.drawRoundedRect(c.x - 12, c.y - 39, 24, 39, 2);
         g.endFill();
-        g.beginFill(COL.warm, 0.6);
-        g.drawCircle(c.x + 4, c.y - 12, 1.5);
+        // door panel
+        g.beginFill(0x6B5B3E);
+        g.drawRect(c.x - 10, c.y - 35, 20, 35);
+        g.endFill();
+        // amber handle
+        g.beginFill(0xD4A840);
+        g.drawCircle(c.x + 6, c.y - 15, 2.5);
         g.endFill();
         this._container.addChild(g);
 
-        // ESC hint near door
+        // ESC hint above door
         const hint = new PIXI.Text('Press ESC to leave', {
             fontFamily: "'Fredoka', sans-serif",
             fontSize: 9,
@@ -651,9 +616,9 @@ export class CoworkScene {
             fontWeight: '400',
         });
         hint.alpha = 0.4;
-        hint.anchor.set(0.5, 0);
+        hint.anchor.set(0.5, 1);
         hint.x = c.x;
-        hint.y = c.y + 4;
+        hint.y = c.y - 40;
         this._container.addChild(hint);
     }
 
@@ -681,15 +646,15 @@ export class CoworkScene {
 
     _spawnNPCs() {
         for (const def of NPCS) {
-            // NPC sits at the chair position (1 tile in front of desk)
-            const chairPos = this._tileCenter(def.gx, def.gy + 1);
+            // NPC sits behind desk (between desk and wall)
+            const chairPos = this._tileCenter(def.gx, def.gy);
             const deskPos = this._tileCenter(def.gx, def.gy);
             const npcGroup = new PIXI.Container();
             npcGroup.zIndex = chairPos.y + 100;
 
             const charContainer = new PIXI.Container();
             charContainer.x = chairPos.x;
-            charContainer.y = chairPos.y - 12;
+            charContainer.y = chairPos.y - 5;
 
             // shadow
             const shadow = new PIXI.Graphics();
@@ -815,10 +780,16 @@ export class CoworkScene {
 
             npcGroup.addChild(charContainer);
 
-            // mini ghost — to the RIGHT of the NPC, offset +30px
+            // Add desk front panel AFTER NPC (covers legs for sitting illusion)
+            const panelIdx = NPCS.indexOf(def);
+            if (panelIdx >= 0 && this._deskFrontPanels && this._deskFrontPanels[panelIdx]) {
+                npcGroup.addChild(this._deskFrontPanels[panelIdx]);
+            }
+
+            // mini ghost — to the RIGHT and ABOVE the NPC
             const ghostContainer = new PIXI.Container();
             ghostContainer.x = chairPos.x + 30;
-            const ghostBaseY = chairPos.y - 46;
+            const ghostBaseY = chairPos.y - 65;
             ghostContainer.y = ghostBaseY;
 
             const ghostGfx = new PIXI.Graphics();
@@ -826,10 +797,10 @@ export class CoworkScene {
             ghostContainer.addChild(ghostGfx);
             npcGroup.addChild(ghostContainer);
 
-            // biometric badge above ghost
+            // biometric badge above NPC character
             const badge = this._createBadge(def);
-            badge.x = chairPos.x + 30;
-            badge.y = ghostBaseY - 28;
+            badge.x = chairPos.x;
+            badge.y = chairPos.y - 5 - 62;
             npcGroup.addChild(badge);
 
             this._container.addChild(npcGroup);
@@ -893,6 +864,7 @@ export class CoworkScene {
                 ghostContainer,
                 ghostBaseY,
                 badge,
+                badgeBaseY: chairPos.y - 5 - 62,
                 tick: Math.random() * 300,
                 sweatDrops,
                 sparkles,
@@ -995,10 +967,10 @@ export class CoworkScene {
 
         const bg = new PIXI.Graphics();
         bg.beginFill(0x2A2420, 0.85);
-        bg.drawRoundedRect(-54, -9, 108, 18, 6);
+        bg.drawRoundedRect(-70, -9, 140, 18, 6);
         bg.endFill();
         bg.lineStyle(1, STATE_COLORS[def.state], 0.2);
-        bg.drawRoundedRect(-54, -9, 108, 18, 6);
+        bg.drawRoundedRect(-70, -9, 140, 18, 6);
         container.addChild(bg);
 
         const text = new PIXI.Text(

@@ -352,6 +352,20 @@ async function startGame(enableDemo = false) {
         }
     });
 
+    // Plant growth from backend
+    socket.on('plant_update', (data) => {
+        if (data.delta > 0 && furniture) {
+            furniture.onInterventionAccepted();
+        }
+    });
+
+    // Sleep mode from backend (BLE disconnect / very low HR)
+    socket.on('sleep_mode', (data) => {
+        if (ghost) {
+            ghost.setSleepMode(data.active);
+        }
+    });
+
     // keyboard
     document.addEventListener('keydown', (e) => {
         // 1-5: change mock biometric state (disabled when WHOOP BLE is streaming live data)

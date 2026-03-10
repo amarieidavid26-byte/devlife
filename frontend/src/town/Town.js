@@ -577,14 +577,14 @@ export class Town {
         const labelPos = this._gridToScreen(startX + w / 2, startY + h / 2);
         const text = new PIXI.Text(label, {
             fontFamily: "'Fredoka', sans-serif",
-            fontSize: 12,
+            fontSize: 16,
             fill: COL.labelFill,
             fontWeight: '600',
         });
-        text.alpha = 0.7;
-        text.anchor.set(0.5, 0.5);
+        text.alpha = 0.85;
+        text.anchor.set(0.5, 1);
         text.x = labelPos.x;
-        text.y = labelPos.y - WALL_H - 14;
+        text.y = labelPos.y - WALL_H - 18;
         this._labelContainer.addChild(text);
     }
 
@@ -698,24 +698,24 @@ export class Town {
         const midY = (topRight.y + bottomRight.y) / 2 - WALL_H * 0.6;
 
         const icon = new PIXI.Graphics();
-        // Cup body — warm cream
+        // Cup body — warm cream (1.5x)
         icon.beginFill(0xF5F0E8, 0.7);
-        icon.drawRect(midX - 5, midY, 10, 10);
+        icon.drawRect(midX - 7.5, midY, 15, 15);
         icon.endFill();
         // Handle
-        icon.lineStyle(1.5, 0xF5F0E8, 0.7);
-        icon.arc(midX + 5, midY + 5, 4, -Math.PI / 2, Math.PI / 2, false);
+        icon.lineStyle(2, 0xF5F0E8, 0.7);
+        icon.arc(midX + 7.5, midY + 7.5, 6, -Math.PI / 2, Math.PI / 2, false);
         // Coffee fill
         icon.lineStyle(0);
         icon.beginFill(0x6B4226, 0.5);
-        icon.drawRect(midX - 4, midY + 2, 8, 6);
+        icon.drawRect(midX - 6, midY + 3, 12, 9);
         icon.endFill();
         // Steam wisps — warm moccasin
-        icon.lineStyle(1, COL.lampGlow, 0.35);
-        icon.moveTo(midX - 2, midY);
-        icon.quadraticCurveTo(midX - 3, midY - 6, midX - 1, midY - 8);
-        icon.moveTo(midX + 2, midY);
-        icon.quadraticCurveTo(midX + 1, midY - 5, midX + 3, midY - 9);
+        icon.lineStyle(1.5, COL.lampGlow, 0.35);
+        icon.moveTo(midX - 3, midY);
+        icon.quadraticCurveTo(midX - 4.5, midY - 9, midX - 1.5, midY - 12);
+        icon.moveTo(midX + 3, midY);
+        icon.quadraticCurveTo(midX + 1.5, midY - 7.5, midX + 4.5, midY - 13.5);
 
         this._buildingContainer.addChild(icon);
     }
@@ -728,24 +728,24 @@ export class Town {
         const midY = (bottomLeft.y + bottomRight.y) / 2 - WALL_H * 0.6;
 
         const icon = new PIXI.Graphics();
-        // Monitor frame — warm white
-        icon.lineStyle(1.5, 0xF5F0E8, 0.6);
-        icon.drawRect(midX - 8, midY - 5, 16, 11);
+        // Monitor frame — warm white (2x size)
+        icon.lineStyle(2.5, 0xF5F0E8, 0.6);
+        icon.drawRect(midX - 16, midY - 10, 32, 22);
         // Screen fill — dark with warm tint
         icon.lineStyle(0);
         icon.beginFill(0x1a2030, 0.7);
-        icon.drawRect(midX - 6, midY - 3, 12, 7);
+        icon.drawRect(midX - 12, midY - 6, 24, 14);
         icon.endFill();
         // Stand
-        icon.lineStyle(1.5, 0xF5F0E8, 0.6);
-        icon.moveTo(midX, midY + 6);
-        icon.lineTo(midX, midY + 9);
-        icon.moveTo(midX - 4, midY + 9);
-        icon.lineTo(midX + 4, midY + 9);
+        icon.lineStyle(2.5, 0xF5F0E8, 0.6);
+        icon.moveTo(midX, midY + 12);
+        icon.lineTo(midX, midY + 18);
+        icon.moveTo(midX - 8, midY + 18);
+        icon.lineTo(midX + 8, midY + 18);
         // Screen glow dot — warm moccasin
         icon.lineStyle(0);
         icon.beginFill(COL.lampGlow, 0.5);
-        icon.drawCircle(midX, midY, 1);
+        icon.drawCircle(midX, midY, 2);
         icon.endFill();
 
         this._buildingContainer.addChild(icon);
@@ -790,7 +790,7 @@ export class Town {
     }
 
     // ─────────────────────────────────────────────
-    //  Street decorations — hydrant, trash bin, bike rack
+    //  Street decorations — hydrant, trash bin
     // ─────────────────────────────────────────────
 
     _drawStreetDecorations() {
@@ -835,30 +835,6 @@ export class Town {
         bg.endFill();
         this._detailContainer.addChild(bg);
 
-        // Bike rack near COWORK (~grid 2.5, 13)
-        const rackPos = this._gridToScreen(2.5, 13);
-        const rg = new PIXI.Graphics();
-        const rx = rackPos.x, ry = rackPos.y;
-        // Rack frame — inverted U shape
-        rg.lineStyle(1.5, 0x8A8A90, 0.7);
-        rg.moveTo(rx - 6, ry);
-        rg.lineTo(rx - 6, ry - 10);
-        rg.arc(rx, ry - 10, 6, Math.PI, 0, false);
-        rg.lineTo(rx + 6, ry);
-        rg.lineStyle(0);
-        // Simple bike: two wheels + frame
-        rg.lineStyle(1, 0x6A6A70, 0.5);
-        rg.drawCircle(rx - 3, ry - 2, 3);  // back wheel
-        rg.drawCircle(rx + 5, ry - 2, 3);  // front wheel
-        // Frame: triangle connecting wheels
-        rg.moveTo(rx - 3, ry - 2);
-        rg.lineTo(rx + 1, ry - 7);
-        rg.lineTo(rx + 5, ry - 2);
-        // Handlebars
-        rg.moveTo(rx + 1, ry - 7);
-        rg.lineTo(rx + 5, ry - 6);
-        rg.lineStyle(0);
-        this._detailContainer.addChild(rg);
     }
 
     // ─────────────────────────────────────────────
@@ -927,14 +903,14 @@ export class Town {
     }
 
     _drawFlowerPatches() {
-        // Near HOME
+        // Near HOME (on grass, not on buildings)
         this._drawFlowerPatch(2.5, 3);
         this._drawFlowerPatch(7.5, 7);
-        // Near CAFE
-        this._drawFlowerPatch(18.5, 3.5);
-        this._drawFlowerPatch(14, 7.5);
-        // Near COWORK
-        this._drawFlowerPatch(2.5, 14.5);
+        // Near CAFE (on grass only)
+        this._drawFlowerPatch(18.5, 8.5);
+        this._drawFlowerPatch(13.5, 8);
+        // Near COWORK (on grass only)
+        this._drawFlowerPatch(2.5, 13);
     }
 
     _drawMailbox() {
@@ -967,9 +943,9 @@ export class Town {
     _drawPark(startX, startY, w, h) {
         // ── Three well-spaced trees across the 4x4 park ──
         const treePositions = [
-            [14.8, 14.8],  // back-left corner
-            [17.2, 15.2],  // right side
-            [15.5, 17.5],  // front-left
+            [14.5, 15],   // left side
+            [17.5, 15],   // right side
+            [16, 17.5],   // back center
         ];
 
         for (const [tx, ty] of treePositions) {
@@ -978,39 +954,39 @@ export class Town {
 
             // Shadow
             tree.beginFill(0x3C2A1A, 0.08);
-            tree.drawEllipse(x, y, 20, 10);
+            tree.drawEllipse(x, y, 28, 14);
             tree.endFill();
 
-            // Trunk (6px wide, 18px tall) with side shading
+            // Trunk (8x24)
             tree.beginFill(0x7A5C30);
-            tree.drawRect(x - 3, y - 18, 6, 18);
+            tree.drawRect(x - 4, y - 24, 8, 24);
             tree.endFill();
             tree.beginFill(0x6B4E28, 0.5);
-            tree.drawRect(x + 1, y - 18, 2, 18);
+            tree.drawRect(x + 1, y - 24, 2.5, 24);
             tree.endFill();
 
-            // Canopy — one large circle
+            // Canopy (r=22)
             tree.beginFill(COL.canopy, 0.9);
-            tree.drawCircle(x, y - 28, 16);
+            tree.drawCircle(x, y - 38, 22);
             tree.endFill();
 
-            // Highlight circle on top-right
+            // Highlight
             tree.beginFill(0x6DC86E, 0.5);
-            tree.drawCircle(x + 4, y - 34, 10);
+            tree.drawCircle(x + 5, y - 45, 15);
             tree.endFill();
 
             this._detailContainer.addChild(tree);
             this._trees.push(tree);
         }
 
-        // ── Flower bed — diagonal arc across the park ──
+        // ── Flower bed — wide arc across the park ──
         const flowerColors = [0xFF9A8C, 0xFFD66B, 0xFF9A8C, 0x9BDFFF, 0xFFD66B, 0xFFB5E8];
         const flowers = new PIXI.Graphics();
         for (let i = 0; i < 6; i++) {
-            // Scatter along a diagonal from (14.5, 16) to (17, 17)
+            // Scatter in a wide arc across the full park area
             const t = i / 5;
-            const fgx = 14.5 + t * 2.5;
-            const fgy = 16.0 + t * 1.0;
+            const fgx = 14.5 + t * 3.0;
+            const fgy = 16 + Math.sin(t * Math.PI) * 1.5;
             const fp = this._gridToScreen(fgx, fgy);
             const fx = fp.x;
             const fy = fp.y + TILE_HEIGHT / 2;
@@ -1018,35 +994,35 @@ export class Town {
             // Stem
             flowers.lineStyle(1, 0x4A8A4C, 0.7);
             flowers.moveTo(fx, fy);
-            flowers.lineTo(fx, fy - 5);
+            flowers.lineTo(fx, fy - 7);
             flowers.lineStyle(0);
 
             // Single colored circle
             flowers.beginFill(flowerColors[i], 0.8);
-            flowers.drawCircle(fx, fy - 5, 3);
+            flowers.drawCircle(fx, fy - 7, 4);
             flowers.endFill();
 
             // Yellow center
             flowers.beginFill(0xFFD66B, 0.9);
-            flowers.drawCircle(fx, fy - 5, 1);
+            flowers.drawCircle(fx, fy - 7, 1.5);
             flowers.endFill();
         }
         this._detailContainer.addChild(flowers);
 
         // ── Bench — clean and simple ──
-        const benchPos = this._gridToScreen(16.5, 16.5);
+        const benchPos = this._gridToScreen(16, 15.8);
         const bench = new PIXI.Graphics();
         const bx = benchPos.x;
         const by = benchPos.y;
 
         // Legs
         bench.beginFill(COL.trunk);
-        bench.drawRect(bx - 11, by + 2, 3, 8);
-        bench.drawRect(bx + 8, by - 2, 3, 8);
+        bench.drawRect(bx - 14, by + 2, 4, 10);
+        bench.drawRect(bx + 10, by - 2, 4, 10);
         bench.endFill();
 
         // Seat (isometric slant)
-        const bw = 24, bh = 6;
+        const bw = 30, bh = 8;
         const bSlant = (TILE_HEIGHT / TILE_WIDTH) * (bw / 2);
         bench.beginFill(COL.bench);
         bench.moveTo(bx - bw / 2, by + bSlant);
@@ -1068,28 +1044,28 @@ export class Town {
         this._detailContainer.addChild(bench);
 
         // ── Park sign — at path entrance ──
-        const signPos = this._gridToScreen(16, 14.5);
+        const signPos = this._gridToScreen(15.5, 14.3);
         const sign = new PIXI.Graphics();
         // Post
         sign.beginFill(0x6B5B3E);
-        sign.drawRect(signPos.x - 1, signPos.y - 12, 2, 12);
+        sign.drawRect(signPos.x - 1.5, signPos.y - 18, 3, 18);
         sign.endFill();
         // Sign board
         sign.beginFill(COL.bench);
-        sign.drawRoundedRect(signPos.x - 15, signPos.y - 22, 30, 12, 2);
+        sign.drawRoundedRect(signPos.x - 20, signPos.y - 32, 40, 16, 3);
         sign.endFill();
         this._detailContainer.addChild(sign);
         // Sign text
         const signText = new PIXI.Text('PARK', {
             fontFamily: "'Fredoka', sans-serif",
-            fontSize: 8,
+            fontSize: 10,
             fill: COL.labelFill,
             fontWeight: '600',
         });
         signText.alpha = 0.85;
         signText.anchor.set(0.5, 0.5);
         signText.x = signPos.x;
-        signText.y = signPos.y - 16;
+        signText.y = signPos.y - 24;
         this._labelContainer.addChild(signText);
     }
 
@@ -1227,10 +1203,10 @@ export class Town {
             { gx: 7,    gy: 5,    name: 'home' },
             { gx: 16,   gy: 7,    name: 'cafe' },
             { gx: 7,    gy: 16,   name: 'cowork' },
-            { gx: 16.5, gy: 16.5, name: 'bench' },
-            { gx: 14.8, gy: 14.8, name: 'tree' },
-            { gx: 17.2, gy: 15.2, name: 'tree' },
-            { gx: 15.5, gy: 17.5, name: 'tree' },
+            { gx: 16, gy: 16, name: 'bench' },
+            { gx: 14.5, gy: 14.5, name: 'tree' },
+            { gx: 17.5, gy: 14.5, name: 'tree' },
+            { gx: 14.5, gy: 17.5, name: 'tree' },
         ];
         for (const door of doors) {
             const iso = cartToIso(door.gx, door.gy);
@@ -1243,7 +1219,7 @@ export class Town {
 
     _isNearBench() {
         if (!this._player) return false;
-        const iso = cartToIso(16.5, 16.5);
+        const iso = cartToIso(16, 15.8);
         const dx = this._player.container.x - iso.x;
         const dy = this._player.container.y - iso.y;
         return (dx * dx + dy * dy) < 80 * 80;
@@ -1251,7 +1227,7 @@ export class Town {
 
     _getNearbyTree() {
         if (!this._player) return false;
-        const treePositions = [[14.8, 14.8], [17.2, 15.2], [15.5, 17.5]];
+        const treePositions = [[14.5, 15], [17.5, 15], [16, 17.5]];
         for (const [tx, ty] of treePositions) {
             const iso = cartToIso(tx, ty);
             const dx = this._player.container.x - iso.x;
