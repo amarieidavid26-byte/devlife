@@ -62,6 +62,18 @@ export class Room {
                 tile.moveTo(x - TILE_WIDTH / 4, y + TILE_HEIGHT / 2);
                 tile.lineTo(x + TILE_WIDTH / 4, y + TILE_HEIGHT / 2);
 
+                // Extra wood grain lines — thin diagonal parallels
+                tile.lineStyle(0.5, 0x7A6040, 0.08);
+                // line 1 — upper-left to lower-right bias
+                tile.moveTo(x - TILE_WIDTH * 0.3, y + TILE_HEIGHT * 0.3);
+                tile.lineTo(x + TILE_WIDTH * 0.1,  y + TILE_HEIGHT * 0.7);
+                // line 2 — parallel, offset
+                tile.moveTo(x - TILE_WIDTH * 0.15, y + TILE_HEIGHT * 0.25);
+                tile.lineTo(x + TILE_WIDTH * 0.25, y + TILE_HEIGHT * 0.65);
+                // line 3 — shorter accent
+                tile.moveTo(x - TILE_WIDTH * 0.05, y + TILE_HEIGHT * 0.35);
+                tile.lineTo(x + TILE_WIDTH * 0.15, y + TILE_HEIGHT * 0.55);
+
                 // Soft tile border
                 tile.lineStyle(0.5, 0x5C4E38, 0.25);
                 tile.moveTo(x, y);
@@ -104,10 +116,31 @@ export class Room {
             panel.closePath();
             panel.endFill();
 
+            // Baseboard shadow line above
+            panel.lineStyle(1, 0x5A4A30, 0.08);
+            panel.moveTo(x,                  y - baseH);
+            panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH);
+            // Baseboard highlight below top edge
+            panel.lineStyle(1, 0xB09A7A, 0.1);
+            panel.moveTo(x,                  y - baseH + 1);
+            panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH + 1);
+
             // Chair-rail groove at 30% — medium wood
             panel.lineStyle(1.2, COL.chairRail, 0.5);
             panel.moveTo(x,                  y - railY);
             panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - railY);
+
+            // Plaster texture — faint scattered dots
+            panel.lineStyle(0);
+            panel.beginFill(0xC4B598, 0.05);
+            const lOff = TILE_WIDTH / 2;
+            for (let d = 0; d < 9; d++) {
+                const dx = -(Math.random() * lOff * 0.9);
+                const dy = -(Math.random() * (wallH - baseH - 10)) - baseH;
+                const frac = -dx / lOff; // 0..1 across face
+                panel.drawCircle(x + dx, y + dy + frac * (TILE_HEIGHT / 2), 0.8);
+            }
+            panel.endFill();
 
             // Vertical edge highlight
             panel.lineStyle(1, COL.wallEdge, 0.5);
@@ -138,6 +171,27 @@ export class Room {
             panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH);
             panel.lineTo(x,                  y - baseH);
             panel.closePath();
+            panel.endFill();
+
+            // Baseboard shadow line above
+            panel.lineStyle(1, 0x5A4A30, 0.08);
+            panel.moveTo(x,                  y - baseH);
+            panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH);
+            // Baseboard highlight below top edge
+            panel.lineStyle(1, 0xB09A7A, 0.1);
+            panel.moveTo(x,                  y - baseH + 1);
+            panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH + 1);
+
+            // Plaster texture — faint scattered dots
+            panel.lineStyle(0);
+            panel.beginFill(0xC4B598, 0.05);
+            const rOff = TILE_WIDTH / 2;
+            for (let d = 0; d < 9; d++) {
+                const dx = Math.random() * rOff * 0.9;
+                const dy = -(Math.random() * (wallH - baseH - 10)) - baseH;
+                const frac = dx / rOff;
+                panel.drawCircle(x + dx, y + dy + frac * (TILE_HEIGHT / 2), 0.8);
+            }
             panel.endFill();
 
             // Vertical edge highlight
@@ -193,6 +247,32 @@ export class Room {
         win.drawCircle(winX + 4, winTop + winH2 * 0.22, 0.7);
         win.drawCircle(winX + winW / 2 - 3, winTop + winH2 * 0.45, 0.6);
         win.endFill();
+        // Curtain rod — thin line across top of window
+        win.lineStyle(1.5, 0x8B7348, 0.9);
+        const rodExtend = 4;
+        win.moveTo(winX - rodExtend * 0.1, winTop - 3);
+        win.lineTo(winX + winW / 2 + rodExtend, winTop + TILE_HEIGHT * 0.35 - 3 + rodExtend * 0.5);
+
+        // Left curtain — thin rectangle on left side
+        win.beginFill(0xB0A090, 0.7);
+        win.moveTo(winX, winTop);
+        win.lineTo(winX + 4 * 0.5, winTop + 4 * 0.25); // skewed 4px wide
+        win.lineTo(winX + 4 * 0.5, winTop + winH2 + 4 * 0.25);
+        win.lineTo(winX, winTop + winH2);
+        win.closePath();
+        win.endFill();
+
+        // Right curtain — thin rectangle on right side
+        win.beginFill(0xB0A090, 0.65);
+        const rcX = winX + winW / 2;
+        const rcOff = TILE_HEIGHT * 0.35;
+        win.moveTo(rcX - 4 * 0.5, winTop + rcOff - 4 * 0.25);
+        win.lineTo(rcX, winTop + rcOff);
+        win.lineTo(rcX, winTop + rcOff + winH2);
+        win.lineTo(rcX - 4 * 0.5, winTop + rcOff + winH2 - 4 * 0.25);
+        win.closePath();
+        win.endFill();
+
         this.wallContainer.addChild(win);
 
         // corner
@@ -202,6 +282,46 @@ export class Room {
         corner.moveTo(cx, cy - wallH);
         corner.lineTo(cx, cy);
         this.wallContainer.addChild(corner);
+
+        // Ceiling light fixture — small circle where walls meet ceiling
+        const lightFixture = new PIXI.Graphics();
+        const { x: lx, y: ly } = this.gridToScreen(3, 0);
+        const lightCx = lx + TILE_WIDTH / 4;
+        const lightCy = ly - wallH * 0.95;
+        lightFixture.beginFill(0xF5F0E8, 0.15);
+        lightFixture.drawCircle(lightCx, lightCy, 10);
+        lightFixture.endFill();
+        // inner bright spot
+        lightFixture.beginFill(0xFFF8EE, 0.12);
+        lightFixture.drawCircle(lightCx, lightCy, 5);
+        lightFixture.endFill();
+        this.wallContainer.addChild(lightFixture);
+
+        // Light cone on floor — very subtle trapezoid glow
+        const lightCone = new PIXI.Graphics();
+        const { x: flx, y: fly } = this.gridToScreen(3, 3);
+        lightCone.beginFill(0xFFE4B5, 0.02);
+        lightCone.moveTo(flx - TILE_WIDTH * 0.8, fly + TILE_HEIGHT * 0.5);
+        lightCone.lineTo(flx + TILE_WIDTH * 0.8, fly + TILE_HEIGHT * 0.5);
+        lightCone.lineTo(flx + TILE_WIDTH * 0.4, fly - TILE_HEIGHT * 0.3);
+        lightCone.lineTo(flx - TILE_WIDTH * 0.4, fly - TILE_HEIGHT * 0.3);
+        lightCone.closePath();
+        lightCone.endFill();
+        this.floorContainer.addChild(lightCone);
+
+        // Door mat — small rounded rect near the exit (bottom-right corner of floor)
+        const mat = new PIXI.Graphics();
+        const { x: mx, y: my } = this.gridToScreen(GRID_SIZE - 1, GRID_SIZE - 1);
+        mat.beginFill(0x8B6B3A, 0.6);
+        // isometric mat — small diamond shape
+        const mw = 15, mh = 8;
+        mat.moveTo(mx, my + TILE_HEIGHT / 2 - mh);
+        mat.lineTo(mx + mw / 2, my + TILE_HEIGHT / 2 - mh / 2);
+        mat.lineTo(mx, my + TILE_HEIGHT / 2);
+        mat.lineTo(mx - mw / 2, my + TILE_HEIGHT / 2 - mh / 2);
+        mat.closePath();
+        mat.endFill();
+        this.floorContainer.addChild(mat);
     }
 
     _drawClock() {

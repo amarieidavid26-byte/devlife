@@ -38,6 +38,15 @@ const COL = {
     labelFill: 0xF5F0E8, // warm white
 };
 
+// Simple seeded random for deterministic tile decoration
+function seededRand(gx, gy, salt = 0) {
+    let h = (gx * 374761 + gy * 668265 + salt * 982451) | 0;
+    h = ((h >> 16) ^ h) * 0x45d9f3b | 0;
+    h = ((h >> 16) ^ h) * 0x45d9f3b | 0;
+    h = (h >> 16) ^ h;
+    return (h & 0x7fffffff) / 0x7fffffff;
+}
+
 // Which tiles are path (cross shape through center)
 function isPath(gx, gy) {
     // Horizontal arm: rows 9-10 across entire width
@@ -68,6 +77,7 @@ export class Town {
         this._meditationOverlay = null;
         this._meditationActive = false;
         this._treeQuoteIndex = 0;
+        this._twinkleStars = [];
 
         this.onEnterHome = null;
         this.onEnterCafe = null;
@@ -112,6 +122,9 @@ export class Town {
         this._drawCoworkIcon(3, 14, 4, 4);
         this._drawPark(14, 14, 4, 4);
         this._drawStreetLamps();
+        this._drawCrosswalks();
+        this._drawStreetDecorations();
+        this._drawStars();
         this._drawFlowerPatches();
         this._drawMailbox();
         this._initParticles();
@@ -224,6 +237,7 @@ export class Town {
         this._particles = [];
         this._trees = [];
         this._lampGlows = [];
+        this._twinkleStars = [];
         this._elapsed = 0;
     }
 
@@ -231,6 +245,7 @@ export class Town {
         this._elapsed += delta;
         this._updateParticles(delta);
         this._updateLampGlow();
+        this._updateStars();
 
         if (this._player) {
             this._player.update(delta);
@@ -325,6 +340,59 @@ export class Town {
                 tile.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
                 tile.closePath();
 
+                // Path cracks and pebbles
+                if (isPath(gx, gy)) {
+                    const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
+                    // Crack lines (2-3 per tile)
+                    const numCracks = 2 + Math.floor(seededRand(gx, gy, 10) * 2);
+                    tile.lineStyle(0.5, 0x7A6A5A, 0.1);
+                    for (let c = 0; c < numCracks; c++) {
+                        const cx1 = x + (seededRand(gx, gy, 20 + c) - 0.5) * hw * 0.7;
+                        const cy1 = y + hh + (seededRand(gx, gy, 30 + c) - 0.5) * hh * 0.6;
+                        const cx2 = cx1 + (seededRand(gx, gy, 40 + c) - 0.5) * 8;
+                        const cy2 = cy1 + (seededRand(gx, gy, 50 + c) - 0.5) * 5;
+                        tile.moveTo(cx1, cy1);
+                        tile.lineTo(cx2, cy2);
+                    }
+                    tile.lineStyle(0);
+                    // Pebble dots (3-4 per tile)
+                    const numPebbles = 3 + Math.floor(seededRand(gx, gy, 60) * 2);
+                    for (let p = 0; p < numPebbles; p++) {
+                        tile.beginFill(0x6A5A4A, 0.15);
+                        const px = x + (seededRand(gx, gy, 70 + p) - 0.5) * hw * 0.7;
+                        const py = y + hh + (seededRand(gx, gy, 80 + p) - 0.5) * hh * 0.5;
+                        tile.drawCircle(px, py, 0.8 + seededRand(gx, gy, 90 + p) * 0.8);
+                        tile.endFill();
+                    }
+                }
+
+                // Grass blades (~20% of grass tiles) and wildflowers (~5%)
+                if (!isPath(gx, gy)) {
+                    const hw = TILE_WIDTH / 2, hh = TILE_HEIGHT / 2;
+                    if (seededRand(gx, gy, 100) < 0.2) {
+                        // 3 grass blade lines
+                        for (let b = 0; b < 3; b++) {
+                            const bx = x + (seededRand(gx, gy, 110 + b) - 0.5) * hw * 0.6;
+                            const by = y + hh + (seededRand(gx, gy, 120 + b) - 0.5) * hh * 0.4;
+                            const bladeH = 2 + seededRand(gx, gy, 130 + b) * 2;
+                            const greenCol = seededRand(gx, gy, 140 + b) > 0.5 ? 0x5BA05C : 0x4A8A48;
+                            tile.lineStyle(0.7, greenCol, 0.3);
+                            tile.moveTo(bx, by);
+                            tile.lineTo(bx + (seededRand(gx, gy, 150 + b) - 0.5) * 2, by - bladeH);
+                        }
+                        tile.lineStyle(0);
+                    }
+                    if (seededRand(gx, gy, 200) < 0.05) {
+                        const warmColors = [0xFF9A8C, 0xFFD66B, 0xFFB5E8, 0x9BDFFF];
+                        const fc = warmColors[Math.floor(seededRand(gx, gy, 210) * warmColors.length)];
+                        const fx = x + (seededRand(gx, gy, 220) - 0.5) * hw * 0.5;
+                        const fy = y + hh + (seededRand(gx, gy, 230) - 0.5) * hh * 0.3;
+                        tile.beginFill(fc, 0.5);
+                        tile.drawCircle(fx, fy, 1.5);
+                        tile.endFill();
+                    }
+                }
+
                 // Stepping stones — lighter accent on every 4th path tile
                 if (isPath(gx, gy) && (gx + gy) % 4 === 0) {
                     tile.lineStyle(0);
@@ -386,6 +454,16 @@ export class Town {
         const topRight    = this._gridToScreen(startX + w - m, startY + m);
         const bottomLeft  = this._gridToScreen(startX + m, startY + h - m);
         const bottomRight = this._gridToScreen(startX + w - m, startY + h - m);
+
+        // ---- Ground shadow ----
+        const shX = 10, shY = 5;
+        g.beginFill(0x3C2A1A, 0.08);
+        g.moveTo(bottomLeft.x + shX, bottomLeft.y + shY);
+        g.lineTo(bottomRight.x + shX, bottomRight.y + shY);
+        g.lineTo(topRight.x + shX, topRight.y + shY);
+        g.lineTo(topLeft.x + shX, topLeft.y + shY);
+        g.closePath();
+        g.endFill();
 
         // ---- Left face (side visible from bottom-left) ----
         g.beginFill(sideCol);
@@ -671,6 +749,147 @@ export class Town {
         icon.endFill();
 
         this._buildingContainer.addChild(icon);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Crosswalks — dashes at building entrances
+    // ─────────────────────────────────────────────
+
+    _drawCrosswalks() {
+        const g = new PIXI.Graphics();
+        // HOME door at grid ~(7, 5) → crosswalk on path approaching from right face
+        // CAFE door at grid ~(16, 7) → crosswalk on path approaching from left face
+        // COWORK door at grid ~(7, 16) → crosswalk on path approaching from right face
+        const crosswalks = [
+            { gx: 8, gy: 5, dir: 'v' },   // HOME — vertical path near door
+            { gx: 16, gy: 8, dir: 'h' },   // CAFE — horizontal path near door
+            { gx: 8, gy: 16, dir: 'v' },   // COWORK — vertical path near door
+        ];
+
+        g.lineStyle(0);
+        for (const cw of crosswalks) {
+            const { x, y } = this._gridToScreen(cw.gx, cw.gy);
+            const hh = TILE_HEIGHT / 2;
+            for (let i = 0; i < 4; i++) {
+                g.beginFill(0xF5F0E8, 0.15);
+                const t = 0.2 + i * 0.2;
+                if (cw.dir === 'v') {
+                    // Dashes along the horizontal axis of the tile
+                    const dx = (t - 0.5) * TILE_WIDTH * 0.6;
+                    const dy = (t - 0.5) * hh * 0.6;
+                    g.drawRect(x + dx - 3, y + hh + dy - 0.5, 6, 1.5);
+                } else {
+                    const dx = (t - 0.5) * TILE_WIDTH * 0.6;
+                    const dy = -(t - 0.5) * hh * 0.6;
+                    g.drawRect(x + dx - 3, y + hh + dy - 0.5, 6, 1.5);
+                }
+                g.endFill();
+            }
+        }
+        this._floorContainer.addChild(g);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Street decorations — hydrant, trash bin, bike rack
+    // ─────────────────────────────────────────────
+
+    _drawStreetDecorations() {
+        // Fire hydrant near path intersection (~grid 8.5, 8.5)
+        const hydrantPos = this._gridToScreen(8.3, 8.3);
+        const hg = new PIXI.Graphics();
+        const hx = hydrantPos.x, hy = hydrantPos.y;
+        // Body
+        hg.beginFill(0xC85A4A);
+        hg.drawRect(hx - 3, hy - 10, 6, 10);
+        hg.endFill();
+        // Cap
+        hg.beginFill(0xA04A3A);
+        hg.drawRect(hx - 4, hy - 12, 8, 3);
+        hg.endFill();
+        // Top knob
+        hg.beginFill(0xC85A4A);
+        hg.drawCircle(hx, hy - 13, 2);
+        hg.endFill();
+        // Side nozzles
+        hg.beginFill(0xA04A3A);
+        hg.drawRect(hx - 5, hy - 7, 2, 2);
+        hg.drawRect(hx + 3, hy - 7, 2, 2);
+        hg.endFill();
+        this._detailContainer.addChild(hg);
+
+        // Trash bin near CAFE (~grid 13.5, 8)
+        const binPos = this._gridToScreen(13.5, 8);
+        const bg = new PIXI.Graphics();
+        const bx = binPos.x, by = binPos.y;
+        // Bin body
+        bg.beginFill(0x5C4E3C);
+        bg.drawRect(bx - 4, by - 12, 8, 12);
+        bg.endFill();
+        // Lid
+        bg.beginFill(0x4A3E2C);
+        bg.drawRect(bx - 5, by - 14, 10, 3);
+        bg.endFill();
+        // Liner peek
+        bg.beginFill(0x2A2A2A, 0.3);
+        bg.drawRect(bx - 3, by - 12, 6, 2);
+        bg.endFill();
+        this._detailContainer.addChild(bg);
+
+        // Bike rack near COWORK (~grid 2.5, 13)
+        const rackPos = this._gridToScreen(2.5, 13);
+        const rg = new PIXI.Graphics();
+        const rx = rackPos.x, ry = rackPos.y;
+        // Rack frame — inverted U shape
+        rg.lineStyle(1.5, 0x8A8A90, 0.7);
+        rg.moveTo(rx - 6, ry);
+        rg.lineTo(rx - 6, ry - 10);
+        rg.arc(rx, ry - 10, 6, Math.PI, 0, false);
+        rg.lineTo(rx + 6, ry);
+        rg.lineStyle(0);
+        // Simple bike: two wheels + frame
+        rg.lineStyle(1, 0x6A6A70, 0.5);
+        rg.drawCircle(rx - 3, ry - 2, 3);  // back wheel
+        rg.drawCircle(rx + 5, ry - 2, 3);  // front wheel
+        // Frame: triangle connecting wheels
+        rg.moveTo(rx - 3, ry - 2);
+        rg.lineTo(rx + 1, ry - 7);
+        rg.lineTo(rx + 5, ry - 2);
+        // Handlebars
+        rg.moveTo(rx + 1, ry - 7);
+        rg.lineTo(rx + 5, ry - 6);
+        rg.lineStyle(0);
+        this._detailContainer.addChild(rg);
+    }
+
+    // ─────────────────────────────────────────────
+    //  Stars — scattered above the town
+    // ─────────────────────────────────────────────
+
+    _drawStars() {
+        this._twinkleStars = [];
+        const vw = window.innerWidth / GAME_ZOOM;
+        // Stars in the upper portion of the viewport
+        for (let i = 0; i < 10; i++) {
+            const star = new PIXI.Graphics();
+            const sx = seededRand(i, 0, 300) * vw;
+            const sy = seededRand(i, 0, 310) * 80 + 10; // top 90px of screen
+            const baseAlpha = 0.15 + seededRand(i, 0, 320) * 0.25;
+            star.beginFill(0xFFFFFF, baseAlpha);
+            star.drawCircle(sx, sy, 1);
+            star.endFill();
+            this._floorContainer.addChild(star);
+            // First 3 stars twinkle
+            if (i < 3) {
+                this._twinkleStars.push({ gfx: star, baseAlpha, phase: seededRand(i, 0, 330) * Math.PI * 2 });
+            }
+        }
+    }
+
+    _updateStars() {
+        const t = this._elapsed * 0.015;
+        for (const s of this._twinkleStars) {
+            s.gfx.alpha = s.baseAlpha * (0.5 + 0.5 * Math.sin(t + s.phase));
+        }
     }
 
     // ─────────────────────────────────────────────

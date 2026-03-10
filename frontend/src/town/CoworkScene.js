@@ -23,8 +23,8 @@ const STATE_HEX = {
 };
 
 const COL = {
-    floorA:    0x8A8A90,
-    floorB:    0x7A7A80,
+    floorA:    0x9A9AA0,
+    floorB:    0x8E8E94,
     wallLeft:  0x7A9AAC,
     wallRight: 0x6A8A9C,
     wallEdge:  0x8ABACC,
@@ -111,6 +111,7 @@ export class CoworkScene {
         this._drawFurniture();
         this._drawWaterCooler();
         this._drawDoor();
+        this._drawCeilingLights();
         this._spawnNPCs();
 
         // player — lives in an offset sub-container so raw cartToIso aligns with _gridToScreen tiles
@@ -259,6 +260,34 @@ export class CoworkScene {
                     npc.head.y = npc.headBaseY;
                 }
             }
+
+            // Alex: sweat drops — appear/disappear every 2 seconds
+            if (npc.sweatDrops) {
+                const sweatCycle = Math.floor(this._elapsed) % 4;
+                for (const drop of npc.sweatDrops) {
+                    drop.visible = sweatCycle < 2;
+                    if (drop.visible) {
+                        drop.y = -38 + Math.sin(this._elapsed * 2) * 2;
+                    }
+                }
+            }
+
+            // Sam: sparkle dots orbiting slowly
+            if (npc.sparkles) {
+                for (const sp of npc.sparkles) {
+                    const a = sp.angle + this._elapsed * 0.5;
+                    sp.gfx.x = Math.cos(a) * sp.radius;
+                    sp.gfx.y = -28 + Math.sin(a) * sp.radius * 0.5;
+                    sp.gfx.alpha = 0.3 + Math.sin(a * 2) * 0.2;
+                }
+            }
+
+            // Mia: Zzz floating and fading
+            if (npc.zzzText) {
+                const zzzCycle = this._elapsed % 3; // 3-second loop
+                npc.zzzText.y = npc.zzzBaseY - zzzCycle * 6;
+                npc.zzzText.alpha = 1 - (zzzCycle / 3);
+            }
         }
 
         // random notification toasts
@@ -296,7 +325,8 @@ export class CoworkScene {
                 tile.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
                 tile.closePath();
                 tile.endFill();
-                tile.lineStyle(0.5, 0x6A6A70, 0.2);
+                // subtle tile grid lines (office carpet tiles)
+                tile.lineStyle(1, 0x7A7A80, 0.1);
                 tile.moveTo(x, y);
                 tile.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
                 tile.lineTo(x, y + TILE_HEIGHT);
@@ -366,26 +396,58 @@ export class CoworkScene {
         const { x, y } = this._gridToScreen(6, 0);
         const g = new PIXI.Graphics();
         const wbW = 80, wbH = 44, wallOff = 68;
+        const bx = x - 20, by = y - wallOff;
 
         g.beginFill(0xF0EDE6);
-        g.drawRoundedRect(x - 20, y - wallOff, wbW, wbH, 3);
+        g.drawRoundedRect(bx, by, wbW, wbH, 3);
         g.endFill();
         g.lineStyle(2, 0x8A8A90);
-        g.drawRoundedRect(x - 20, y - wallOff, wbW, wbH, 3);
-        // header divider
-        g.lineStyle(1, 0x8A8A90, 0.4);
-        g.moveTo(x - 16, y - wallOff + 10);
-        g.lineTo(x - 16 + wbW - 8, y - wallOff + 10);
-        // colored sprint board lines
-        const colors = [0xFF7A6A, 0x6AD89A, 0x6AB8FF, 0xFFB84A, 0x9B6AFF, 0xFF7A6A];
-        for (let i = 0; i < 6; i++) {
-            g.lineStyle(2, colors[i], 0.7);
-            const lx = x - 14 + (i % 3) * 22;
-            const ly = y - wallOff + 16 + Math.floor(i / 3) * 14;
-            g.moveTo(lx, ly);
-            g.lineTo(lx + 12 + (i * 3) % 8, ly);
-        }
+        g.drawRoundedRect(bx, by, wbW, wbH, 3);
+
+        // column dividers
+        const colW = (wbW - 8) / 3;
+        g.lineStyle(0.5, 0x8A8A90, 0.3);
+        g.moveTo(bx + 4 + colW, by + 4);
+        g.lineTo(bx + 4 + colW, by + wbH - 4);
+        g.moveTo(bx + 4 + colW * 2, by + 4);
+        g.lineTo(bx + 4 + colW * 2, by + wbH - 4);
+
         this._container.addChild(g);
+
+        // column headers
+        const headers = ['TODO', 'IN PROG', 'DONE'];
+        for (let i = 0; i < 3; i++) {
+            const ht = new PIXI.Text(headers[i], {
+                fontFamily: "'Fredoka', sans-serif",
+                fontSize: 6,
+                fill: '#6A6A70',
+                fontWeight: '600',
+            });
+            ht.anchor.set(0.5, 0);
+            ht.x = bx + 4 + colW * i + colW / 2;
+            ht.y = by + 3;
+            this._container.addChild(ht);
+        }
+
+        // sticky notes
+        const notes = new PIXI.Graphics();
+        const noteW = 8, noteH = 6;
+        // TODO column: 2 notes (pink, yellow)
+        const todoX = bx + 6;
+        notes.beginFill(0xFF9A8C); notes.drawRect(todoX, by + 13, noteW, noteH); notes.endFill();
+        notes.beginFill(0xFFD66B); notes.drawRect(todoX + 2, by + 22, noteW, noteH); notes.endFill();
+        // IN PROGRESS column: 1 note (blue)
+        const ipX = bx + 4 + colW + 4;
+        notes.beginFill(0x9BDFFF); notes.drawRect(ipX, by + 15, noteW, noteH); notes.endFill();
+        // DONE column: 2 notes (green) with checkmarks
+        const doneX = bx + 4 + colW * 2 + 4;
+        notes.beginFill(0x6AD89A); notes.drawRect(doneX, by + 13, noteW, noteH); notes.endFill();
+        notes.beginFill(0x6AD89A); notes.drawRect(doneX + 2, by + 22, noteW, noteH); notes.endFill();
+        // tiny checkmarks on done notes
+        notes.lineStyle(1, 0x2A6A3A, 0.8);
+        notes.moveTo(doneX + 2, by + 16); notes.lineTo(doneX + 4, by + 18); notes.lineTo(doneX + 7, by + 14);
+        notes.moveTo(doneX + 4, by + 25); notes.lineTo(doneX + 6, by + 27); notes.lineTo(doneX + 9, by + 23);
+        this._container.addChild(notes);
     }
 
     // ── furniture ─────────────────────────────────────────────────────
@@ -399,14 +461,15 @@ export class CoworkScene {
             { gx: 9, gy: 8 },  // empty (player's)
         ];
         this._screenGlows = [];
-        for (const s of stations) this._drawDeskStation(s.gx, s.gy);
+        const screenColors = [0x3A5A2A, 0x2A4A6A, 0x4A3A5A, 0x2A4A5A]; // different app tints per desk
+        for (let i = 0; i < stations.length; i++) this._drawDeskStation(stations[i].gx, stations[i].gy, i, screenColors[i]);
 
         // cubicle dividers — vertical center and horizontal center
         this._drawDivider(6, 1, 6, 11);
         this._drawDivider(1, 6, 11, 6);
     }
 
-    _drawDeskStation(gx, gy) {
+    _drawDeskStation(gx, gy, stationIdx, screenColor) {
         const c = this._tileCenter(gx, gy);
         const g = new PIXI.Graphics();
 
@@ -434,6 +497,14 @@ export class CoworkScene {
         g.lineTo(c.x, c.y + 12);
         g.closePath();
         g.endFill();
+        // front panel (modesty panel below desktop)
+        g.beginFill(0x7A6A4A);
+        g.moveTo(c.x - 20, c.y - 8);
+        g.lineTo(c.x + 20, c.y - 8);
+        g.lineTo(c.x + 20, c.y + 6);
+        g.lineTo(c.x - 20, c.y + 6);
+        g.closePath();
+        g.endFill();
 
         // monitor
         g.beginFill(COL.monFrame);
@@ -442,9 +513,9 @@ export class CoworkScene {
         g.beginFill(COL.monitor);
         g.drawRect(c.x - 9, c.y - 32, 18, 12);
         g.endFill();
-        // screen glow
+        // screen glow (different color per desk)
         const glow = new PIXI.Graphics();
-        glow.beginFill(0x2A4A5A, 0.8);
+        glow.beginFill(screenColor, 0.8);
         glow.drawRect(c.x - 9, c.y - 32, 18, 12);
         glow.endFill();
         this._screenGlows.push({ gfx: glow, phase: Math.random() * Math.PI * 2 });
@@ -452,6 +523,34 @@ export class CoworkScene {
         g.beginFill(0x4A4A52);
         g.drawRect(c.x - 2, c.y - 18, 4, 5);
         g.endFill();
+
+        // desk items per station
+        if (stationIdx === 0) {
+            // Alex: coffee mug (stressed, lots of coffee)
+            g.beginFill(0xE8E0D0);
+            g.drawRoundedRect(c.x + 12, c.y - 18, 5, 6, 1);
+            g.endFill();
+            // mug handle
+            g.lineStyle(1, 0xE8E0D0, 0.8);
+            g.moveTo(c.x + 17, c.y - 16);
+            g.bezierCurveTo(c.x + 20, c.y - 16, c.x + 20, c.y - 13, c.x + 17, c.y - 13);
+            g.lineStyle(0);
+            // coffee fill
+            g.beginFill(0x4A2A10, 0.7);
+            g.drawRect(c.x + 13, c.y - 17, 3, 2);
+            g.endFill();
+        } else if (stationIdx === 1) {
+            // Sam: water bottle (healthy focused developer)
+            g.beginFill(0x6AB8FF, 0.6);
+            g.drawRoundedRect(c.x + 13, c.y - 20, 4, 8, 2);
+            g.endFill();
+            // bottle cap
+            g.beginFill(0x4A8ACC);
+            g.drawRect(c.x + 14, c.y - 21, 2, 2);
+            g.endFill();
+        }
+        // stationIdx === 2 (Mia): nothing — just her head resting on desk
+        // stationIdx === 3 (empty): nothing
 
         // chair (in front of desk — positive gy direction)
         const chairC = this._tileCenter(gx, gy + 1);
@@ -477,23 +576,41 @@ export class CoworkScene {
         const g = new PIXI.Graphics();
         const dx = p2.x - p1.x, dy = p2.y - p1.y;
         const len = Math.sqrt(dx * dx + dy * dy);
-        const nx = -dy / len, ny = dx / len;
-        // panel face
-        g.beginFill(COL.divider, 0.35);
+        const nx = -dy / len * 2, ny = dx / len * 2; // 2px wide
+
+        // main panel face
+        g.beginFill(0xC8C0B4, 0.4);
         g.moveTo(p1.x + nx, p1.y + ny - 28);
         g.lineTo(p2.x + nx, p2.y + ny - 28);
         g.lineTo(p2.x - nx, p2.y - ny - 28);
         g.lineTo(p1.x - nx, p1.y - ny - 28);
         g.closePath();
         g.endFill();
+        // top highlight edge
+        g.lineStyle(1, 0xD8D0C8, 0.5);
+        g.moveTo(p1.x + nx, p1.y + ny - 28);
+        g.lineTo(p2.x + nx, p2.y + ny - 28);
+        g.lineStyle(0);
         // bottom edge (gives depth)
-        g.beginFill(COL.divider, 0.2);
+        g.beginFill(0xC8C0B4, 0.25);
         g.moveTo(p1.x - nx, p1.y - ny - 28);
         g.lineTo(p2.x - nx, p2.y - ny - 28);
         g.lineTo(p2.x - nx, p2.y - ny);
         g.lineTo(p1.x - nx, p1.y - ny);
         g.closePath();
         g.endFill();
+
+        // pinned items on dividers (tiny colored squares — photos/notes)
+        const pinColors = [0xFFD66B, 0x9BDFFF, 0xFF9A8C, 0x6AD89A];
+        for (let i = 0; i < 2; i++) {
+            const t = 0.2 + i * 0.55; // position along the divider
+            const px = p1.x + dx * t;
+            const py = p1.y + dy * t - 20 - i * 6;
+            g.beginFill(pinColors[(gx1 + i) % pinColors.length], 0.6);
+            g.drawRect(px - 2, py - 2, 4, 4);
+            g.endFill();
+        }
+
         this._container.addChild(g);
     }
 
@@ -538,6 +655,26 @@ export class CoworkScene {
         hint.x = c.x;
         hint.y = c.y + 4;
         this._container.addChild(hint);
+    }
+
+    // ── ceiling lights ────────────────────────────────────────────────
+
+    _drawCeilingLights() {
+        // 4 rectangular light panels (one per quadrant)
+        const quadrants = [
+            { gx: 3, gy: 3 },
+            { gx: 9, gy: 3 },
+            { gx: 3, gy: 8 },
+            { gx: 9, gy: 8 },
+        ];
+        for (const q of quadrants) {
+            const c = this._tileCenter(q.gx, q.gy);
+            const light = new PIXI.Graphics();
+            light.beginFill(0xF5F0E8, 0.08);
+            light.drawRoundedRect(c.x - 16, c.y - 44, 32, 10, 2);
+            light.endFill();
+            this._container.addChild(light);
+        }
     }
 
     // ── NPCs ──────────────────────────────────────────────────────────
@@ -697,6 +834,53 @@ export class CoworkScene {
 
             this._container.addChild(npcGroup);
 
+            // personality extras
+            let sweatDrops = null;
+            let sparkles = null;
+            let zzzText = null;
+
+            if (def.state === 'STRESSED') {
+                // Alex: sweat drops near head
+                sweatDrops = [];
+                for (let si = 0; si < 2; si++) {
+                    const drop = new PIXI.Graphics();
+                    drop.beginFill(0x6AB8FF, 0.7);
+                    drop.drawCircle(0, 0, 1.5);
+                    drop.endFill();
+                    drop.x = (si === 0 ? -14 : 14);
+                    drop.y = -38;
+                    charContainer.addChild(drop);
+                    sweatDrops.push(drop);
+                }
+            }
+
+            if (def.state === 'DEEP_FOCUS') {
+                // Sam: sparkle dots orbiting slowly
+                sparkles = [];
+                for (let si = 0; si < 6; si++) {
+                    const dot = new PIXI.Graphics();
+                    dot.beginFill(0xFFFFFF, 0.5);
+                    dot.drawCircle(0, 0, 0.8);
+                    dot.endFill();
+                    charContainer.addChild(dot);
+                    sparkles.push({ gfx: dot, angle: (si / 6) * Math.PI * 2, radius: 18 + (si % 2) * 4 });
+                }
+            }
+
+            if (def.state === 'FATIGUED') {
+                // Mia: Zzz floating text
+                zzzText = new PIXI.Text('Zzz', {
+                    fontFamily: "'Fredoka', sans-serif",
+                    fontSize: 9,
+                    fill: '#FFFFFF',
+                    fontWeight: '600',
+                });
+                zzzText.anchor.set(0.5, 1);
+                zzzText.x = 8;
+                zzzText.y = -48;
+                charContainer.addChild(zzzText);
+            }
+
             this._npcs.push({
                 def,
                 armL, armR,
@@ -710,6 +894,10 @@ export class CoworkScene {
                 ghostBaseY,
                 badge,
                 tick: Math.random() * 300,
+                sweatDrops,
+                sparkles,
+                zzzText,
+                zzzBaseY: -48,
             });
         }
     }
