@@ -104,7 +104,19 @@ const demoHotbar = new DemoHotbar();
 demoHotbar.setClickHandler((key) => socket.sendMockState(key));
 
 const whoop = new WHOOPBluetooth();
-whoop.onUpdate((bpm, connected) => demoHotbar.setBLEConnected(connected));
+let bleWasConnected = false;
+whoop.onUpdate((bpm, connected) => {
+    demoHotbar.setBLEConnected(connected);
+    if (connected && bpm > 0) {
+        socket.send({ type: 'live_hr', heart_rate: bpm });
+    }
+    if (connected && !bleWasConnected) {
+        socket.send({ type: 'ble_reconnected' });
+    } else if (!connected && bleWasConnected) {
+        socket.send({ type: 'ble_disconnected' });
+    }
+    bleWasConnected = connected;
+});
 window.connectWHOOP = () => whoop.connect();
 
 // app overlays
@@ -215,6 +227,7 @@ socket.on('intervention',     (data) => {
 socket.on('biometric_update', (data) => {
     hud.update(data);
     beneathView.update(data);
+    if (data.source) demoHotbar.setSource(data.source);
     demoHotbar.setActive(data.state);
     atmosphere.setState(data.state);
     ghost.setStateTint(data.state);

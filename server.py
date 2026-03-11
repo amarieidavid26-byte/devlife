@@ -177,7 +177,7 @@ def _check_sleep_mode(data):
 # loop for biometric polling
 
 def biometric_loop():
-    global last_coding_activity
+    global last_coding_activity, ble_active
     while ghost_running:
         is_whoop = False 
         if time.time() < mock_override_until:
@@ -193,11 +193,12 @@ def biometric_loop():
         
         if data: 
             ble_fresh = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
-            if ble_fresh: 
+            if ble_fresh:
                 data["heartRate"] = bio.live_heart_rate
-            elif is_whoop: 
+            elif is_whoop:
                 pre_state = bio.classify(data)
                 data["heartRate"] = _simulate_hr(pre_state)
+            ble_active = ble_fresh
             state = bio.classify(data)
 
             if is_whoop:
