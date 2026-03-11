@@ -14,6 +14,7 @@ import { TerminalApp } from './apps/Terminal.js';
 import { BrowserApp } from './apps/Browser.js';
 import { NotesApp } from './apps/Notes.js';
 import { ChatApp } from './apps/Chat.js';
+import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -101,6 +102,10 @@ const hud = new HUD();
 const beneathView = new DashboardOverlay();
 const demoHotbar = new DemoHotbar();
 demoHotbar.setClickHandler((key) => socket.sendMockState(key));
+
+const whoop = new WHOOPBluetooth();
+whoop.onUpdate((bpm, connected) => demoHotbar.setBLEConnected(connected));
+window.connectWHOOP = () => whoop.connect();
 
 // app overlays
 const apps = {
