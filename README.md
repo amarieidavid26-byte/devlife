@@ -1,6 +1,7 @@
 # DevLife 
 
 ## there are still lots to be added in the next week. huge graphic and code editor updates
+## a demo with the whoop connected, below in the yt video
 
 ## what even is this
 
