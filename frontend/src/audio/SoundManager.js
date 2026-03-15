@@ -1,7 +1,5 @@
-/**
- * Procedural sound system using Web Audio API.
- * All sounds are synthesized — no external audio files needed.
- */
+// procedural sound system, all sounds are synthesized with web audio api
+// no external audio files needed
 export class SoundManager {
   constructor() {
     this._ctx = null;
@@ -23,7 +21,7 @@ export class SoundManager {
       this._masterGain.gain.value = this._masterVolume;
       this._masterGain.connect(this._ctx.destination);
     } catch {
-      // Audio not supported — all methods will gracefully no-op
+      // Audio not supported -- all methods will gracefully no-op
     }
   }
 
@@ -36,9 +34,7 @@ export class SoundManager {
     } catch { /* ignore */ }
   }
 
-  // ─────────────────────────────────────────────
-  //  1. STATE AMBIENT DRONES
-  // ─────────────────────────────────────────────
+  // --- ambient drones
 
   _stateConfig(state) {
     const configs = {
@@ -196,9 +192,7 @@ export class SoundManager {
     } catch { /* graceful fail */ }
   }
 
-  // ─────────────────────────────────────────────
-  //  2. UI SFX
-  // ─────────────────────────────────────────────
+  // sfx stuff
 
   _playSfx(fn) {
     try {
@@ -310,9 +304,7 @@ export class SoundManager {
     });
   }
 
-  // ─────────────────────────────────────────────
-  //  3. GHOST SFX
-  // ─────────────────────────────────────────────
+  // ghost sounds
 
   playGhostAppear() {
     this._playSfx((ctx, dest) => {
@@ -334,7 +326,7 @@ export class SoundManager {
       noiseGain.connect(dest);
       noise.start(now);
 
-      // Sweep 1000Hz → 200Hz over 200ms
+      // Sweep 1000Hz -> 200Hz over 200ms
       const osc = ctx.createOscillator();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(1000, now + 0.05);
@@ -392,9 +384,7 @@ export class SoundManager {
     });
   }
 
-  // ─────────────────────────────────────────────
-  //  4. MASTER CONTROLS
-  // ─────────────────────────────────────────────
+  // volume
 
   setMasterVolume(v) {
     try {

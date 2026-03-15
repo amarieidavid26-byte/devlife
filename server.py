@@ -51,10 +51,10 @@ intervention_history: list[dict] = []
 ghost_running = False 
 pending_content = {}
 content_lock = threading.Lock()
-last_analyzed_hashes = {}          # {app_type: hash} — skip re-analysis of identical content
-intervention_cooldown_until = 0    # timestamp — skip ALL analysis during cooldown
+last_analyzed_hashes = {}          # {app_type: hash} -- skip re-analysis of identical content
+intervention_cooldown_until = 0    # timestamp -- skip ALL analysis during cooldown
 last_intervention_hash = None      # hash of content that triggered the last intervention
-suppressed_hashes = {}        # {hash: expiry_timestamp} — suppressed for 10s after user responds
+suppressed_hashes = {}        # {hash: expiry_timestamp} -- suppressed for 10s after user responds
 mock_override_until = 0
 sleep_mode_active = False
 sleep_low_hr_count = 0
@@ -63,7 +63,7 @@ ble_disconnected_timer = None
 last_coding_activity = 0
 main_event_loop: asyncio.AbstractEventLoop = None
 
-# recovery velocity tracking — derived from HR data
+# recovery velocity tracking -- derived from HR data
 _hr_history = []            # list of (timestamp, hr) tuples
 _last_stress_peak = None    # timestamp of last HR spike
 _recovery_velocity = None   # seconds to recover after spike
@@ -196,7 +196,7 @@ def _check_sleep_mode(data):
             sleep_mode_active = False
             sleep_low_hr_count = 0
             broadcast_sync({"type": "sleep_mode", "active": False})
-            print("[bio] Sleep mode OFF — no BLE data")
+            print("[bio] Sleep mode OFF -- no BLE data")
         return
 
     hr = bio.live_heart_rate
@@ -205,7 +205,7 @@ def _check_sleep_mode(data):
         if sleep_low_hr_count >= 5 and not sleep_mode_active:
             sleep_mode_active = True
             broadcast_sync({"type": "sleep_mode", "active": True})
-            print(f"[bio] Sleep mode ON — low HR={hr} for {sleep_low_hr_count} cycles")
+            print(f"[bio] Sleep mode ON -- low HR={hr} for {sleep_low_hr_count} cycles")
     else: 
         if sleep_mode_active: 
             sleep_mode_active = False
@@ -238,7 +238,7 @@ def biometric_loop():
                 data["heartRate"] = _simulate_hr(pre_state)
             state = bio.classify(data)
 
-            # ── recovery velocity tracking ──
+            # recovery velocity tracking
             hr = data.get("heartRate", 0)
             if hr > 0:
                 _hr_history.append((time.time(), hr))
@@ -318,7 +318,7 @@ def ghost_loop():
                     user_suppressed = suppressed_hashes.get(content_hash, 0) > time.time()
 
                     if already_analyzed or in_cooldown or user_suppressed:
-                        # clear this pending content — it's been handled
+                        # clear this pending content -- it's been handled
                         with content_lock:
                             if app_type in pending_content:
                                 del pending_content[app_type]
@@ -333,7 +333,7 @@ def ghost_loop():
                             )
                             # mark this content hash as analyzed
                             last_analyzed_hashes[app_type] = content_hash
-                            # clear pending content — we consumed it
+                            # clear pending content -- we consumed it
                             with content_lock:
                                 if app_type in pending_content:
                                     del pending_content[app_type]
@@ -346,7 +346,7 @@ def ghost_loop():
                     intervention = brain.process(analysis, state, modifiers)
 
                     if intervention:
-                        # set 8s cooldown — short enough for demo re-triggering
+                        # set 8s cooldown -- short enough for demo re-triggering
                         intervention_cooldown_until = time.time() + 8
                         last_intervention_hash = content_hash
                         # clear analyzed hashes so same content can re-trigger after cooldown
@@ -582,7 +582,7 @@ async def websocket_endpoint(ws: WebSocket):
                 action = data.get("action", "")
                 brain.user_feedback(action)
                 if action == "Apply Fix":
-                    # Apply Fix changes the code — clear everything so Ghost re-analyzes immediately
+                    # Apply Fix changes the code -- clear everything so Ghost re-analyzes immediately
                     intervention_cooldown_until = 0
                     last_analyzed_hashes.clear()
                     suppressed_hashes.clear()
@@ -621,7 +621,7 @@ async def websocket_endpoint(ws: WebSocket):
                 state_num = data.get("state")
                 if state_num in [1, 2, 3, 4, 5]:
                     mock.set_state(state_num)
-                    # immediately classify and broadcast — don't wait for biometric_loop
+                    # immediately classify and broadcast -- don't wait for biometric_loop
                     data_now = mock.get_data()
                     new_state = bio.classify(data_now)
                     await ws.send_json(build_biometric_msg(data_now, new_state))

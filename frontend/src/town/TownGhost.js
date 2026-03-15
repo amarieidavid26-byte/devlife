@@ -182,7 +182,7 @@ export class TownGhost {
     g.clear();
 
     if (closed) {
-      // blink — thin lines
+      // blink -- thin lines
       g.lineStyle(1.8, 0xffffff, 0.8);
       g.moveTo(-14, -6);
       g.lineTo(-4, -6);

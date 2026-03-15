@@ -1,4 +1,4 @@
-const STARTER_CODE = `# Ghost Demo — Bug Detection
+const STARTER_CODE = `# Ghost Demo -- Bug Detection
 # Try introducing a bug and watch Ghost help you!
 
 def calculate_total(items):
@@ -30,54 +30,46 @@ export class CodeEditorApp {
 
         this.overlay = document.createElement('div');
         this.overlay.id = 'code-editor-overlay';
-        Object.assign(this.overlay.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            background: '#1e1e1e',
-            zIndex: '1000',
-            display: 'flex',
-            flexDirection: 'column',
-            pointerEvents: 'auto'
-        });
+        this.overlay.style.position = 'fixed';
+        this.overlay.style.top = '0';
+        this.overlay.style.left = '0';
+        this.overlay.style.width = '100%';
+        this.overlay.style.height = '100%';
+        this.overlay.style.background = '#1e1e1e';
+        this.overlay.style.zIndex = '1000';
+        this.overlay.style.display = 'flex';
+        this.overlay.style.flexDirection = 'column';
+        this.overlay.style.pointerEvents = 'auto';
         document.getElementById('app-overlay-root').appendChild(this.overlay);
         ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>
             this.overlay.addEventListener(evt, e => e.stopPropagation())
         );
 
         const topBar = document.createElement('div');
-        Object.assign(topBar.style, {
-            height: '40px',
-            background: '#252526',
-            borderBottom: '1px solid #3c3c3c',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 16px',
-            flexShrink: '0'
-        });
+        topBar.style.height = '40px';
+        topBar.style.background = '#252526';
+        topBar.style.borderBottom = '1px solid #3c3c3c';
+        topBar.style.display = 'flex';
+        topBar.style.alignItems = 'center';
+        topBar.style.justifyContent = 'space-between';
+        topBar.style.padding = '0 16px';
+        topBar.style.flexShrink = '0';
 
         const tab = document.createElement('span');
-        Object.assign(tab.style, {
-            background: '#1e1e1e',
-            padding: '6px 16px',
-            borderTop: '2px solid #007acc',
-            color: '#ffffff',
-            fontSize: '13px'
-        });
+        tab.style.background = '#1e1e1e';
+        tab.style.padding = '6px 16px';
+        tab.style.borderTop = '2px solid #007acc';
+        tab.style.color = '#ffffff';
+        tab.style.fontSize = '13px';
         tab.textContent = 'demo.py';
 
         const closeBtn = document.createElement('button');
-        Object.assign(closeBtn.style, {
-            background: 'transparent',
-            color: '#888',
-            fontSize: '13px',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px 8px'
-        });
+        closeBtn.style.background = 'transparent';
+        closeBtn.style.color = '#888';
+        closeBtn.style.fontSize = '13px';
+        closeBtn.style.border = 'none';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.style.padding = '4px 8px';
         closeBtn.textContent = 'ESC to close';
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
@@ -88,10 +80,8 @@ export class CodeEditorApp {
         this.overlay.appendChild(topBar);
 
         const editorContainer = document.createElement('div');
-        Object.assign(editorContainer.style, {
-            flex: '1',
-            position: 'relative'
-        });
+        editorContainer.style.flex = '1';
+        editorContainer.style.position = 'relative';
         this.overlay.appendChild(editorContainer);
 
         // grabbed this from stackoverflow
@@ -149,14 +139,12 @@ export class CodeEditorApp {
         }, 200);
 
         const flash = document.createElement('div');
-        Object.assign(flash.style, {
-            position: 'absolute',
-            inset: '0',
-            background: 'rgba(0,200,100,0.12)',
-            pointerEvents: 'none',
-            transition: 'opacity 0.6s ease-out',
-            zIndex: '10'
-        });
+        flash.style.position = 'absolute';
+        flash.style.inset = '0';
+        flash.style.background = 'rgba(0,200,100,0.12)';
+        flash.style.pointerEvents = 'none';
+        flash.style.transition = 'opacity 0.6s ease-out';
+        flash.style.zIndex = '10';
         this.overlay.appendChild(flash);
         requestAnimationFrame(() => { flash.style.opacity = '0'; });
         setTimeout(() => flash.remove(), 650);

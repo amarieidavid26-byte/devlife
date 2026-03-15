@@ -66,7 +66,7 @@ export class TownPlayer {
         document.addEventListener('keyup', this._onKeyUp);
     }
 
-    // ── Sprite (copied from room Player._buildSprite) ──
+    // -- Sprite (copied from room Player._buildSprite) --
 
     _buildSprite() {
         const container = new PIXI.Container();
@@ -144,7 +144,7 @@ export class TownPlayer {
         return container;
     }
 
-    // ── Animated legs (copied from room Player._drawLegs) ──
+    // -- Animated legs (copied from room Player._drawLegs) --
 
     _drawLegs(walkPhase) {
         const lOff =  Math.sin(walkPhase) * 5;
@@ -182,7 +182,7 @@ export class TownPlayer {
         this._legRight.endFill();
     }
 
-    // ── Animated arms (copied from room Player._drawArms) ──
+    // -- Animated arms (copied from room Player._drawArms) --
 
     _drawArms(walkPhase) {
         const lOff =  Math.sin(walkPhase + Math.PI) * 4;
@@ -210,7 +210,7 @@ export class TownPlayer {
         this._armRight.endFill();
     }
 
-    // ── Input ──
+    // -- Input --
 
     _handleKeyDown(e) {
         if (!this._enabled) return;
@@ -225,7 +225,7 @@ export class TownPlayer {
         if (k in this._keys) this._keys[k] = false;
     }
 
-    // ── Update ──
+    // -- Update --
 
     update(delta) {
         if (!this._enabled) return;
@@ -317,7 +317,7 @@ export class TownPlayer {
         this.container.y = iso.y + this._bobOffset;
     }
 
-    // ── Dust (copied from room Player._spawnDust) ──
+    // -- Dust (copied from room Player._spawnDust) --
 
     _spawnDust() {
         this._dustFootToggle = !this._dustFootToggle;
@@ -345,7 +345,7 @@ export class TownPlayer {
         }
     }
 
-    // ── Public API ──
+    // -- Public API --
 
     getPosition() {
         return { x: this._cx, y: this._cy };

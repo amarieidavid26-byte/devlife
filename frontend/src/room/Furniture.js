@@ -621,7 +621,7 @@ export class Furniture extends EventEmitter {
         const c = new PIXI.Container();
         const g = new PIXI.Graphics();
 
-        // Door panel on left wall — isometric rectangle matching wall angle
+        // Door panel on left wall -- isometric rectangle matching wall angle
         // The left wall face runs from top-right to bottom-left with a leftward slant
         const doorW = 40;
         const doorH = 60;
@@ -655,7 +655,7 @@ export class Furniture extends EventEmitter {
 
         c.addChild(g);
 
-        // Door handle (warm amber/gold circle) — on the right side of the door face
+        // Door handle (warm amber/gold circle) -- on the right side of the door face
         this._doorHandleGlow = new PIXI.Graphics();
         this._doorHandleGlow.beginFill(0xE8A04C);
         this._doorHandleGlow.drawCircle(-4, -doorH / 2 + 4, 3);
@@ -718,7 +718,7 @@ export class Furniture extends EventEmitter {
     // Returns true if a world position (in grid units) is blocked by furniture
     isBlocked(gx, gy) {
         return this._items.some(item => {
-            // Chair and phone don't block (walkable — chair is at desk, phone is on desk surface)
+            // Chair and phone don't block (walkable -- chair is at desk, phone is on desk surface)
             if (item.name === 'chair' || item.name === 'phone') return false;
             return Math.abs(item.gridX - gx) < 0.65 && Math.abs(item.gridY - gy) < 0.65;
         });
@@ -782,7 +782,7 @@ export class Furniture extends EventEmitter {
             this._doorHandleGlow.alpha = 0.5 + Math.sin(Date.now() / 318.3) * 0.2; // 318.3 ≈ 1000/π for 2s period
         }
 
-        // LED strip — flash ROG red every ~30s when in RELAXED state
+        // LED strip -- flash ROG red every ~30s when in RELAXED state
         if (this._deskLedStrip) {
             if (this._currentState === 'RELAXED') {
                 this._ledFlashTimer += delta;

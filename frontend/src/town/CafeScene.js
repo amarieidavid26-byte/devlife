@@ -8,7 +8,7 @@ const WALL_H = 100;
 
 // Offset player coordinates by +7 so TownPlayer's hardcoded BLOCKED_ZONES
 // (HOME 3.25-6.75 in both axes) don't create invisible walls inside the cafe.
-// Cafe (0,0) → TownPlayer (7,7), Cafe (12,12) → TownPlayer (19,19) — all clear.
+// Cafe (0,0) -> TownPlayer (7,7), Cafe (12,12) -> TownPlayer (19,19) -- all clear.
 const COORD_OFFSET = 7;
 
 const COL = {
@@ -69,9 +69,9 @@ export class CafeScene {
         this._recoveryIntervals = [];
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Scene interface
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     async enter() {
         this._plantTex = await PIXI.Assets.load('/assets/Isometric/pottedPlant_SE.png').catch(() => null);
@@ -89,7 +89,7 @@ export class CafeScene {
         this._container.addChild(this._wallContainer);
         this._container.addChild(this._furnitureContainer);
 
-        // Player layer — offset so TownPlayer's cartToIso aligns with _gridToScreen.
+        // Player layer -- offset so TownPlayer's cartToIso aligns with _gridToScreen.
         // The extra COORD_OFFSET*TILE_HEIGHT compensates for the coordinate shift.
         this._playerLayer = new PIXI.Container();
         this._playerLayer.x = (window.innerWidth / GAME_ZOOM) / 2;
@@ -115,7 +115,7 @@ export class CafeScene {
         this._drawWarmOverlay();
         this._initDustMotes();
 
-        // Player — spawn near door (6, 8) in cafe coords
+        // Player -- spawn near door (6, 8) in cafe coords
         this._player = new TownPlayer(this._playerLayer);
         this._player.setPosition(6 + COORD_OFFSET, 8 + COORD_OFFSET);
         this._player.enable();
@@ -255,9 +255,9 @@ export class CafeScene {
         this._updateRecoveryGraph(delta);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Coordinates
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _gridToScreen(gx, gy) {
         const iso = cartToIso(gx, gy);
@@ -267,9 +267,9 @@ export class CafeScene {
         };
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Floor (12x12 warm wood checkerboard)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawFloor() {
         const hw = TILE_WIDTH / 2;
@@ -303,7 +303,7 @@ export class CafeScene {
             }
         }
 
-        // Doormat at (6, 11) — darker tile to indicate exit
+        // Doormat at (6, 11) -- darker tile to indicate exit
         const { x: dx, y: dy } = this._gridToScreen(6, 11);
         const mat = new PIXI.Graphics();
         mat.beginFill(0x7A5C3A, 0.6);
@@ -316,9 +316,9 @@ export class CafeScene {
         this._floorContainer.addChild(mat);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Walls (per-tile panels)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawWalls() {
         const baseH = 6;
@@ -391,7 +391,7 @@ export class CafeScene {
         corner.lineTo(cx, cy);
         this._wallContainer.addChild(corner);
 
-        // ── Decorative shelf on back wall (y=0, gx=6..8) ──
+        // -- Decorative shelf on back wall (y=0, gx=6..8) --
         const shelfPos = this._gridToScreen(7, 0);
         const shelfX = shelfPos.x + TILE_WIDTH / 4;
         const shelfY = shelfPos.y + TILE_HEIGHT / 4 - WALL_H * 0.45;
@@ -418,7 +418,7 @@ export class CafeScene {
         shelfContainer.skew.y = Math.atan2(TILE_HEIGHT / 2, TILE_WIDTH / 2);
         this._wallContainer.addChild(shelfContainer);
 
-        // ── Framed picture on left wall (x=0, gy=3) ──
+        // -- Framed picture on left wall (x=0, gy=3) --
         const picWall = this._gridToScreen(0, 3);
         const picX = picWall.x - TILE_WIDTH / 4;
         const picY = picWall.y + TILE_HEIGHT / 4 - WALL_H * 0.6;
@@ -449,7 +449,7 @@ export class CafeScene {
         picContainer.skew.y = -Math.atan2(TILE_HEIGHT / 2, TILE_WIDTH / 2);
         this._wallContainer.addChild(picContainer);
 
-        // ── Wall clock on left wall (x=0, gy=8) ──
+        // -- Wall clock on left wall (x=0, gy=8) --
         const clockWall = this._gridToScreen(0, 8);
         const clockX = clockWall.x - TILE_WIDTH / 4;
         const clockY = clockWall.y + TILE_HEIGHT / 4 - WALL_H * 0.65;
@@ -490,9 +490,9 @@ export class CafeScene {
         this._wallContainer.addChild(clockContainer);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Coffee counter (back wall, y=1, x=2 to x=6)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawCounter() {
         const counterH = 36;
@@ -536,7 +536,7 @@ export class CafeScene {
 
         this._furnitureContainer.addChild(g);
 
-        // Counter details — items sit ON the counter surface
+        // Counter details -- items sit ON the counter surface
         const details = new PIXI.Graphics();
 
         // Napkin holder at gx=2.8
@@ -642,9 +642,9 @@ export class CafeScene {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Menu board (right wall at gx=4, y=0)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawMenuBoard() {
         const { x: wx, y: wy } = this._gridToScreen(4, 0);
@@ -678,9 +678,9 @@ export class CafeScene {
         this._wallContainer.addChild(menuContainer);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Chalkboard (left wall at x=0, gy=5)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawChalkboard() {
         const { x: wx, y: wy } = this._gridToScreen(0, 5);
@@ -715,9 +715,9 @@ export class CafeScene {
         this._wallContainer.addChild(chalkContainer);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Tables + chairs
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawTable(gx, gy, chairCount) {
         const { x, y } = this._gridToScreen(gx, gy);
@@ -794,9 +794,9 @@ export class CafeScene {
         this._furnitureContainer.addChild(g);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Plant (corner, Kenney sprite with fallback)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawPlant(gx, gy) {
         const { x, y } = this._gridToScreen(gx, gy);
@@ -833,9 +833,9 @@ export class CafeScene {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  String lights across ceiling
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawStringLights() {
         const wire = new PIXI.Graphics();
@@ -886,9 +886,9 @@ export class CafeScene {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Recovery display (right wall at gx=8, y=0)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawRecoveryDisplay() {
         const { x: wx, y: wy } = this._gridToScreen(8, 0);
@@ -919,7 +919,7 @@ export class CafeScene {
         label.y = -27;
         displayContainer.addChild(label);
 
-        // graph — updated each frame
+        // graph -- updated each frame
         this._recoveryGraph = new PIXI.Graphics();
         displayContainer.addChild(this._recoveryGraph);
 
@@ -955,7 +955,7 @@ export class CafeScene {
             g.lineTo(gx + gw, ly);
         }
 
-        // recovery line — curves upward
+        // recovery line -- curves upward
         const drawnPoints = Math.floor(points * this._recoveryProgress);
         if (drawnPoints > 0) {
             g.lineStyle(1.5, COL.green, 0.8);
@@ -975,9 +975,9 @@ export class CafeScene {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Door hint (bottom center, grid 6,11)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawDoorHint() {
         const { x, y } = this._gridToScreen(6, 11);
@@ -1015,9 +1015,9 @@ export class CafeScene {
         this._furnitureContainer.addChild(hint);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Warm ambient overlay
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawWarmOverlay() {
         const vw = window.innerWidth / GAME_ZOOM;
@@ -1037,9 +1037,9 @@ export class CafeScene {
         this._ambientContainer.addChild(glow);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Dust motes
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _initDustMotes() {
         const vw = window.innerWidth / GAME_ZOOM;
@@ -1081,9 +1081,9 @@ export class CafeScene {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Steam particles (coffee cups)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _updateSteam(delta) {
         for (const source of this._steamSources) {
@@ -1126,9 +1126,9 @@ export class CafeScene {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  String light pulse
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _updateStringLights() {
         const t = this._elapsed * 0.015;
@@ -1137,9 +1137,9 @@ export class CafeScene {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Interaction system
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _getPlayerCafePos() {
         if (!this._player) return null;
@@ -1226,7 +1226,7 @@ export class CafeScene {
         this.onGhostSay?.("The barista recommends herbal tea for your stress levels. Smart ghost, smart barista.", 5000);
     }
 
-    // ── Brewing ──
+    // -- Brewing --
 
     _startBrewing(tableIdx) {
         const table = this._tables[tableIdx];
@@ -1354,7 +1354,7 @@ export class CafeScene {
         if (this._player) this._player.enable();
     }
 
-    // ── Recovery Panel (DOM overlay) ──
+    // -- Recovery Panel (DOM overlay) --
 
     _showRecoveryPanel() {
         if (this._recoveryPanel) return;

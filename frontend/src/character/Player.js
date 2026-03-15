@@ -139,7 +139,7 @@ export class Player {
         head.lineStyle(1.2, 0x6B3A1A, 0.7);
         head.moveTo(-6.5, -43.5); head.lineTo(-2, -42.5);
         head.moveTo( 2,   -42.5); head.lineTo( 6.5, -43.5);
-        // mouth (subtle smile — control points below endpoints for upward curve)
+        // mouth (subtle smile -- control points below endpoints for upward curve)
         head.lineStyle(1.5, 0xD4A070, 0.82);
         head.moveTo(-3, -32);
         head.bezierCurveTo(-1, -29.5, 1, -29.5, 3, -32);
@@ -321,7 +321,7 @@ export class Player {
         }
         this._shadow.alpha = 0.2;
 
-        // idle breathing — very subtle body scale oscillation
+        // idle breathing -- very subtle body scale oscillation
         if (!this._isMoving && !this._isSitting && !this._sleeping) {
             this._breathTick += delta;
             const breath = 1.0 + Math.sin((this._breathTick / 180) * Math.PI * 2) * 0.008;

@@ -26,10 +26,10 @@ export class HUD {
     constructor() {
         this._connected = false;
         this._data = {
-            heartRate:        '—',
-            recovery:         '—',
-            strain:           '—',
-            hrv:              '—',
+            heartRate:        '--',
+            recovery:         '--',
+            strain:           '--',
+            hrv:              '--',
             state:            'CONNECTING',
             estimated_stress: 0,
         };
@@ -43,7 +43,7 @@ export class HUD {
         this._ecgLastTs = null;
 
         this._sleepMode = false;
-        this._lastHR = '—';
+        this._lastHR = '--';
         this._sleepData = null;
         this._cqi = null;
 
@@ -225,7 +225,7 @@ export class HUD {
     update(data) {
         const prevHR = this._data.heartRate;
         this._data = { ...this._data, ...data };
-        if (data.heartRate && data.heartRate !== '—') {
+        if (data.heartRate && data.heartRate !== '--') {
             this._ecgTargetBPM = parseFloat(data.heartRate) || 72;
         }
         if (data.state && STATE_COLORS[data.state]) {
@@ -300,15 +300,15 @@ export class HUD {
 
         const rec    = parseFloat(d.recovery);
         const recDot = isNaN(rec) ? '⚫' : rec >= 66 ? '🟢' : rec >= 33 ? '🟡' : '🔴';
-        const recFmt = isNaN(rec) ? '—' : `${rec}%`;
+        const recFmt = isNaN(rec) ? '--' : `${rec}%`;
 
         const stress         = parseFloat(d.estimated_stress) || 0;
         const stressBarWidth = Math.min(100, (stress / 3) * 100);
         const stressBarColor = stress < 1 ? '#6AD89A' : stress < 2 ? '#FFB84A' : '#FF7A6A';
 
-        const strainFmt = d.strain    !== '—' ? parseFloat(d.strain).toFixed(1)  : '—';
-        const hrvFmt    = d.hrv       !== '—' ? `${Math.round(d.hrv)}ms`         : '—';
-        const bpmFmt    = d.heartRate !== '—' ? `${Math.round(d.heartRate)}`     : '—';
+        const strainFmt = d.strain    !== '--' ? parseFloat(d.strain).toFixed(1)  : '--';
+        const hrvFmt    = d.hrv       !== '--' ? `${Math.round(d.hrv)}ms`         : '--';
+        const bpmFmt    = d.heartRate !== '--' ? `${Math.round(d.heartRate)}`     : '--';
 
         const connDot = this._connected
             ? '<span class="live-dot" style="color:#6AD89A;font-size:10px;letter-spacing:0.05em">● LIVE</span>'

@@ -19,10 +19,10 @@ export class GhostSocket {
 
         this.ws = new WebSocket(this.url);
 
-        // connection timeout — if not open within 5s, go offline
+        // connection timeout -- if not open within 5s, go offline
         this._connectTimeout = setTimeout(() => {
             if (!this.isConnected) {
-                console.warn('[GhostSocket] Connection timeout — entering offline mode');
+                console.warn('[GhostSocket] Connection timeout -- entering offline mode');
                 this._offline = true;
                 this.ws.close();
                 this.emit('disconnected', {});

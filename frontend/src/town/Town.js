@@ -8,7 +8,7 @@ const GRID_SIZE = 20;
 const GAME_ZOOM = 1.5;
 const WALL_H = 90; // building wall height in px
 
-// Color palette — warm Animal Crossing nighttime
+// Color palette -- warm Animal Crossing nighttime
 const COL = {
     grassA:    0x74B05A, // warm natural green
     grassB:    0x6A9E50, // slightly darker warm green
@@ -88,9 +88,9 @@ export class Town {
         this._spawnPoint = { gx: gridX, gy: gridY };
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Scene interface
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     async enter() {
         // Load optional Kenney sprites (fail gracefully)
@@ -131,14 +131,14 @@ export class Town {
         this._setupHomeClick(3, 3, 4, 4);
         this._centerCamera();
 
-        // Entity container — viewport offset aligns cartToIso coords with the grid
+        // Entity container -- viewport offset aligns cartToIso coords with the grid
         this._entityContainer = new PIXI.Container();
         this._entityContainer.sortableChildren = true;
         this._entityContainer.x = (window.innerWidth / GAME_ZOOM) / 2;
         this._entityContainer.y = (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2);
         this._container.addChild(this._entityContainer);
 
-        // Player — spawn near the building they exited, or HOME by default
+        // Player -- spawn near the building they exited, or HOME by default
         this._player = new TownPlayer(this._entityContainer);
         if (this._spawnPoint) {
             this._player.setPosition(this._spawnPoint.gx, this._spawnPoint.gy);
@@ -148,11 +148,11 @@ export class Town {
         }
         this._player.enable();
 
-        // Ghost — follows player
+        // Ghost -- follows player
         this._ghost = new TownGhost(this._entityContainer);
         this._ghost.setTarget(this._player.container.x, this._player.container.y);
 
-        // Dialogue — ambient ghost chatter in town
+        // Dialogue -- ambient ghost chatter in town
         this._dialogue = new TownDialogue(this._entityContainer);
         this._dialogue.startAmbient(
             () => this._player.getPosition(),
@@ -162,7 +162,7 @@ export class Town {
             if (this._dialogue) this._dialogue.say("Fresh air! Let's explore the neighborhood.", 4000);
         }, 2000);
 
-        // [E] prompt — floats above nearby interactable door
+        // [E] prompt -- floats above nearby interactable door
         this._ePrompt = new PIXI.Text('[E]', {
             fontFamily: "'Fredoka', sans-serif",
             fontSize: 14,
@@ -258,7 +258,7 @@ export class Town {
             this._player.container.zIndex = this._player.container.y;
             this._ghost._container.zIndex = this._ghost._container.y;
 
-            // Camera follow — lerp container so player stays centered
+            // Camera follow -- lerp container so player stays centered
             const playerWorldX = this._entityContainer.x + this._player.container.x;
             const playerWorldY = this._entityContainer.y + this._player.container.y;
             const targetX = this._app.screen.width / 2 - playerWorldX * GAME_ZOOM;
@@ -268,7 +268,7 @@ export class Town {
             this._container.y += (targetY - this._container.y) * camLerp;
         }
 
-        // [E] prompt — show above the nearest interactable door
+        // [E] prompt -- show above the nearest interactable door
         if (this._ePrompt && this._player) {
             const nearDoor = this._getNearbyDoor(100);
             if (nearDoor) {
@@ -284,9 +284,9 @@ export class Town {
         if (this._dialogue) this._dialogue.update(delta);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Coordinate helpers
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _gridToScreen(gx, gy) {
         const iso = cartToIso(gx, gy);
@@ -304,9 +304,9 @@ export class Town {
         this._container.y = 0;
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Ground
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawGround() {
         for (let gx = 0; gx < GRID_SIZE; gx++) {
@@ -393,7 +393,7 @@ export class Town {
                     }
                 }
 
-                // Stepping stones — lighter accent on every 4th path tile
+                // Stepping stones -- lighter accent on every 4th path tile
                 if (isPath(gx, gy) && (gx + gy) % 4 === 0) {
                     tile.lineStyle(0);
                     tile.beginFill(0xAA9B7E, 0.35);
@@ -412,9 +412,9 @@ export class Town {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Buildings (isometric boxes with detail)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     // Draw a window parallelogram on an isometric wall face
     _drawFaceWindow(g, nearPt, farPt, t, heightFrac) {
@@ -492,7 +492,7 @@ export class Town {
         g.closePath();
         g.endFill();
 
-        // Roof highlight — top two edges for subtle 3D
+        // Roof highlight -- top two edges for subtle 3D
         g.lineStyle(1, 0xffffff, 0.2);
         g.moveTo(bottomLeft.x, bottomLeft.y - WALL_H);
         g.lineTo(topLeft.x, topLeft.y - WALL_H);
@@ -506,11 +506,11 @@ export class Town {
         g.lineStyle(0);
 
         // ---- Windows on both visible faces ----
-        // Right face: bottomRight → topRight
+        // Right face: bottomRight -> topRight
         const rightDoor = doorSide === 'right';
         this._drawFaceWindow(g, bottomRight, topRight, 0.25, 0.55);
         this._drawFaceWindow(g, bottomRight, topRight, 0.75, 0.55);
-        // Left face: bottomLeft → bottomRight
+        // Left face: bottomLeft -> bottomRight
         const leftDoor = doorSide === 'left';
         this._drawFaceWindow(g, bottomLeft, bottomRight, 0.25, 0.55);
         this._drawFaceWindow(g, bottomLeft, bottomRight, 0.75, 0.55);
@@ -588,13 +588,13 @@ export class Town {
         this._labelContainer.addChild(text);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Building-specific details
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawChimney(g, topLeft, topRight, bottomRight, bottomLeft) {
         // Small chimney on the roof near the back-right corner
-        const t = 0.75; // position along topLeft→topRight edge
+        const t = 0.75; // position along topLeft->topRight edge
         const cx = topLeft.x + (topRight.x - topLeft.x) * t;
         const cy = topLeft.y + (topRight.y - topLeft.y) * t - WALL_H;
         const chimW = 6, chimH = 14;
@@ -667,7 +667,7 @@ export class Town {
         g.drawRect(cx - 1, cy - 18, 2, 18);
         g.endFill();
 
-        // Satellite dish — small arc
+        // Satellite dish -- small arc
         g.lineStyle(1.5, 0x8AAAB8, 0.8);
         g.arc(cx, cy - 14, 5, -Math.PI * 0.8, -Math.PI * 0.2, false);
         g.lineStyle(0);
@@ -686,9 +686,9 @@ export class Town {
         g.endFill();
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Building decorations
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawCafeIcon(startX, startY, w, h) {
         // Small coffee cup on the right face of the CAFE building
@@ -698,7 +698,7 @@ export class Town {
         const midY = (topRight.y + bottomRight.y) / 2 - WALL_H * 0.6;
 
         const icon = new PIXI.Graphics();
-        // Cup body — warm cream (1.5x)
+        // Cup body -- warm cream (1.5x)
         icon.beginFill(0xF5F0E8, 0.7);
         icon.drawRect(midX - 7.5, midY, 15, 15);
         icon.endFill();
@@ -710,7 +710,7 @@ export class Town {
         icon.beginFill(0x6B4226, 0.5);
         icon.drawRect(midX - 6, midY + 3, 12, 9);
         icon.endFill();
-        // Steam wisps — warm moccasin
+        // Steam wisps -- warm moccasin
         icon.lineStyle(1.5, COL.lampGlow, 0.35);
         icon.moveTo(midX - 3, midY);
         icon.quadraticCurveTo(midX - 4.5, midY - 9, midX - 1.5, midY - 12);
@@ -728,10 +728,10 @@ export class Town {
         const midY = (bottomLeft.y + bottomRight.y) / 2 - WALL_H * 0.6;
 
         const icon = new PIXI.Graphics();
-        // Monitor frame — warm white (2x size)
+        // Monitor frame -- warm white (2x size)
         icon.lineStyle(2.5, 0xF5F0E8, 0.6);
         icon.drawRect(midX - 16, midY - 10, 32, 22);
-        // Screen fill — dark with warm tint
+        // Screen fill -- dark with warm tint
         icon.lineStyle(0);
         icon.beginFill(0x1a2030, 0.7);
         icon.drawRect(midX - 12, midY - 6, 24, 14);
@@ -742,7 +742,7 @@ export class Town {
         icon.lineTo(midX, midY + 18);
         icon.moveTo(midX - 8, midY + 18);
         icon.lineTo(midX + 8, midY + 18);
-        // Screen glow dot — warm moccasin
+        // Screen glow dot -- warm moccasin
         icon.lineStyle(0);
         icon.beginFill(COL.lampGlow, 0.5);
         icon.drawCircle(midX, midY, 2);
@@ -751,19 +751,19 @@ export class Town {
         this._buildingContainer.addChild(icon);
     }
 
-    // ─────────────────────────────────────────────
-    //  Crosswalks — dashes at building entrances
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
+    //  Crosswalks -- dashes at building entrances
+    // ---------------------------------------------
 
     _drawCrosswalks() {
         const g = new PIXI.Graphics();
-        // HOME door at grid ~(7, 5) → crosswalk on path approaching from right face
-        // CAFE door at grid ~(16, 7) → crosswalk on path approaching from left face
-        // COWORK door at grid ~(7, 16) → crosswalk on path approaching from right face
+        // HOME door at grid ~(7, 5) -> crosswalk on path approaching from right face
+        // CAFE door at grid ~(16, 7) -> crosswalk on path approaching from left face
+        // COWORK door at grid ~(7, 16) -> crosswalk on path approaching from right face
         const crosswalks = [
-            { gx: 8, gy: 5, dir: 'v' },   // HOME — vertical path near door
-            { gx: 16, gy: 8, dir: 'h' },   // CAFE — horizontal path near door
-            { gx: 8, gy: 16, dir: 'v' },   // COWORK — vertical path near door
+            { gx: 8, gy: 5, dir: 'v' },   // HOME -- vertical path near door
+            { gx: 16, gy: 8, dir: 'h' },   // CAFE -- horizontal path near door
+            { gx: 8, gy: 16, dir: 'v' },   // COWORK -- vertical path near door
         ];
 
         g.lineStyle(0);
@@ -789,9 +789,9 @@ export class Town {
         this._floorContainer.addChild(g);
     }
 
-    // ─────────────────────────────────────────────
-    //  Street decorations — hydrant, trash bin
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
+    //  Street decorations -- hydrant, trash bin
+    // ---------------------------------------------
 
     _drawStreetDecorations() {
         // Fire hydrant near path intersection (~grid 8.5, 8.5)
@@ -837,9 +837,9 @@ export class Town {
 
     }
 
-    // ─────────────────────────────────────────────
-    //  Stars — scattered above the town
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
+    //  Stars -- scattered above the town
+    // ---------------------------------------------
 
     _drawStars() {
         this._twinkleStars = [];
@@ -868,9 +868,9 @@ export class Town {
         }
     }
 
-    // ─────────────────────────────────────────────
-    //  Ambient details — flowers, mailbox
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
+    //  Ambient details -- flowers, mailbox
+    // ---------------------------------------------
 
     _drawFlowerPatch(gx, gy) {
         const { x, y } = this._gridToScreen(gx, gy);
@@ -936,12 +936,12 @@ export class Town {
         this._detailContainer.addChild(g);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Park (trees + bench)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawPark(startX, startY, w, h) {
-        // ── Three well-spaced trees across the 4x4 park ──
+        // -- Three well-spaced trees across the 4x4 park --
         const treePositions = [
             [14.5, 15],   // left side
             [17.5, 15],   // right side
@@ -979,7 +979,7 @@ export class Town {
             this._trees.push(tree);
         }
 
-        // ── Flower bed — wide arc across the park ──
+        // -- Flower bed -- wide arc across the park --
         const flowerColors = [0xFF9A8C, 0xFFD66B, 0xFF9A8C, 0x9BDFFF, 0xFFD66B, 0xFFB5E8];
         const flowers = new PIXI.Graphics();
         for (let i = 0; i < 6; i++) {
@@ -1009,7 +1009,7 @@ export class Town {
         }
         this._detailContainer.addChild(flowers);
 
-        // ── Bench — clean and simple ──
+        // -- Bench -- clean and simple --
         const benchPos = this._gridToScreen(16, 15.8);
         const bench = new PIXI.Graphics();
         const bx = benchPos.x;
@@ -1043,7 +1043,7 @@ export class Town {
 
         this._detailContainer.addChild(bench);
 
-        // ── Park sign — at path entrance ──
+        // -- Park sign -- at path entrance --
         const signPos = this._gridToScreen(15.5, 14.3);
         const sign = new PIXI.Graphics();
         // Post
@@ -1069,9 +1069,9 @@ export class Town {
         this._labelContainer.addChild(signText);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Street lamps
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _drawStreetLamps() {
         // Place lamps along the path cross-arms
@@ -1093,7 +1093,7 @@ export class Town {
             lamp.drawRect(x - 1.5, y - 30, 3, 30);
             lamp.endFill();
 
-            // Lamp head — warm glow
+            // Lamp head -- warm glow
             lamp.beginFill(COL.lampGlow, 0.5);
             lamp.drawCircle(x, y - 32, 3.5);
             lamp.endFill();
@@ -1110,9 +1110,9 @@ export class Town {
         }
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Ambient particles (warm moccasin dust motes)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _initParticles() {
         const vw = window.innerWidth / GAME_ZOOM;
@@ -1166,13 +1166,13 @@ export class Town {
         }
     }
 
-    // ─────────────────────────────────────────────
-    //  Proximity check — HOME door
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
+    //  Proximity check -- HOME door
+    // ---------------------------------------------
 
     _isNearHome() {
         if (!this._player) return false;
-        // HOME door center in grid coords: right face of (3,3)+(4,4) → midpoint (7, 5)
+        // HOME door center in grid coords: right face of (3,3)+(4,4) -> midpoint (7, 5)
         const doorIso = cartToIso(7, 5);
         const dx = this._player.container.x - doorIso.x;
         const dy = this._player.container.y - doorIso.y;
@@ -1181,7 +1181,7 @@ export class Town {
 
     _isNearCafe() {
         if (!this._player) return false;
-        // CAFE (14,3,4,4) door on left face → midpoint of bottom edge = grid (16, 7)
+        // CAFE (14,3,4,4) door on left face -> midpoint of bottom edge = grid (16, 7)
         const doorIso = cartToIso(16, 7);
         const dx = this._player.container.x - doorIso.x;
         const dy = this._player.container.y - doorIso.y;
@@ -1190,7 +1190,7 @@ export class Town {
 
     _isNearCowork() {
         if (!this._player) return false;
-        // COWORK (3,14,4,4) door on right face → midpoint of right edge = grid (7, 16)
+        // COWORK (3,14,4,4) door on right face -> midpoint of right edge = grid (7, 16)
         const doorIso = cartToIso(7, 16);
         const dx = this._player.container.x - doorIso.x;
         const dy = this._player.container.y - doorIso.y;
@@ -1247,9 +1247,9 @@ export class Town {
         this._treeQuoteIndex++;
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Meditation overlay (DOM)
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _openMeditation() {
         if (this._meditationActive) return;
@@ -1363,13 +1363,13 @@ export class Town {
             else phaseEl.textContent = 'Exhale...';
         }, 200);
 
-        // Cycle counter — every 10 seconds = 1 breath cycle
+        // Cycle counter -- every 10 seconds = 1 breath cycle
         const cycleInterval = setInterval(() => {
             if (!this._meditationActive) return;
             cycle++;
             quoteEl.textContent = quotes[cycle % quotes.length];
             hr = Math.max(62, hr - Math.floor(Math.random() * 3 + 3));
-            hrEl.textContent = `Simulated HR: 75 → ${hr} bpm`;
+            hrEl.textContent = `Simulated HR: 75 -> ${hr} bpm`;
 
             if (cycle >= 3) {
                 completeEl.textContent = 'Session complete. Stress reduced by 24%.';
@@ -1404,9 +1404,9 @@ export class Town {
         if (messages[building]) this._dialogue.say(messages[building], 3000);
     }
 
-    // ─────────────────────────────────────────────
-    //  Interactivity — HOME click area
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
+    //  Interactivity -- HOME click area
+    // ---------------------------------------------
 
     _setupHomeClick(startX, startY, w, h) {
         // Invisible hit area over the HOME building

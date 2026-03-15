@@ -150,7 +150,7 @@ async function startGame(enableDemo = false) {
         socket.sendMockState(key);
     });
 
-    // WHOOP BLE pairing — connects the PAIR WHOOP button to the Web Bluetooth API
+    // WHOOP BLE pairing -- connects the PAIR WHOOP button to the Web Bluetooth API
     const whoop = new WHOOPBluetooth();
     window.connectWHOOP = async () => {
         const ok = await whoop.connect();
@@ -208,7 +208,7 @@ async function startGame(enableDemo = false) {
         html5:       true,
         onloaderror: () => {
             ambientSound = null;
-            console.log('[main] No ambient audio file found — speaker will be silent');
+            console.log('[main] No ambient audio file found -- speaker will be silent');
         },
     });
     let musicPlaying = false;
@@ -225,7 +225,7 @@ async function startGame(enableDemo = false) {
     }
 
     // furniture interactions
-    // door → town transition
+    // door -> town transition
     furniture.onDoorInteract = () => {
         if (sceneManager && sceneManager.getCurrentScene() === 'room') {
             town.setSpawnPoint(7, 7);
@@ -240,7 +240,7 @@ async function startGame(enableDemo = false) {
             coffeeCount++;
             let message, priority, buttons;
             if (coffeeCount < 3) {
-                message = "Good idea — coffee fuels great code. Don't forget to hydrate too! ☕";
+                message = "Good idea -- coffee fuels great code. Don't forget to hydrate too! ☕";
                 priority = 'low';
                 buttons = ['Thanks!'];
                 toastSystem.show('info', '☕ Caffeine Boost', 'HR +5bpm, Alertness +15%, Recovery -3%', 4000);
@@ -326,7 +326,7 @@ async function startGame(enableDemo = false) {
         furniture.setMonitorState(data.state);
         soundManager.setState(data.state);
 
-        // CQI — weighted composite of recovery, HRV, and inverse stress
+        // CQI -- weighted composite of recovery, HRV, and inverse stress
         const recovery = data.recovery || 50;
         const hrv = data.hrv || 40;
         const stress = data.estimated_stress || 0;
@@ -393,7 +393,7 @@ async function startGame(enableDemo = false) {
             return;
         }
 
-        // Don't capture WASD/E when an app overlay is open — let the app handle them
+        // Don't capture WASD/E when an app overlay is open -- let the app handle them
         if (activeApp) return;
 
         // Skip game shortcuts while typing in an input field (e.g. HUD search)
@@ -427,14 +427,14 @@ async function startGame(enableDemo = false) {
         atmosphere.update(delta);
         furniture.update(delta);
 
-        // Smooth camera follow — lerp gameContainer toward player centre
+        // Smooth camera follow -- lerp gameContainer toward player centre
         const camTargetX = window.innerWidth  / 2 - player.container.x * GAME_ZOOM;
         const camTargetY = window.innerHeight / 2 - player.container.y * GAME_ZOOM;
         const camLerp = 0.07 * delta;
         gameContainer.x += (camTargetX - gameContainer.x) * camLerp;
         gameContainer.y += (camTargetY - gameContainer.y) * camLerp;
 
-        // Screen shake (critical interventions — Fatigue Firewall)
+        // Screen shake (critical interventions -- Fatigue Firewall)
         atmosphere.applyScreenShake(gameContainer);
 
         // Beneath the Surface: feed screen-space positions for rings + particles
@@ -451,7 +451,7 @@ async function startGame(enableDemo = false) {
             );
         }
 
-        // z-sorting — higher screen Y = closer to camera
+        // z-sorting -- higher screen Y = closer to camera
         furniture._items.forEach(item => { item.container.zIndex = item.container.y; });
         player.container.zIndex = player.container.y;
         ghost.container.zIndex = player.container.y + 50;
@@ -477,19 +477,19 @@ async function startGame(enableDemo = false) {
     fetch(CONFIG.BACKEND_URL + '/health').then(r => r.json()).then(d => {
         console.log('[main] backend health:', d.status);
     }).catch(() => {
-        console.log('[main] backend unreachable — running in offline/demo mode');
+        console.log('[main] backend unreachable -- running in offline/demo mode');
     });
 
     console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');
 
-    // Demo mode — auto-play cinematic sequence
+    // Demo mode -- auto-play cinematic sequence
     if (enableDemo) {
         demoMode = new DemoMode({ socket, ghost, atmosphere, hud, furniture, player });
         demoMode.start({ loop: true });
-        console.log('[DevLife] Demo mode started — looping through all states');
+        console.log('[DevLife] Demo mode started -- looping through all states');
     }
 
-    // ── Scene Manager ──
+    // -- Scene Manager --
     sceneManager = new SceneManager(pixiApp);
 
     const roomScene = {

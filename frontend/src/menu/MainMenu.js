@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 
 const STATE_COLORS = [0x6AD89A, 0x9B6AFF, 0xFF7A6A, 0xFFB84A, 0x6AB8FF];
 
-// ECG waveform points — P wave, QRS complex, T wave pattern
+// ECG waveform points -- P wave, QRS complex, T wave pattern
 function buildECGPoints(width, cy) {
     const points = [];
     const beatWidth = width / 3.5;
@@ -139,7 +139,7 @@ export class MainMenu {
         if (this._onStart) this._onStart();
     }
 
-    // LAYER 1 — deep background
+    // LAYER 1 -- deep background
     _buildLayer1() {
         const w = this._app.screen.width;
         const h = this._app.screen.height;
@@ -178,7 +178,7 @@ export class MainMenu {
         }
     }
 
-    // LAYER 2 — room silhouette
+    // LAYER 2 -- room silhouette
     _buildLayer2() {
         const w = this._app.screen.width;
         const h = this._app.screen.height;
@@ -195,7 +195,7 @@ export class MainMenu {
         sil.drawRoundedRect(cx - 30, by - 80, 60, 55, 6);
         sil.endFill();
 
-        // desk — isometric parallelogram (280px wide)
+        // desk -- isometric parallelogram (280px wide)
         sil.beginFill(0x2A2015);
         sil.moveTo(cx - 140, by);
         sil.lineTo(cx + 140, by);
@@ -253,7 +253,7 @@ export class MainMenu {
         this._container.addChild(sil);
     }
 
-    // LAYER 3 — ECG title
+    // LAYER 3 -- ECG title
     _buildLayer3() {
         const w = this._app.screen.width;
         const h = this._app.screen.height;
@@ -313,7 +313,7 @@ export class MainMenu {
         this._container.addChild(this._subtitleText);
     }
 
-    // LAYER 4 — ghost
+    // LAYER 4 -- ghost
     _buildLayer4() {
         const w = this._app.screen.width;
         const h = this._app.screen.height;
@@ -379,7 +379,7 @@ export class MainMenu {
         const g = this._ghostEyes;
         g.clear();
         if (blinking) {
-            // closed eyes — horizontal lines
+            // closed eyes -- horizontal lines
             g.lineStyle(2, 0xffffff, 0.9);
             g.moveTo(-13, -6); g.lineTo(-5, -6);
             g.moveTo(5, -6); g.lineTo(13, -6);
@@ -400,7 +400,7 @@ export class MainMenu {
         }
     }
 
-    // LAYER 5 — code particles
+    // LAYER 5 -- code particles
     _buildLayer5() {
         const snippets = [
             'const', 'async', '=>', 'import', '{}', '//TODO', 'npm run', 'git push',
@@ -434,13 +434,13 @@ export class MainMenu {
         }
     }
 
-    // LAYER 6 — heartbeat pulse
+    // LAYER 6 -- heartbeat pulse
     _buildLayer6() {
         this._pulseGfx = new PIXI.Graphics();
         this._container.addChild(this._pulseGfx);
     }
 
-    // LAYER 7 — DOM buttons
+    // LAYER 7 -- DOM buttons
     _buildLayer7() {
         const wrap = document.createElement('div');
         wrap.id = 'menu-buttons';
@@ -496,7 +496,7 @@ export class MainMenu {
         this._btnWrap = wrap;
     }
 
-    // LAYER 8 — corner text
+    // LAYER 8 -- corner text
     _buildLayer8() {
         const cornerStyle = "position:fixed;bottom:20px;font:11px 'Nunito',sans-serif;color:#333;z-index:10000;opacity:0;transition:opacity 0.5s ease";
 
@@ -560,7 +560,7 @@ export class MainMenu {
                     for (let i = 1; i < pts.length; i++) this._ecgLine.lineTo(pts[i].x, pts[i].y);
                 }
 
-                // title mask — reveal as ECG passes center
+                // title mask -- reveal as ECG passes center
                 if (pts.length > 0) {
                     const lastX = pts[pts.length - 1].x;
                     this._titleMask.clear();

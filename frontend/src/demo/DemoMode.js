@@ -1,9 +1,5 @@
-/**
- * DemoMode — "A Day in the Life" cinematic auto-play sequence.
- *
- * Cycles through all 5 cognitive states in ~3.5 minutes so judges can see
- * every feature without needing a WHOOP strap.
- */
+// demo mode - "a day in the life" cinematic auto play
+// cycles through all 5 states in ~3.5 min so judges can see everything without a whoop
 
 const STATES = {
   RELAXED: 'RELAXED',
@@ -13,12 +9,10 @@ const STATES = {
   WIRED: 'WIRED',
 };
 
-// ---------------------------------------------------------------------------
-// Script definition
-// ---------------------------------------------------------------------------
+// script definition
 
 const SCRIPT = [
-  // ── Chapter 0 — "Intro: The Next 20 Years" (0:00 – 0:15) ──────────────
+  // -- ch0 "Intro: The Next 20 Years" (0:00-0:15)
   {
     title: 'The Next 20 Years',
     state: null,
@@ -39,7 +33,7 @@ const SCRIPT = [
     ],
   },
 
-  // ── Chapter 1 — "Morning: Fresh Start" (0:15 – 0:55) ──────────────────
+  // -- ch1 "Morning: Fresh Start" (0:15-0:55)
   {
     title: 'Morning: Fresh Start',
     state: STATES.RELAXED,
@@ -73,7 +67,7 @@ const SCRIPT = [
     ],
   },
 
-  // ── Chapter 2 — "Deep Work: The Zone" (0:40 – 1:20) ───────────────────
+  // -- ch2 "Deep Work: The Zone" (0:40-1:20)
   {
     title: 'Deep Work: The Zone',
     state: STATES.DEEP_FOCUS,
@@ -97,7 +91,7 @@ const SCRIPT = [
     ],
   },
 
-  // ── Chapter 3 — "Stress: Something Broke" (1:20 – 2:00) ───────────────
+  // -- ch3 "Stress: Something Broke" (1:20-2:00)
   {
     title: 'Stress: Something Broke',
     state: STATES.STRESSED,
@@ -136,7 +130,7 @@ const SCRIPT = [
     ],
   },
 
-  // ── Chapter 4 — "Fatigue: Running on Empty" (2:00 – 2:40) ─────────────
+  // -- ch4 "Fatigue: Running on Empty" (2:00-2:40)
   {
     title: 'Fatigue: Running on Empty',
     state: STATES.FATIGUED,
@@ -165,7 +159,7 @@ const SCRIPT = [
     ],
   },
 
-  // ── Chapter 5 — "Wired: Can't Stop" (2:40 – 3:10) ────────────────────
+  // -- ch5 "Wired: Can't Stop" (2:40-3:10)
   {
     title: "Wired: Can't Stop",
     state: STATES.WIRED,
@@ -189,7 +183,7 @@ const SCRIPT = [
     ],
   },
 
-  // ── Chapter 6 — "Sleep Mode" (3:10 – 3:30) ────────────────────────────
+  // -- ch6 "Sleep Mode" (3:10-3:30)
   {
     title: 'Sleep Mode',
     state: null, // wind-down, no cognitive state
@@ -213,7 +207,7 @@ const SCRIPT = [
     ],
   },
 
-  // ── Chapter 7 — "Outro" (3:30 – 3:35) ────────────────────────────────
+  // -- ch7 "Outro" (3:30-3:35)
   {
     title: 'Outro',
     state: null,
@@ -225,9 +219,7 @@ const SCRIPT = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// DemoMode class
-// ---------------------------------------------------------------------------
+// --- DemoMode class ---
 
 // Intro text lines (shown sequentially during Chapter 0)
 const INTRO_LINES = [
@@ -240,21 +232,13 @@ const INTRO_LINES = [
 
 // Outro text lines (shown simultaneously during Chapter 7)
 const OUTRO_LINES = [
-  'DevLife — The Biometric Developer Simulator',
+  'DevLife -- The Biometric Developer Simulator',
   'A game that understands you.',
   'ROG 20-Year Coding Challenge 2026',
 ];
 
 export class DemoMode {
-  /**
-   * @param {object} deps
-   * @param {object} deps.socket      — WebSocket (or wrapper) for biometric messages
-   * @param {object} deps.ghost       — Ghost AI companion
-   * @param {object} deps.atmosphere  — Atmosphere / lighting controller
-   * @param {object} deps.hud         — HUD overlay
-   * @param {object} deps.furniture   — Furniture / interaction manager
-   * @param {object} deps.player      — Player controller
-   */
+  // takes all the game objects so demo can control everything
   constructor({ socket, ghost, atmosphere, hud, furniture, player }) {
     this._socket = socket;
     this._ghost = ghost;
@@ -274,11 +258,8 @@ export class DemoMode {
     this._overlayTextEls = [];
   }
 
-  // -----------------------------------------------------------------------
-  // Public API
-  // -----------------------------------------------------------------------
+  // --- public api
 
-  /** Start the demo from the beginning. Optionally loop forever. */
   start({ loop = false } = {}) {
     if (this._running) return;
     this._running = true;
@@ -287,7 +268,6 @@ export class DemoMode {
     this._scheduleChapter(0);
   }
 
-  /** Stop the demo and cancel all pending events. */
   stop() {
     this._running = false;
     this._looping = false;
@@ -295,16 +275,13 @@ export class DemoMode {
     this._destroyOverlay();
   }
 
-  /** @returns {boolean} */
   isRunning() {
     return this._running;
   }
 
-  // -----------------------------------------------------------------------
-  // Scheduling
-  // -----------------------------------------------------------------------
+  // --- scheduling
 
-  /** Schedule all events for chapter at `index`, then chain to next chapter. */
+  // schedule all events for a chapter then move to next
   _scheduleChapter(index) {
     if (!this._running) return;
     if (index >= SCRIPT.length) {
@@ -335,9 +312,7 @@ export class DemoMode {
     this._timers.push(nextId);
   }
 
-  // -----------------------------------------------------------------------
-  // Event execution
-  // -----------------------------------------------------------------------
+  // --- event execution
 
   _executeEvent(event, chapter) {
     if (!this._running) return;
@@ -381,15 +356,9 @@ export class DemoMode {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Action handlers — stubs that call into game objects.
-  // Each one is safe to call even if the dependency isn't wired yet.
-  // -----------------------------------------------------------------------
+  // --- action handlers (safe to call even if dependency isnt wired yet)
 
-  /**
-   * Push mock biometric data through the socket (or directly update HUD).
-   * Mirrors the `biometric_update` WebSocket message format.
-   */
+  // push fake biometric data through the socket so the whole pipeline processes it
   _setBiometrics(data, state) {
     const message = {
       type: 'biometric_update',
@@ -410,7 +379,7 @@ export class DemoMode {
       try {
         this._socket.send(JSON.stringify(message));
       } catch {
-        // Socket not ready — fall through to direct update.
+        // Socket not ready -- fall through to direct update.
       }
     }
 
@@ -439,7 +408,7 @@ export class DemoMode {
     if (typeof this._player.moveTo === 'function') {
       this._player.moveTo(target);
     } else {
-      console.log(`[DemoMode] Player → ${target}`);
+      console.log(`[DemoMode] Player -> ${target}`);
     }
   }
 
@@ -479,9 +448,7 @@ export class DemoMode {
     console.log('[DemoMode] 💤 Sleep mode');
   }
 
-  // -----------------------------------------------------------------------
-  // Overlay — Intro & Outro cinematic screens
-  // -----------------------------------------------------------------------
+  // --- overlay (intro + outro cinematic screens)
 
   _createOverlayEl() {
     if (this._overlayEl) return;
@@ -509,7 +476,7 @@ export class DemoMode {
     for (let i = 0; i < INTRO_LINES.length; i++) {
       const line = INTRO_LINES[i];
       const span = document.createElement('div');
-      const isTitle = i === 3; // "DevLife" — larger
+      const isTitle = i === 3; // "DevLife" -- larger
       const isCredit = i === 4;
       span.textContent = line;
       span.style.cssText = `
@@ -583,9 +550,7 @@ export class DemoMode {
     }
   }
 
-  // -----------------------------------------------------------------------
-  // Cleanup
-  // -----------------------------------------------------------------------
+  // --- cleanup
 
   _clearTimers() {
     for (const id of this._timers) {

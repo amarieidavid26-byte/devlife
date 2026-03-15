@@ -9,7 +9,7 @@ const STATE_COLORS = {
 export class BeneathView {
     constructor() {
         this._visible = false;
-        this._data = { heartRate: '—', hrv: '—', recovery: '—', state: 'RELAXED' };
+        this._data = { heartRate: '--', hrv: '--', recovery: '--', state: 'RELAXED' };
         this._playerPos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
         this._ghostPos = { x: window.innerWidth / 2 + 120, y: window.innerHeight / 2 - 40 };
         this._animFrame = null;
@@ -217,7 +217,7 @@ export class BeneathView {
         ctx.fillStyle   = '#B8A88C';
         ctx.globalAlpha = 0.5;
         ctx.textAlign   = 'center';
-        ctx.fillText('what ghost sees — press TAB to hide', W / 2, 72);
+        ctx.fillText('what ghost sees -- press TAB to hide', W / 2, 72);
         ctx.restore();
 
         const stats = [

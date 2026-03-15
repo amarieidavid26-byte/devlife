@@ -194,7 +194,7 @@ export class Ghost {
                 break;
 
             case 'WIRED':
-                // Wide eyes with tiny pupils — jittery
+                // Wide eyes with tiny pupils -- jittery
                 g.beginFill(0xffffff, 0.98);
                 g.drawCircle(-9, -6, 7.5);
                 g.drawCircle( 9, -6, 7.5);
@@ -225,7 +225,7 @@ export class Ghost {
                 break;
 
             case 'RELAXED':
-                // Half-closed eyes — sleepy/content
+                // Half-closed eyes -- sleepy/content
                 g.beginFill(0xffffff, 0.88);
                 g.drawEllipse(-9, -5, 6, 3);
                 g.drawEllipse( 9, -5, 6, 3);
@@ -469,8 +469,8 @@ export class Ghost {
             ? '0 8px 32px rgba(0,0,0,0.6), 0 0 30px rgba(255,80,80,0.6)'
             : `0 8px 32px rgba(0,0,0,0.4), 0 0 20px ${glowColor}`;
 
-        const bpm = data.biometric?.heartRate ?? '—';
-        const recovery = data.biometric?.recovery ?? '—';
+        const bpm = data.biometric?.heartRate ?? '--';
+        const recovery = data.biometric?.recovery ?? '--';
         const recDot = recovery >= 66 ? '🟢' : recovery >= 33 ? '🟡' : '🔴';
 
         const buttons = (data.buttons || ['Not Now']).map(label => `

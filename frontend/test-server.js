@@ -35,7 +35,7 @@ const FAKE_INTERVENTIONS = [
         risky: false
     },
     {
-        message: "Bug on line 7 — you're passing None to a function that expects a list.",
+        message: "Bug on line 7 -- you're passing None to a function that expects a list.",
         priority: 'high',
         reason: 'bug_detected',
         buttons: ['Apply Fix', 'Show More', 'Not Now'],
@@ -139,7 +139,7 @@ function randomIntervention() {
     console.log(`\u{1F47B} Ghost intervention #${interventionCount}: ${intervention.message.slice(0, 60)}...`);
 }
 
-// Biometric update loop — every 5 seconds
+// Biometric update loop -- every 5 seconds
 setInterval(() => {
     if (connectedClients.size === 0) return;
     const bio = getJitteredBiometrics();
@@ -149,7 +149,7 @@ setInterval(() => {
     });
 }, 5000);
 
-// Intervention loop — every 20 seconds
+// Intervention loop -- every 20 seconds
 setInterval(() => {
     if (connectedClients.size === 0) return;
     randomIntervention();
@@ -185,7 +185,7 @@ wss.on('connection', (ws) => {
         switch (msg.type) {
             case 'content_update':
                 console.log(`\u{1F4DD} [${msg.app}] Content update (${msg.content.length} chars)`);
-                // Simulate Ghost analyzing content — send intervention after 3-5 seconds
+                // Simulate Ghost analyzing content -- send intervention after 3-5 seconds
                 setTimeout(() => {
                     if (connectedClients.size > 0) randomIntervention();
                 }, 3000 + Math.random() * 2000);

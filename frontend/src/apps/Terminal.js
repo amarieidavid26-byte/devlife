@@ -13,7 +13,7 @@ const FAKE_RESPONSES = {
     'npm test': 'PASS src/tests/ghost.test.js\n  ✓ biometric state classification (12ms)\n  ✓ intervention threshold adapts to feedback (8ms)\n  ✓ fatigue firewall triggers on risky + fatigued (5ms)\n  ✓ deep focus protection blocks low-priority (3ms)\n\n4 tests passed, 0 failed',
     'npm install': 'added 847 packages in 12s\n\n142 packages are looking for funding\n  run `npm fund` for details',
     'git status': 'On branch main\nYour branch is up to date with \'origin/main\'.\n\nChanges not staged for commit:\n  (use "git add <file>..." to update what will be committed)\n\n\tmodified:   src/ghost_brain.py\n\tmodified:   src/biometric_engine.py\n\nno changes added to commit',
-    'git log --oneline': 'a3f2b1c Wire plant_update to frontend UI\n8d4e9f2 Add fatigue firewall for risky commands\n1b7c3a0 Implement ghost speech bubble typewriter\n5e2d8f1 Initial commit — biometric engine + ghost brain',
+    'git log --oneline': 'a3f2b1c Wire plant_update to frontend UI\n8d4e9f2 Add fatigue firewall for risky commands\n1b7c3a0 Implement ghost speech bubble typewriter\n5e2d8f1 Initial commit -- biometric engine + ghost brain',
     'git log': 'commit a3f2b1c (HEAD -> main)\nAuthor: dev <dev@devlife.rog>\nDate:   Mon Mar 10 14:30:00 2026\n\n    Wire plant_update to frontend UI\n\ncommit 8d4e9f2\nAuthor: dev <dev@devlife.rog>\nDate:   Sun Mar 9 22:15:00 2026\n\n    Add fatigue firewall for risky commands',
     'git diff': 'diff --git a/src/ghost_brain.py b/src/ghost_brain.py\n--- a/src/ghost_brain.py\n+++ b/src/ghost_brain.py\n@@ -45,6 +45,8 @@\n+    # Adaptive cooldown based on user feedback\n+    if self.ignored_count >= 3: self.cooldown = 60',
     'git branch': '* main\n  feature/ghost-vision\n  fix/biometric-thresholds',
@@ -95,7 +95,7 @@ export class TerminalApp {
         });
 
         const title = document.createElement('span');
-        title.textContent = 'Terminal — bash';
+        title.textContent = 'Terminal -- bash';
         Object.assign(title.style, { color: '#888', fontSize: '13px' });
 
         const closeBtn = document.createElement('button');

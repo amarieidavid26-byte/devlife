@@ -21,7 +21,7 @@ import threading
 class MockBiometrics: 
     #biometric values that match a specific cognitive state
     PRESETS = {
-        1: {  # DEEP_FOCUS — moderate strain, good recovery, slightly suppressed HRV
+        1: {  # DEEP_FOCUS -- moderate strain, good recovery, slightly suppressed HRV
             "name": "DEEP_FOCUS",
             "heartRate": 62,
             "strain": 10.2,
@@ -29,11 +29,11 @@ class MockBiometrics:
             "sleepPerformance": 0.85,
             "hrv": 40,
             "estimated_stress": 1.2,
-            # float — blood oxygen saturation percentage (from WHOOP pulse oximeter)
+            # float -- blood oxygen saturation percentage (from WHOOP pulse oximeter)
             "spo2": 97.5,
             "skinTemp": 33.2
         },
-        2: {  # STRESSED — high strain, low recovery, elevated heart rate
+        2: {  # STRESSED -- high strain, low recovery, elevated heart rate
             "name": "STRESSED",
             "heartRate": 95,
             "strain": 18.5,

@@ -10,104 +10,90 @@ import time
 from anthropic import Anthropic
 from config import CLAUDE_API_KEY, VISION_MODEL, VISION_MAX_TOKENS
 
-# Deterministic risky command patterns for the Fatigue Firewall
-# These trigger IMMEDIATELY without waiting for Claude's analysis
+# patterns that trigger the fatigue firewall instantly (no api call)
+# mostly stuff that can nuke your repo or server if you run it while tired
 RISKY_COMMAND_PATTERNS = [
-    (r'rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+|.*-rf\s+)', 'Destructive file deletion (rm -rf)'),
-    (r'git\s+push\s+.*--force', 'Force push — can overwrite remote history'),
-    (r'git\s+push\s+-f\b', 'Force push — can overwrite remote history'),
-    (r'DROP\s+(TABLE|DATABASE|INDEX)', 'Database destructive command'),
-    (r'chmod\s+777\b', 'Overly permissive file permissions'),
-    (r'sudo\s+rm\b', 'Elevated destructive command'),
-    (r'git\s+reset\s+--hard', 'Hard reset — discards all uncommitted changes'),
-    (r'DELETE\s+FROM\s+\w+', 'Database row deletion'),
-    (r':\(\)\{\s*:\|:&\s*\};:', 'Fork bomb — crashes the system'),
-    (r'mkfs\b', 'Disk format command'),
-    (r'kubectl\s+delete', 'Kubernetes resource deletion'),
-    (r'docker\s+rm\s+-f', 'Force remove running container'),
-    (r'npm\s+publish\b', 'Publishing package to npm registry'),
-    (r'\benv\b', 'Environment variable dump — may expose secrets'),
+    (r'rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+|.*-rf\s+)', 'rm -rf, deletes stuff permanently'),
+    (r'git\s+push\s+.*--force', 'force push -- can overwrite remote'),
+    (r'git\s+push\s+-f\b', 'force push -- can overwrite remote'),
+    (r'DROP\s+(TABLE|DATABASE|INDEX)', 'DROP command, destroys db stuff'),
+    (r'chmod\s+777\b', 'chmod 777, way too permissive'),
+    (r'sudo\s+rm\b', 'sudo rm, elevated delete'),
+    (r'git\s+reset\s+--hard', 'hard reset, kills uncommitted changes'),
+    (r'DELETE\s+FROM\s+\w+', 'DELETE FROM, removes db rows'),
+    (r'docker\s+rm\s+-f', 'force removing a running container'),
+    (r'npm\s+publish\b', 'publishing to npm'),
+    (r'\benv\b', 'env dump, might leak secrets'),
+    # might need more patterns later
 ]
 
 class ContentAnalyzer:
+    # prompts for each app type, tells claude what to look for
+    # code and terminal are the most important ones so they get more detail
     APP_PROMPTS = {
-        "code": """You are Ghost, an AI assistant analyzing code in real-time. Analyze this
-code and respond ONLY with a JSON object:
+        "code": """You are Ghost analyzing code. Respond ONLY with JSON:
 {
     "app": "code_editor",
     "language": "detected language",
-    "activity": "what the user is doing (writing, debugging, refactoring, etc)",
+    "activity": "what the user is doing",
     "stuck_probability": 0.0 to 1.0,
-    "stuck_reason": "why the user might be stuck or null",
+    "stuck_reason": "why stuck or null",
     "mistake_detected": true/false,
-    "mistake_description": "describe the bug or error or null",
-    "help_opportunity": "how Ghost could help or null",
+    "mistake_description": "bug description or null",
+    "help_opportunity": "how to help or null",
     "risky_action": false,
     "risky_description": null,
     "suggested_intervention": {
         "type": "fix | suggestion | warning | encouragement",
-        "message": "concise Ghost message (2-3 sentences max)",
+        "message": "short Ghost message, 2-3 sentences",
         "priority": "low | medium | high",
-        "code_suggestion": "corrected code snippet or null"
+        "code_suggestion": "corrected code or null"
     },
-    "context_summary": "one-line summary of coding session"
+    "context_summary": "one line summary"
 }
 
-Signs of bugs and mistakes:
-- TypeError risks (calling methods on None, wrong argument types)
-- Undefined or uninitialized variables
-- Off-by-one errors in loops or array indexing
-- Missing null/None checks before accessing attributes
-- Infinite loops or missing break conditions
-- Missing imports or undefined functions
-- Logic errors (wrong operator, inverted condition)
-- Resource leaks (unclosed files, connections)
+Look for bugs like:
+- TypeError (calling methods on None, wrong types)
+- undefined variables, missing imports
+- off by one errors, infinite loops
+- missing null checks, logic errors
+- unclosed files/connections
 
-Signs of being stuck:
-- Same code unchanged for multiple checks
-- Repeated undo/redo patterns
-- Adding and deleting the same lines""",
+Stuck signals:
+- same code unchanged for a while
+- undo/redo spam
+- adding and deleting the same lines""",
 
-        "terminal": """You are Ghost, an AI assistant monitoring a terminal session.
-Analyze this terminal output and respond with ONLY a JSON object:
+        "terminal": """You are Ghost watching a terminal. Respond with ONLY JSON:
 {
     "app": "terminal",
-    "activity": "what the user is doing (installing, building, debugging, deploying, etc)",
+    "activity": "what theyre doing",
     "stuck_probability": 0.0 to 1.0,
-    "stuck_reason": "why they might be stuck or null",
+    "stuck_reason": "why stuck or null",
     "mistake_detected": true/false,
-    "mistake_description": "describe the error or null",
-    "help_opportunity": "what Ghost could help with or null",
+    "mistake_description": "error desc or null",
+    "help_opportunity": "how ghost could help or null",
     "risky_action": true/false,
-    "risky_description": "what the risky action is or null",
+    "risky_description": "whats risky or null",
     "suggested_intervention": {
         "type": "fix | suggestion | warning | encouragement",
-        "message": "concise Ghost message (2-3 sentences max)",
+        "message": "2-3 sentences max",
         "priority": "low | medium | high | critical",
         "code_suggestion": "correct command or null"
     },
-    "context_summary": "one-line summary of terminal session"
+    "context_summary": "one line summary"
 }
 
-Signs of being stuck in terminal:
-- Same command failing multiple times
-- Repeated errors with slight variations
-- Rapid command history cycling (up-arrow spam)
+Stuck = same command failing over and over, or rapid up-arrow spam
+Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
 
-Signs of risky terminal actions:
-- rm -rf with broad paths (especially / or ~)
-- sudo operations on production servers
-- git push --force to main/master
-- DROP TABLE or database destructive commands
-- chmod 777 on sensitive directories""",
-
-        "browser": """You are Ghost analyzing browser content. Respond with JSON:
+        "browser": """You are Ghost looking at browser content. Respond with JSON only:
 {"app":"browser","activity":"string","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":null,"help_opportunity":"string|null","risky_action":false,"risky_description":null,"suggested_intervention":{"type":"suggestion|encouragement","message":"2-3 sentences","priority":"low|medium","code_suggestion":null},"context_summary":"one-line summary"}""",
 
-        "notes": """You are Ghost analyzing notes/planning content. Respond with JSON:
+        "notes": """Ghost analyzing notes. JSON only:
 {"app":"notes","activity":"string","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":null,"help_opportunity":"string|null","risky_action":false,"risky_description":null,"suggested_intervention":{"type":"suggestion|encouragement","message":"2-3 sentences","priority":"low|medium","code_suggestion":null},"context_summary":"one-line summary"}""",
 
-        "chat": """You are Ghost analyzing a chat conversation. Respond with JSON:
+        "chat": """Ghost analyzing chat. JSON only:
 {"app":"chat","activity":"string","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":"string|null","help_opportunity":"string|null","risky_action":false,"risky_description":null,"suggested_intervention":{"type":"suggestion|warning|encouragement","message":"2-3 sentences","priority":"low|medium|high","code_suggestion":null},"context_summary":"one-line summary"}"""
     }
 
@@ -118,8 +104,7 @@ Signs of risky terminal actions:
         self.content_history = {}
 
     def detect_risky_commands(self, content):
-        """Deterministic pattern matching for dangerous terminal commands.
-        Returns (is_risky, description) — runs INSTANTLY, no API call needed."""
+        # check if content has any dangerous commands, returns before hitting the api
         for pattern, description in RISKY_COMMAND_PATTERNS:
             if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
                 return True, description
@@ -129,7 +114,7 @@ Signs of risky terminal actions:
         # analyze content from an ingame app
         # unlike vision analyzer, which takes ss this takes raw text content which is 10x cheaper
 
-        # CUT 1: Risky command detection BEFORE Claude API call — instant response
+        # CUT 1: check for risky commands before wasting an api call
         if app_type == "terminal":
             is_risky, risky_desc = self.detect_risky_commands(content)
             if is_risky:

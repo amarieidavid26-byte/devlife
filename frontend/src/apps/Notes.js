@@ -1,5 +1,5 @@
 
-const DEFAULT_NOTES = `# DevLife — Sprint Planning
+const DEFAULT_NOTES = `# DevLife -- Sprint Planning
 
 ## Current Tasks
 - [ ] Fix TypeError in calculate_total()
@@ -71,7 +71,7 @@ export class NotesApp {
         title.style.color = '#e6edf3';
         title.style.fontSize = '14px';
         title.style.fontWeight = '600';
-        title.textContent = 'Notes — Planning Board';
+        title.textContent = 'Notes -- Planning Board';
 
         const toolbar = document.createElement('div');
         Object.assign(toolbar.style, { display: 'flex', gap: '4px' });

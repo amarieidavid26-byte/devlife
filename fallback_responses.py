@@ -16,34 +16,37 @@ FALLBACKS = {
         "..."
     ],
     "STRESSED": [
-        "One step at a time. What's the smallest thing you can't fix?",
-        "HRV is dropping. Maybe take a short walk?",
+        "One step at a time. whats the smallest thing you can fix?",
+        "HRV is dropping. maybe take a short walk?",
         "This is a tough one, but you will conquer",
-        "Remember that every expert or legend was once stuck here too",
-        "Try rubber ducking it. Explain the problem out loud"
+        "every expert was stuck here at some point too",
+        "try rubber ducking it. explain the problem out loud",
+        "breathe bro. you got this"
     ],
     "FATIGUED": [
-        "Decision quality drops when you are this tired",
-        "Consider picking this up tomorrow with fresh eyes.",
-        "Maybe grab some water? Small break, big difference.",
-        "Save your work. Just in case.",
-        "Your future self will thank you for resting now."
+        "your decision quality drops when youre this tired",
+        "pick this up tomorrow with fresh eyes.",
+        "grab some water? small break, big difference.",
+        "Save your work. just in case.",
+        "your future self will thank you for resting now",
+        "just save bro"
     ],
     "RELAXED": [
-        "You're in a great headspace. Good time to tackle something creative.",
-        "Nice flow. Want to brainstorm some edge cases?",
-        "You seem sharp right now. Good time for complex problems.",
-        "What would this look like with half the code?",
-        "Your recovery looks great. Make the most of it."
+        "good headspace rn. tackle something creative.",
+        "Nice flow. wanna brainstorm some edge cases?",
+        "You seem sharp right now. good time for the hard stuff",
+        "what would this look like with half the code?",
+        "recovery looks great. make the most of it"
     ],
     "WIRED": [
        "Focus. One thing at a time.",
         "Ship it. Move on.",
-        "Don't overthink it. The first solution usually works.",
-        "Too many tabs open. Pick one thing.",
-        "That's done. Next."
+        "dont overthink it. first solution usually works.",
+        "Too many tabs open. pick one.",
+        "That's done. Next.",
+        # "slow down" -- too preachy, removed
     ],
-    
+
 }
 
 def get_fallback(state):

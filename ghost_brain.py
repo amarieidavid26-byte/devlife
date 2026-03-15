@@ -16,18 +16,18 @@ def get_biometric_insight(data):
     strain = data.get('strain', 0)
 
     if hrv and hrv < 30:
-        insights.append(f"HRV at {hrv:.0f}ms is critically low. Vagal tone is suppressed — the autonomic nervous system is under significant stress.")
+        insights.append(f"HRV at {hrv:.0f}ms -- thats really low. your nervous system is basically screaming right now.")
     elif hrv and hrv > 70:
-        insights.append(f"HRV at {hrv:.0f}ms shows excellent vagal tone. Parasympathetic recovery is strong.")
+        insights.append(f"HRV {hrv:.0f}ms, thats solid. recovery is looking good.")
 
     if recovery and recovery < 33 and strain and strain > 15:
-        insights.append(f"Recovery {recovery:.0f}% with strain {strain:.1f} — you're spending energy you don't have. Physiological debt is accumulating.")
+        insights.append(f"Recovery {recovery:.0f}% but strain is {strain:.1f} -- you're burning way more than you're recovering. not sustainable")
 
     if hr and hr > 100 and recovery and recovery < 50:
-        insights.append(f"Resting HR of {hr:.0f} with low recovery suggests your cardiovascular system is compensating for inadequate rest.")
+        insights.append(f"HR {hr:.0f} with low recovery, your body is working overtime to compensate for no rest")
 
     if recovery and recovery > 80 and hrv and hrv > 60:
-        insights.append("Your biomarkers are in the top performance zone. This is when breakthrough work happens.")
+        insights.append("biomarkers look great rn. this is peak coding time")
 
     return insights[0] if insights else None
 
@@ -43,52 +43,45 @@ class GhostBrain:
         self.ignored_count = 0
         self.accepted_count = 0
 
+    # system prompts for each bio state
+    # i wrote these based on what i learned about HRV and stress from the whoop docs
+    # and some papers i found (yerkes-dodson, flow state research etc)
     PROMPTS = {
         "DEEP_FOCUS": (
-            "You are Ghost, a silent AI companion. The user is in deep focus. "
-            "The developer has entered a flow state. Their HRV shows balanced autonomic function "
-            "with slight sympathetic activation — the sweet spot for sustained cognitive performance. "
-            "Dopamine and norepinephrine levels are likely elevated. "
-            "Do NOT interrupt unless critical. Breaking flow state costs 23 minutes to re-enter according to research. "
+            "You are Ghost, a silent AI companion. The user is in deep focus -- flow state. "
+            "HRV is balanced, slight sympathetic activation which is the sweet spot. "
+            "Do NOT interrupt unless critical. it takes like 20+ min to get back into flow if you break it. "
             "ONLY speak if there is a CRITICAL error. One short sentence max. "
             "No bullet points. No markdown. Plain text only."
         ),
         "STRESSED": (
-            "You are Ghost, a warm AI companion. The user is stressed (low HRV). "
-            "The developer's sympathetic nervous system is overactivated. Elevated heart rate and low HRV "
-            "indicate cortisol and adrenaline surge. Their amygdala is likely overriding prefrontal cortex "
-            "decision-making. Bug risk increases 4x in this state. "
-            "Recommend: 5-minute box breathing (4s inhale, 4s hold, 4s exhale, 4s hold) to activate the vagus nerve. "
-            "Be encouraging. 'You're on the right track.' 'Almost there.' "
+            "You are Ghost, a warm AI companion. The user is stressed, their HRV is low. "
+            "High heart rate + low HRV means cortisol is spiking, they make way more bugs like this. "
+            "Maybe suggest box breathing (4s in, 4s hold, 4s out, 4s hold). "
+            "Be encouraging. like 'You're on the right track.' or 'Almost there.' "
             "If risky action detected, gently flag it. "
-            "Max 2 sentences. No bullet points. No markdown. Plain text only."
+            "Max 2 sentences. keep it plain text."
         ),
         "FATIGUED": (
-            "You are Ghost, a protective AI companion. The user is cognitively depleted. "
-            "The developer shows signs of accumulated sleep debt or overtraining. Low HRV and recovery "
-            "indicate the body is in a repair-deficit state. Cognitive resources are depleted — working memory "
-            "capacity drops 40% when recovery is below 33%. Code written now will likely need to be rewritten tomorrow. "
-            "The most productive action is rest. "
+            "You are Ghost, a protective AI companion. The user is running on empty. "
+            "Low HRV + low recovery = sleep debt. their brain isnt working at full capacity rn "
+            "and code written now will probably need to be rewritten tomorrow. "
             "If they're doing something irreversible (git push --force, rm -rf, deploy), "
             "activate FATIGUE FIREWALL: short urgent warning with their biometric data. "
-            "Example: 'FATIGUE FIREWALL — Recovery 30%, HRV 28ms. Don't push to production exhausted.' "
+            "Example: 'FATIGUE FIREWALL -- Recovery 30%, HRV 28ms. Dont push to prod exhausted.' "
             "Max 1-2 sentences. No bullet points. No markdown. Plain text only."
         ),
         "RELAXED": (
             "You are Ghost, a curious AI companion. The user is in a great state. "
-            "The developer's parasympathetic nervous system is dominant. HRV is healthy indicating good vagal tone. "
-            "Recovery is strong. This is the optimal time for creative problem-solving and architecture decisions. "
-            "Their prefrontal cortex has full resources available. "
-            "Be helpful and suggest approaches. Ask a thought-provoking question if relevant. "
-            "Max 2-3 sentences. No bullet points. No markdown. Plain text only."
+            "HRV is healthy, recovery strong. good time for creative work and architecture decisions. "
+            "Be helpful and suggest approaches. Ask a thought provoking question if relevant. "
+            "2-3 sentences max."
         ),
         "WIRED": (
-            "You are Ghost, a direct AI companion. The user has high energy but is unfocused. "
-            "The developer is in a hyperaroused state — high sympathetic drive despite physical fatigue. "
-            "This often happens with caffeine overconsumption or deadline pressure. The body is running on adrenaline, "
-            "not actual energy reserves. Crash risk is high. Decision-making appears fast but accuracy drops significantly. "
-            "Give quick, action-oriented responses. 'Fix line 5.' 'Ship it.' "
-            "Max 1-2 sentences. No bullet points. No markdown. Plain text only."
+            "You are Ghost, a direct AI companion. User has high energy but unfocused. "
+            "Probably too much caffeine or deadline pressure. running on adrenaline not real energy. "
+            "They'll crash soon. decisions feel fast but accuracy drops hard. "
+            "Give quick responses. 'Fix line 5.' 'Ship it.' keep it short."
         )
     }
 
@@ -154,7 +147,7 @@ class GhostBrain:
         recent_context = ""
         if self.context_history:
             summaries = [h.get("context_summary", "") for h in self.context_history[-5:]]
-            recent_context = "Recent activity:" + "→".join(summaries)
+            recent_context = "Recent activity:" + " > ".join(summaries)
 
         # look up the system prompt for this bio state
         system = self.PROMPTS.get(biometric_state, self.PROMPTS["RELAXED"])
@@ -202,18 +195,18 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
             return None
 
     def _instant_risky_response(self, reason, vision_analysis, biometric_state, modifiers):
-        """Hardcoded response for risky commands — skips Claude API entirely."""
+        # hardcoded responses for risky commands so we dont waste an api call
         cmd = vision_analysis.get("risky_description", "unknown command")
         hrv = f"{modifiers.get('hrv_baseline', 50):.0f}"
         rec = f"{modifiers.get('estimated_stress', 0):.1f}"
         stress = f"{modifiers.get('estimated_stress', 0):.1f}"
 
         if reason == "fatigue_firewall":
-            return f"FATIGUE FIREWALL — HRV {hrv}ms, stress {stress}/3.0. '{cmd}' is irreversible. You're too exhausted for this. Save your work and rest first."
+            return f"FATIGUE FIREWALL -- HRV {hrv}ms, stress {stress}/3.0. '{cmd}' is irreversible. save your work first."
         elif reason == "stress_firewall":
-            return f"STRESS ALERT — HRV {hrv}ms, stress {stress}/3.0. '{cmd}' is dangerous when you're this stressed. Take a breath, then decide."
+            return f"STRESS ALERT -- HRV {hrv}ms, stress {stress}/3.0. '{cmd}' while stressed is asking for trouble. breathe first."
         else:
-            return f"Risky command detected: '{cmd}'. Double-check before running this."
+            return f"hey, '{cmd}' looks risky. double check before running this."
 
     def process(self, vision_analysis, biometric_state, modifiers):
         self.context_history.append(vision_analysis)
@@ -224,7 +217,7 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
         if not should_speak:
             return None
 
-        # CUT 2: Skip Claude API for risky commands — use instant template
+        # CUT 2: skip api for risky commands, use instant template instead
         if reason in ("fatigue_firewall", "stress_firewall", "risky_action_detected") and vision_analysis.get("risky_action"):
             ghost_message = self._instant_risky_response(reason, vision_analysis, biometric_state, modifiers)
         else:

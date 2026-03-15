@@ -3,7 +3,7 @@ import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
 
 export const GRID_SIZE = 12;
 
-// Color palette — warm Animal Crossing nighttime
+// Color palette -- warm Animal Crossing nighttime
 const COL = {
     bg:         0x1a1a2e,
     floor:      0x8B7355, // warm medium wood
@@ -47,7 +47,7 @@ export class Room {
                 const tile = new PIXI.Graphics();
                 const { x, y } = this.gridToScreen(gx, gy);
 
-                // Diamond tile fill — warm wood checkerboard
+                // Diamond tile fill -- warm wood checkerboard
                 const shade = (gx + gy) % 2 === 0 ? COL.floor : COL.floorAlt;
                 tile.beginFill(shade, 1);
                 tile.moveTo(x, y);
@@ -62,15 +62,15 @@ export class Room {
                 tile.moveTo(x - TILE_WIDTH / 4, y + TILE_HEIGHT / 2);
                 tile.lineTo(x + TILE_WIDTH / 4, y + TILE_HEIGHT / 2);
 
-                // Extra wood grain lines — thin diagonal parallels
+                // Extra wood grain lines -- thin diagonal parallels
                 tile.lineStyle(0.5, 0x7A6040, 0.08);
-                // line 1 — upper-left to lower-right bias
+                // line 1 -- upper-left to lower-right bias
                 tile.moveTo(x - TILE_WIDTH * 0.3, y + TILE_HEIGHT * 0.3);
                 tile.lineTo(x + TILE_WIDTH * 0.1,  y + TILE_HEIGHT * 0.7);
-                // line 2 — parallel, offset
+                // line 2 -- parallel, offset
                 tile.moveTo(x - TILE_WIDTH * 0.15, y + TILE_HEIGHT * 0.25);
                 tile.lineTo(x + TILE_WIDTH * 0.25, y + TILE_HEIGHT * 0.65);
-                // line 3 — shorter accent
+                // line 3 -- shorter accent
                 tile.moveTo(x - TILE_WIDTH * 0.05, y + TILE_HEIGHT * 0.35);
                 tile.lineTo(x + TILE_WIDTH * 0.15, y + TILE_HEIGHT * 0.55);
 
@@ -98,7 +98,7 @@ export class Room {
             const { x, y } = this.gridToScreen(0, gy);
             const panel = new PIXI.Graphics();
 
-            // Main face — warm cream
+            // Main face -- warm cream
             panel.beginFill(COL.wallLeft);
             panel.moveTo(x, y);
             panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
@@ -107,7 +107,7 @@ export class Room {
             panel.closePath();
             panel.endFill();
 
-            // Baseboard strip — dark wood trim
+            // Baseboard strip -- dark wood trim
             panel.beginFill(COL.baseboard);
             panel.moveTo(x,                  y);
             panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
@@ -125,12 +125,12 @@ export class Room {
             panel.moveTo(x,                  y - baseH + 1);
             panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH + 1);
 
-            // Chair-rail groove at 30% — medium wood
+            // Chair-rail groove at 30% -- medium wood
             panel.lineStyle(1.2, COL.chairRail, 0.5);
             panel.moveTo(x,                  y - railY);
             panel.lineTo(x - TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - railY);
 
-            // Plaster texture — faint scattered dots
+            // Plaster texture -- faint scattered dots
             panel.lineStyle(0);
             panel.beginFill(0xC4B598, 0.05);
             const lOff = TILE_WIDTH / 2;
@@ -155,7 +155,7 @@ export class Room {
             const { x, y } = this.gridToScreen(gx, 0);
             const panel = new PIXI.Graphics();
 
-            // Main face — slightly darker cream
+            // Main face -- slightly darker cream
             panel.beginFill(COL.wallRight);
             panel.moveTo(x, y);
             panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
@@ -164,7 +164,7 @@ export class Room {
             panel.closePath();
             panel.endFill();
 
-            // Baseboard strip — dark wood trim
+            // Baseboard strip -- dark wood trim
             panel.beginFill(COL.baseboard, 0.85);
             panel.moveTo(x,                  y);
             panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2);
@@ -182,7 +182,7 @@ export class Room {
             panel.moveTo(x,                  y - baseH + 1);
             panel.lineTo(x + TILE_WIDTH / 2, y + TILE_HEIGHT / 2 - baseH + 1);
 
-            // Plaster texture — faint scattered dots
+            // Plaster texture -- faint scattered dots
             panel.lineStyle(0);
             panel.beginFill(0xC4B598, 0.05);
             const rOff = TILE_WIDTH / 2;
@@ -208,7 +208,7 @@ export class Room {
         const winW = TILE_WIDTH * 0.7;
         const winH2 = 60;
         const winTop = winY - wallH * 0.75;
-        // night sky fill — deep blue
+        // night sky fill -- deep blue
         win.beginFill(0x1a2040);
         win.moveTo(winX, winTop);
         win.lineTo(winX + winW / 2, winTop + TILE_HEIGHT * 0.35);
@@ -225,7 +225,7 @@ export class Room {
         win.lineTo(winX, winTop + winH2);
         win.closePath();
         win.endFill();
-        // window frame — warm wood
+        // window frame -- warm wood
         win.lineStyle(2, COL.baseboard, 0.9);
         win.moveTo(winX, winTop);
         win.lineTo(winX + winW / 2, winTop + TILE_HEIGHT * 0.35);
@@ -237,7 +237,7 @@ export class Room {
         win.moveTo(winX, winTop + winH2 / 2);
         win.lineTo(winX + winW / 2, midY);
         win.lineStyle(0);
-        // stars — more of them, soft white
+        // stars -- more of them, soft white
         win.beginFill(0xffffff, 0.7);
         win.drawCircle(winX + 8, winTop + 12, 1);
         win.drawCircle(winX + winW / 2 - 6, winTop + 8 + TILE_HEIGHT * 0.15, 0.8);
@@ -247,13 +247,13 @@ export class Room {
         win.drawCircle(winX + 4, winTop + winH2 * 0.22, 0.7);
         win.drawCircle(winX + winW / 2 - 3, winTop + winH2 * 0.45, 0.6);
         win.endFill();
-        // Curtain rod — thin line across top of window
+        // Curtain rod -- thin line across top of window
         win.lineStyle(1.5, 0x8B7348, 0.9);
         const rodExtend = 4;
         win.moveTo(winX - rodExtend * 0.1, winTop - 3);
         win.lineTo(winX + winW / 2 + rodExtend, winTop + TILE_HEIGHT * 0.35 - 3 + rodExtend * 0.5);
 
-        // Left curtain — thin rectangle on left side
+        // Left curtain -- thin rectangle on left side
         win.beginFill(0xB0A090, 0.7);
         win.moveTo(winX, winTop);
         win.lineTo(winX + 4 * 0.5, winTop + 4 * 0.25); // skewed 4px wide
@@ -262,7 +262,7 @@ export class Room {
         win.closePath();
         win.endFill();
 
-        // Right curtain — thin rectangle on right side
+        // Right curtain -- thin rectangle on right side
         win.beginFill(0xB0A090, 0.65);
         const rcX = winX + winW / 2;
         const rcOff = TILE_HEIGHT * 0.35;
@@ -283,7 +283,7 @@ export class Room {
         corner.lineTo(cx, cy);
         this.wallContainer.addChild(corner);
 
-        // Ceiling light fixture — small circle where walls meet ceiling
+        // Ceiling light fixture -- small circle where walls meet ceiling
         const lightFixture = new PIXI.Graphics();
         const { x: lx, y: ly } = this.gridToScreen(3, 0);
         const lightCx = lx + TILE_WIDTH / 4;
@@ -297,7 +297,7 @@ export class Room {
         lightFixture.endFill();
         this.wallContainer.addChild(lightFixture);
 
-        // Light cone on floor — very subtle trapezoid glow
+        // Light cone on floor -- very subtle trapezoid glow
         const lightCone = new PIXI.Graphics();
         const { x: flx, y: fly } = this.gridToScreen(3, 3);
         lightCone.beginFill(0xFFE4B5, 0.02);
@@ -309,11 +309,11 @@ export class Room {
         lightCone.endFill();
         this.floorContainer.addChild(lightCone);
 
-        // Door mat — small rounded rect near the exit (bottom-right corner of floor)
+        // Door mat -- small rounded rect near the exit (bottom-right corner of floor)
         const mat = new PIXI.Graphics();
         const { x: mx, y: my } = this.gridToScreen(GRID_SIZE - 1, GRID_SIZE - 1);
         mat.beginFill(0x8B6B3A, 0.6);
-        // isometric mat — small diamond shape
+        // isometric mat -- small diamond shape
         const mw = 15, mh = 8;
         mat.moveTo(mx, my + TILE_HEIGHT / 2 - mh);
         mat.lineTo(mx + mw / 2, my + TILE_HEIGHT / 2 - mh / 2);
@@ -326,18 +326,18 @@ export class Room {
 
     _drawClock() {
         const wallH = 120;
-        // Right wall face at gx = 6 — roughly the centre of the back-right wall
+        // Right wall face at gx = 6 -- roughly the centre of the back-right wall
         const { x: wx, y: wy } = this.gridToScreen(6, 0);
         const cx = wx + TILE_WIDTH  / 4;              // horizontal centre of face
         const cy = wy + TILE_HEIGHT / 4 - wallH * 0.62; // 62% up the wall
 
-        // LED panel — warm dark wood frame
+        // LED panel -- warm dark wood frame
         const screen = new PIXI.Graphics();
         screen.beginFill(0x1a1510);
         screen.drawRoundedRect(-38, -14, 76, 28, 5);
         screen.endFill();
 
-        // Outer bezel border — warm wood
+        // Outer bezel border -- warm wood
         screen.lineStyle(1, 0x4A3C28, 0.9);
         screen.drawRoundedRect(-38, -14, 76, 28, 5);
 
@@ -354,7 +354,7 @@ export class Room {
         }
         screen.endFill();
 
-        // time text — warm moccasin glow
+        // time text -- warm moccasin glow
         this._clockText = new PIXI.Text('00:00', {
             fontFamily:         'monospace',
             fontSize:           16,

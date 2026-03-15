@@ -2,8 +2,9 @@
 # smart ass file right here
 # connects to whoop api via oauth2, fetches recov/strain/sleep data and classifies them into
 # deepfocus - stressed - wired - fatigued - relaxed
-# the classification is based on Peifer 2014, inverted U model adn the Yerkes-Dodson law.
+# classification is based on the inverted U model (yerkes-dodson basically)
 # performance peaks at moderate arousal, drops at both extremes
+# i read a bunch of papers on this, peifer 2014 was the most useful one
 # alright lets code enough science
 
 import httpx
@@ -127,7 +128,7 @@ class BiometricEngine:
         try:
             recovery_resp = httpx.get(f"{self.API_BASE}/recovery", headers=headers, params={"limit": 1})
             if recovery_resp.status_code == 401:
-                print("[bio] Token expired — need to re-authenticate")
+                print("[bio] Token expired -- need to re-authenticate")
                 self.access_token = None
                 return None
             if recovery_resp.status_code < 200 or recovery_resp.status_code >= 300:
@@ -137,7 +138,7 @@ class BiometricEngine:
 
             cycle_resp = httpx.get(f"{self.API_BASE}/cycle", headers=headers, params={"limit": 1})
             if cycle_resp.status_code == 401:
-                print("[bio] Token expired — need to re-authenticate")
+                print("[bio] Token expired -- need to re-authenticate")
                 self.access_token = None
                 return None
             if cycle_resp.status_code < 200 or cycle_resp.status_code >= 300:
@@ -152,11 +153,11 @@ class BiometricEngine:
                     sleep_data = sleep_resp.json()
                     self._sleep_error_logged = False
                 elif not self._sleep_error_logged:
-                    print(f"[bio] Sleep API returned HTTP {sleep_resp.status_code} — skipping sleep data")
+                    print(f"[bio] Sleep API returned HTTP {sleep_resp.status_code} -- skipping sleep data")
                     self._sleep_error_logged = True
             except Exception as e:
                 if not self._sleep_error_logged:
-                    print(f"[bio] Sleep API failed: {e} — skipping sleep data")
+                    print(f"[bio] Sleep API failed: {e} -- skipping sleep data")
                     self._sleep_error_logged = True
 
             recovery_records = recovery_data.get("records", [])

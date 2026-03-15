@@ -53,9 +53,9 @@ export class TownDialogue {
         this._stateColor = 0xe94560; // default accent, can be updated
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Public API
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     say(text, duration = 3000) {
         const ghostPos = this._getGhostPos ? this._getGhostPos() : { x: 0, y: 0 };
@@ -120,9 +120,9 @@ export class TownDialogue {
         this._getGhostPos = null;
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Bubble creation
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _createBubble(text, ghostPos, duration) {
         // Remove any existing bubble so they don't pile up
@@ -208,9 +208,9 @@ export class TownDialogue {
         this._bubbles.splice(index, 1);
     }
 
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
     //  Ambient line selection
-    // ─────────────────────────────────────────────
+    // ---------------------------------------------
 
     _scheduleNextAmbient() {
         const delay = 15000 + Math.random() * 10000; // 15-25 seconds
@@ -232,7 +232,7 @@ export class TownDialogue {
     }
 
     _findNearbyBuilding(playerPos) {
-        // Building centers in screen space — use the same isometric formula as Town.js
+        // Building centers in screen space -- use the same isometric formula as Town.js
         // cartToIso: x = (gx-gy)*32, y = (gx+gy)*16
         // Then offset by viewport center / zoom and grid offset
         // Since playerPos is in the same coordinate space (container-local),

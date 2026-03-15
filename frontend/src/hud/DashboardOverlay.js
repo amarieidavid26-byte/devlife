@@ -748,7 +748,7 @@ export class DashboardOverlay {
         const stressPenalty = Math.max(0, 1 - stress / 3);
         this._targetCQI = Math.round((recFactor * 0.4 + hrvFactor * 0.35 + stressPenalty * 0.25) * 100);
 
-        // ANS Balance — SNS driven by stress, PNS driven by HRV
+        // ANS Balance -- SNS driven by stress, PNS driven by HRV
         this._targetSNS = Math.min(stress / 3, 1);
         this._targetPNS = Math.min(hrv / 80, 1);
     }

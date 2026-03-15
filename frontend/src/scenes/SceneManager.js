@@ -43,7 +43,7 @@ export class SceneManager {
     const color = options.color ?? 0x000000;
     const halfDuration = duration / 2;
 
-    // No current scene — skip the fade-out, just enter directly
+    // No current scene -- skip the fade-out, just enter directly
     if (!this._currentScene) {
       this._currentScene = sceneName;
       const next = this._scenes.get(sceneName);
@@ -61,7 +61,7 @@ export class SceneManager {
 
     const startTime = Date.now();
 
-    // Phase 1: fade out (alpha 0 → 1)
+    // Phase 1: fade out (alpha 0 -> 1)
     const fadeOut = () => {
       const elapsed = Date.now() - startTime;
       const t = Math.min(elapsed / halfDuration, 1);
@@ -84,7 +84,7 @@ export class SceneManager {
       this._app.stage.removeChild(overlay);
       this._app.stage.addChild(overlay);
 
-      // Phase 2: fade in (alpha 1 → 0)
+      // Phase 2: fade in (alpha 1 -> 0)
       const fadeInStart = Date.now();
       const fadeIn = () => {
         const elapsed2 = Date.now() - fadeInStart;
@@ -96,7 +96,7 @@ export class SceneManager {
           return;
         }
 
-        // Done — clean up
+        // Done -- clean up
         this._app.stage.removeChild(overlay);
         overlay.destroy();
         this._transitioning = false;

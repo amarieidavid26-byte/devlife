@@ -54,7 +54,7 @@ export class Atmosphere {
         this._buildMoonlight();
         this._redrawOverlay();
 
-        // Vignette overlay — added last so it draws on top of everything
+        // Vignette overlay -- added last so it draws on top of everything
         this._vignetteSprite = null;
         this._vignetteContainer = new PIXI.Container();
         this.container.addChild(this._vignetteContainer);
@@ -84,7 +84,7 @@ export class Atmosphere {
         }
     }
 
-    // ── Firefly-style glowing particles ──
+    // -- Firefly-style glowing particles --
 
     _initFireflies() {
         for (let i = 0; i < 6; i++) {
@@ -109,7 +109,7 @@ export class Atmosphere {
         }
     }
 
-    // ── Warm lamp light pool on floor ──
+    // -- Warm lamp light pool on floor --
 
     _buildLampGlow() {
         const canvas = document.createElement('canvas');
@@ -130,7 +130,7 @@ export class Atmosphere {
         this.container.addChild(this._lampGlow);
     }
 
-    // ── Moonlight beam on floor near window ──
+    // -- Moonlight beam on floor near window --
 
     _buildMoonlight() {
         this._moonlight = new PIXI.Graphics();
@@ -148,7 +148,7 @@ export class Atmosphere {
         this.container.addChild(this._moonlight);
     }
 
-    // ── Vignette: smooth radial gradient via offscreen canvas ──
+    // -- Vignette: smooth radial gradient via offscreen canvas --
 
     _buildVignette() {
         const w = window.innerWidth;
@@ -183,7 +183,7 @@ export class Atmosphere {
         this._vignetteContainer.addChild(this._vignetteSprite);
     }
 
-    // ── State transition burst particles ──
+    // -- State transition burst particles --
 
     _spawnBurst(color) {
         const cx = window.innerWidth / 2;
@@ -360,7 +360,7 @@ export class Atmosphere {
             }
         }
 
-        // dust motes — slow drift
+        // dust motes -- slow drift
         for (const d of this._dustMotes) {
             d.phase += (delta / 60) * (Math.PI * 2 / d.sinePeriod);
             d.gfx.x += d.vx * delta;
@@ -371,7 +371,7 @@ export class Atmosphere {
             }
         }
 
-        // fireflies — pulsing warm glow
+        // fireflies -- pulsing warm glow
         for (const f of this._fireflies) {
             f.phase += (delta / 60) * (Math.PI * 2 / f.sinePeriod);
             f.pulsePhase += (delta / 60) * (Math.PI * 2 / f.pulsePeriod);
@@ -429,12 +429,12 @@ export class Atmosphere {
             p.gfx.destroy();
         }
 
-        // ── Ambient light flicker ──
+        // -- Ambient light flicker --
         this._flickerBase += delta;
         const flicker = (Math.random() - 0.5) * 0.01;
         this._overlay.alpha = Math.max(0, Math.min(1, this._curAlpha + flicker));
 
-        // ── State-transition burst particles ──
+        // -- State-transition burst particles --
         for (let i = this._burstParticles.length - 1; i >= 0; i--) {
             const bp = this._burstParticles[i];
             bp.gfx.x += bp.vx * delta;

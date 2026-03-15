@@ -114,7 +114,7 @@ export class CoworkScene {
         this._drawCeilingLights();
         this._spawnNPCs();
 
-        // player — lives in an offset sub-container so raw cartToIso aligns with _gridToScreen tiles
+        // player -- lives in an offset sub-container so raw cartToIso aligns with _gridToScreen tiles
         this._playerOffset = new PIXI.Container();
         this._playerOffset.x = (window.innerWidth / ZOOM) / 2;
         this._playerOffset.y = (window.innerHeight / ZOOM) / 2 - (GRID * TILE_HEIGHT / 2);
@@ -233,7 +233,7 @@ export class CoworkScene {
             npc.ghostContainer.y = npc.ghostBaseY + bobY;
             npc.badge.y = npc.badgeBaseY;
 
-            // typing — arm wiggle
+            // typing -- arm wiggle
             const typeSpeed = npc.def.state === 'STRESSED' ? 0.12 :
                               npc.def.state === 'FATIGUED' ? 0.03 : 0.06;
             const typeAmp   = npc.def.state === 'STRESSED' ? 1.5 :
@@ -261,7 +261,7 @@ export class CoworkScene {
                 }
             }
 
-            // Alex: sweat drops — appear/disappear every 2 seconds
+            // Alex: sweat drops -- appear/disappear every 2 seconds
             if (npc.sweatDrops) {
                 const sweatCycle = Math.floor(this._elapsed) % 4;
                 for (const drop of npc.sweatDrops) {
@@ -311,7 +311,7 @@ export class CoworkScene {
         }
     }
 
-    // ── floor ─────────────────────────────────────────────────────────
+    // -- floor ---------------------------------------------------------
 
     _drawFloor() {
         for (let gx = 0; gx < GRID; gx++) {
@@ -337,7 +337,7 @@ export class CoworkScene {
         }
     }
 
-    // ── walls ─────────────────────────────────────────────────────────
+    // -- walls ---------------------------------------------------------
 
     _drawWalls() {
         const baseH = 6;
@@ -450,7 +450,7 @@ export class CoworkScene {
         this._container.addChild(notes);
     }
 
-    // ── furniture ─────────────────────────────────────────────────────
+    // -- furniture -----------------------------------------------------
 
     _drawFurniture() {
         this._deskFrontPanels = [];
@@ -471,7 +471,7 @@ export class CoworkScene {
         const c = this._tileCenter(gx, gy);
         const g = new PIXI.Graphics();
 
-        // desk top (iso diamond) — 1.8x scale
+        // desk top (iso diamond) -- 1.8x scale
         g.beginFill(COL.desk);
         g.moveTo(c.x, c.y - 32);
         g.lineTo(c.x + 43, c.y - 18);
@@ -496,7 +496,7 @@ export class CoworkScene {
         g.closePath();
         g.endFill();
 
-        // monitor — sits on desk surface (back edge at c.y - 32)
+        // monitor -- sits on desk surface (back edge at c.y - 32)
         const monY = c.y - 32;
         g.beginFill(COL.monFrame);
         g.drawRoundedRect(c.x - 16, monY - 24, 33, 24, 3);
@@ -540,10 +540,10 @@ export class CoworkScene {
             g.drawRect(c.x + 22, c.y - 29, 2, 1);
             g.endFill();
         }
-        // stationIdx === 2 (Mia): nothing — just her head resting on desk
+        // stationIdx === 2 (Mia): nothing -- just her head resting on desk
         // stationIdx === 3 (empty): nothing
 
-        // Front panel (modesty panel — hides NPC legs) — stored separately
+        // Front panel (modesty panel -- hides NPC legs) -- stored separately
         // Added AFTER NPC in _spawnNPCs for correct z-order
         const panelG = new PIXI.Graphics();
         panelG.beginFill(0x7A6A4A);
@@ -622,7 +622,7 @@ export class CoworkScene {
         this._container.addChild(hint);
     }
 
-    // ── ceiling lights ────────────────────────────────────────────────
+    // -- ceiling lights ------------------------------------------------
 
     _drawCeilingLights() {
         // 4 rectangular light panels (one per quadrant)
@@ -642,7 +642,7 @@ export class CoworkScene {
         }
     }
 
-    // ── NPCs ──────────────────────────────────────────────────────────
+    // -- NPCs ----------------------------------------------------------
 
     _spawnNPCs() {
         for (const def of NPCS) {
@@ -786,7 +786,7 @@ export class CoworkScene {
                 npcGroup.addChild(this._deskFrontPanels[panelIdx]);
             }
 
-            // mini ghost — to the RIGHT and ABOVE the NPC
+            // mini ghost -- to the RIGHT and ABOVE the NPC
             const ghostContainer = new PIXI.Container();
             ghostContainer.x = chairPos.x + 30;
             const ghostBaseY = chairPos.y - 65;
@@ -874,7 +874,7 @@ export class CoworkScene {
         }
     }
 
-    // ── mini ghost ────────────────────────────────────────────────────
+    // -- mini ghost ----------------------------------------------------
 
     _drawMiniGhost(g, color, state) {
         const s = 0.55;
@@ -958,7 +958,7 @@ export class CoworkScene {
         }
     }
 
-    // ── biometric badge ───────────────────────────────────────────────
+    // -- biometric badge -----------------------------------------------
 
     _createBadge(def) {
         const color = STATE_HEX[def.state] || '#888';
@@ -988,7 +988,7 @@ export class CoworkScene {
         return container;
     }
 
-    // ── notification toasts ───────────────────────────────────────────
+    // -- notification toasts -------------------------------------------
 
     _spawnNotif() {
         const npc = this._npcs[Math.floor(Math.random() * this._npcs.length)];
@@ -1020,7 +1020,7 @@ export class CoworkScene {
         this._notifSprites.push(toast);
     }
 
-    // ── interactions ───────────────────────────────────────────────────
+    // -- interactions ---------------------------------------------------
 
     _checkProximity() {
         if (!this._player || this._activePanel) return;
