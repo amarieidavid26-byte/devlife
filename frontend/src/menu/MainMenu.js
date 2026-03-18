@@ -91,17 +91,39 @@ export class MainMenu {
         this._titleText = null;
         this._titleGlow = null;
         this._subtitleText = null;
+        // cinematic intro state
+        this._blackOverlay = null;
+        this._soundManager = null;
+        this._ecgStarted = false;
+        this._titleShaking = false;
+        this._titleShakeStart = 0;
+        this._ghostEntered = false;
+        this._ghostFinalX = 0;
+        this._particlesRevealed = false;
+        this._buttons = [];
+        this._rogText = null;
     }
 
-    show(onStart, onDemo, onSettings) {
+    show(onStart, onDemo, onSettings, soundManager) {
         this._onStart = onStart;
         this._onDemo = onDemo || null;
         this._onSettings = onSettings || null;
+        this._soundManager = soundManager || null;
         this._startTime = Date.now();
         this._app.stage.addChild(this._container);
 
         this._buildLayer1();
         this._buildLayer2();
+
+        // black overlay between bg and content for cinematic fade
+        const w = this._app.screen.width;
+        const h = this._app.screen.height;
+        this._blackOverlay = new PIXI.Graphics();
+        this._blackOverlay.beginFill(0x000000);
+        this._blackOverlay.drawRect(0, 0, w, h);
+        this._blackOverlay.endFill();
+        this._container.addChild(this._blackOverlay);
+
         this._buildLayer3();
         this._buildLayer4();
         this._buildLayer5();
@@ -320,7 +342,8 @@ export class MainMenu {
         const cy = h * 0.28;
 
         this._ghostContainer = new PIXI.Container();
-        this._ghostContainer.x = w / 2 + 250;
+        this._ghostFinalX = w / 2 + 250;
+        this._ghostContainer.x = this._ghostFinalX + 200;
         this._ghostContainer.y = cy;
         this._ghostContainer.scale.set(0);
         this._container.addChild(this._ghostContainer);
@@ -419,7 +442,8 @@ export class MainMenu {
                 fontSize: 11,
                 fill: color,
             });
-            t.alpha = 0.08 + Math.random() * 0.12;
+            const particleAlpha = 0.08 + Math.random() * 0.12;
+            t.alpha = 0;
             t.x = Math.random() * w;
             t.y = h + Math.random() * h;
             this._container.addChild(t);
@@ -430,6 +454,7 @@ export class MainMenu {
                 driftPeriod: 3 + Math.random() * 5,
                 baseX: t.x,
                 time: Math.random() * 100,
+                targetAlpha: particleAlpha,
             });
         }
     }
@@ -447,7 +472,7 @@ export class MainMenu {
         wrap.style.cssText = [
             'position:fixed', 'bottom:15vh', 'left:50%', 'transform:translateX(-50%)',
             'display:flex', 'flex-direction:column', 'align-items:center', 'gap:12px',
-            'z-index:10000', 'opacity:0', 'transition:opacity 0.5s ease',
+            'z-index:10000',
         ].join(';');
 
         const btnStyle = [
@@ -486,9 +511,10 @@ export class MainMenu {
         btns.forEach(({ label, action }) => {
             const b = document.createElement('button');
             b.textContent = label;
-            b.style.cssText = btnStyle;
+            b.style.cssText = btnStyle + ';opacity:0;transform:translateY(10px);transition:all 0.4s ease';
             b.addEventListener('click', action);
             wrap.appendChild(b);
+            this._buttons.push(b);
         });
 
         document.body.appendChild(wrap);
@@ -496,8 +522,20 @@ export class MainMenu {
         this._btnWrap = wrap;
     }
 
-    // LAYER 8 -- corner text
+    // LAYER 8 -- corner text + ROG
     _buildLayer8() {
+        // PIXI ROG text at bottom center
+        this._rogText = new PIXI.Text('Joc realizat pentru ROG 20-Year Coding Challenge 2026', {
+            fontFamily: "'Nunito', sans-serif",
+            fontSize: 11,
+            fill: 0xB8A88C,
+        });
+        this._rogText.anchor.set(0.5);
+        this._rogText.x = this._app.screen.width / 2;
+        this._rogText.y = this._app.screen.height - 24;
+        this._rogText.alpha = 0;
+        this._container.addChild(this._rogText);
+
         const cornerStyle = "position:fixed;bottom:20px;font:11px 'Nunito',sans-serif;color:#333;z-index:10000;opacity:0;transition:opacity 0.5s ease";
 
         const right = document.createElement('div');
@@ -521,6 +559,17 @@ export class MainMenu {
         const w = this._app.screen.width;
         const h = this._app.screen.height;
 
+        // --- Black overlay fade (0.5s to 2.5s) ---
+        if (this._blackOverlay) {
+            if (elapsed < 0.5) {
+                this._blackOverlay.alpha = 1;
+            } else if (elapsed < 2.5) {
+                this._blackOverlay.alpha = 1 - easeOutQuad((elapsed - 0.5) / 2.0);
+            } else if (this._blackOverlay.alpha > 0) {
+                this._blackOverlay.alpha = 0;
+            }
+        }
+
         // --- Layer 1: drift circles ---
         for (const c of this._bgCircles) {
             c.gfx.x += c.vx * delta;
@@ -531,10 +580,14 @@ export class MainMenu {
             if (c.gfx.y > h + 400) c.gfx.y = -400;
         }
 
-        // --- Layer 3: ECG drawing ---
-        if (elapsed > 0.3 && this._ecgDrawIdx < this._ecgPoints.length) {
-            const ecgElapsed = elapsed - 0.3;
-            const ecgDuration = 1.7; // 0.3 to 2.0
+        // --- Layer 3: ECG drawing (starts at 0.5s, 3.0s duration) ---
+        if (elapsed > 0.5 && this._ecgDrawIdx < this._ecgPoints.length) {
+            if (!this._ecgStarted) {
+                this._ecgStarted = true;
+                if (this._soundManager) this._soundManager.playHeartbeat();
+            }
+            const ecgElapsed = elapsed - 0.5;
+            const ecgDuration = 3.0;
             const targetIdx = Math.min(
                 this._ecgPoints.length,
                 Math.floor((ecgElapsed / ecgDuration) * this._ecgPoints.length)
@@ -567,7 +620,27 @@ export class MainMenu {
                     this._titleMask.beginFill(0xffffff);
                     this._titleMask.drawRect(0, 0, lastX, h);
                     this._titleMask.endFill();
+
+                    // trigger title shake when ECG reaches title center
+                    if (!this._titleShaking && !this._titleShakeStart && lastX >= w / 2) {
+                        this._titleShaking = true;
+                        this._titleShakeStart = elapsed;
+                    }
                 }
+            }
+        }
+
+        // --- Title shake (200ms power-on impact) ---
+        if (this._titleShaking) {
+            const shakeElapsed = elapsed - this._titleShakeStart;
+            if (shakeElapsed < 0.2) {
+                const offsetX = (Math.random() - 0.5) * 6;
+                this._titleText.x = w / 2 + offsetX;
+                this._titleGlow.x = w / 2 + offsetX;
+            } else {
+                this._titleText.x = w / 2;
+                this._titleGlow.x = w / 2;
+                this._titleShaking = false;
             }
         }
 
@@ -578,24 +651,32 @@ export class MainMenu {
             this._titleGlow.scale.set(1.0 + pulse * 0.04);
         }
 
-        // subtitle fade in (2.0 to 2.5)
-        if (elapsed > 2.0 && elapsed < 2.5) {
-            this._subtitleText.alpha = easeOutQuad((elapsed - 2.0) / 0.5);
-        } else if (elapsed >= 2.5) {
+        // subtitle fade in (2.5 to 3.0)
+        if (elapsed > 2.5 && elapsed < 3.0) {
+            this._subtitleText.alpha = easeOutQuad((elapsed - 2.5) / 0.5);
+        } else if (elapsed >= 3.0) {
             this._subtitleText.alpha = 1;
         }
 
-        // --- Layer 4: ghost ---
-        if (elapsed > 2.0) {
-            const ghostElapsed = Math.min(elapsed - 2.0, 0.6);
-            const t = ghostElapsed / 0.6;
-            this._ghostScale = easeOutElastic(t);
-            this._ghostContainer.scale.set(this._ghostScale);
+        // --- Layer 4: ghost (float in from right starting at 3.0s) ---
+        if (elapsed > 3.0) {
+            const ghostElapsed = elapsed - 3.0;
 
-            // bob
-            this._ghostBobTick += delta;
-            const bob = Math.sin((this._ghostBobTick / 150) * Math.PI * 2) * 6;
-            this._ghostContainer.y = this._app.screen.height * 0.28 + bob;
+            // entrance: float from right over 1.5s with sine wobble
+            if (!this._ghostEntered) {
+                this._ghostContainer.scale.set(1);
+                const entranceT = Math.min(ghostElapsed / 1.5, 1);
+                const eased = easeOutQuad(entranceT);
+                this._ghostContainer.x = this._ghostFinalX + 200 * (1 - eased);
+                this._ghostContainer.y = h * 0.28 + Math.sin(entranceT * Math.PI * 3) * 12;
+                if (entranceT >= 1) this._ghostEntered = true;
+            } else {
+                // normal bobbing after entrance
+                this._ghostBobTick += delta;
+                const bob = Math.sin((this._ghostBobTick / 150) * Math.PI * 2) * 6;
+                this._ghostContainer.x = this._ghostFinalX;
+                this._ghostContainer.y = h * 0.28 + bob;
+            }
 
             // color cycling (12s full cycle)
             this._ghostColorTime += delta / 60;
@@ -625,15 +706,24 @@ export class MainMenu {
             }
         }
 
-        // --- Layer 5: code particles ---
-        for (const p of this._codeParticles) {
-            p.time += delta / 60;
-            p.gfx.y -= p.speed * delta;
-            p.gfx.x = p.baseX + Math.sin(p.time * (Math.PI * 2) / p.driftPeriod) * p.driftAmp;
-            if (p.gfx.y < -20) {
-                p.gfx.y = h + 20;
-                p.baseX = Math.random() * w;
-                p.gfx.x = p.baseX;
+        // --- Layer 5: code particles (delayed start at 3.5s) ---
+        if (elapsed > 3.5) {
+            if (!this._particlesRevealed) {
+                const fadeT = Math.min((elapsed - 3.5) / 0.5, 1);
+                for (const p of this._codeParticles) {
+                    p.gfx.alpha = p.targetAlpha * easeOutQuad(fadeT);
+                }
+                if (fadeT >= 1) this._particlesRevealed = true;
+            }
+            for (const p of this._codeParticles) {
+                p.time += delta / 60;
+                p.gfx.y -= p.speed * delta;
+                p.gfx.x = p.baseX + Math.sin(p.time * (Math.PI * 2) / p.driftPeriod) * p.driftAmp;
+                if (p.gfx.y < -20) {
+                    p.gfx.y = h + 20;
+                    p.baseX = Math.random() * w;
+                    p.gfx.x = p.baseX;
+                }
             }
         }
 
@@ -653,10 +743,26 @@ export class MainMenu {
             }
         }
 
-        // --- Layer 7+8: DOM fade-in at t=2.5s ---
-        if (elapsed >= 2.5 && this._btnWrap && this._btnWrap.style.opacity === '0') {
-            this._btnWrap.style.opacity = '1';
-            if (this._cornerEls) this._cornerEls.forEach(el => { el.style.opacity = '1'; });
+        // --- Layer 7: staggered button reveal ---
+        const btnTimes = [4.0, 4.3, 4.6];
+        for (let i = 0; i < this._buttons.length; i++) {
+            if (elapsed >= btnTimes[i] && this._buttons[i].style.opacity === '0') {
+                this._buttons[i].style.opacity = '1';
+                this._buttons[i].style.transform = 'translateY(0)';
+            }
+        }
+
+        // --- Layer 8: corner text + ROG at 4.8s ---
+        if (elapsed >= 4.8) {
+            if (this._cornerEls) {
+                for (const el of this._cornerEls) {
+                    if (el.style.opacity === '0') el.style.opacity = '1';
+                }
+            }
+            if (this._rogText && this._rogText.alpha < 0.7) {
+                const rogT = Math.min((elapsed - 4.8) / 0.5, 1);
+                this._rogText.alpha = 0.7 * easeOutQuad(rogT);
+            }
         }
     }
 }
