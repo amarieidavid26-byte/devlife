@@ -1,5 +1,5 @@
 // demo mode - "a day in the life" cinematic auto play
-// cycles through all 5 states in ~3.5 min so judges can see everything without a whoop
+// cycles through all 5 states in ~5 min so judges can see everything without a whoop
 
 const STATES = {
   RELAXED: 'RELAXED',
@@ -9,31 +9,56 @@ const STATES = {
   WIRED: 'WIRED',
 };
 
+// intro text lines (shown one at a time during Chapter 0)
+const INTRO_LINES = [
+  { text: 'For 20 years, games asked players to adapt.', style: 'normal' },
+  { text: 'What if a game could adapt to YOU?', style: 'normal' },
+  { text: 'What if it could read your heartbeat...', style: 'normal' },
+  { text: '...measure your stress...', style: 'normal' },
+  { text: '...and protect you from yourself?', style: 'normal' },
+  { text: 'This is DevLife.', style: 'title' },
+];
+
+// chapter transition descriptions
+const CHAPTER_DESCRIPTIONS = {
+  1: 'The morning begins. Coffee first.',
+  2: 'Flow state. The code writes itself.',
+  3: 'Pressure builds. Deadlines approach.',
+  4: 'The body speaks. Will you listen?',
+  5: 'Wired on caffeine. Running on fumes.',
+  6: 'Rest. The most productive thing you can do.',
+};
+
+// outro credit lines
+const OUTRO_LINES = [
+  { text: 'DevLife', font: 'Fredoka', size: 32, color: '#6AD89A' },
+  { text: 'A game that understands you.', font: 'Nunito', size: 16, color: '#F5F0E8' },
+  { text: 'Built by David Amariei', font: 'Nunito', size: 14, color: '#B8A88C' },
+  { text: 'Joc realizat pentru ROG 20-Year Coding Challenge 2026', font: 'Nunito', size: 12, color: '#B8A88C' },
+];
+
 // script definition
 
 const SCRIPT = [
-  // -- ch0 "Intro: The Next 20 Years" (0:00-0:15)
+  // -- ch0 "Intro: The Next 20 Years" (cinematic text crawl)
   {
     title: 'The Next 20 Years',
     state: null,
-    duration: 15_000,
+    duration: 22_000,
     events: [
-      { time: 0,     action: 'showOverlay', data: {} },
-      { time: 500,   action: 'overlayText', data: { index: 0, fade: 'in' } },   // "In the next 20 years..."
-      { time: 3_000, action: 'overlayText', data: { index: 0, fade: 'out' } },
-      { time: 3_500, action: 'overlayText', data: { index: 1, fade: 'in' } },   // "...your code will change the world."
-      { time: 6_000, action: 'overlayText', data: { index: 1, fade: 'out' } },
-      { time: 6_500, action: 'overlayText', data: { index: 2, fade: 'in' } },   // "But who watches over you?"
-      { time: 9_000, action: 'overlayText', data: { index: 2, fade: 'out' } },
-      { time: 9_500, action: 'overlayText', data: { index: 3, fade: 'in' } },   // "DevLife"
-      { time: 12_000, action: 'overlayText', data: { index: 3, fade: 'out' } },
-      { time: 12_500, action: 'overlayText', data: { index: 4, fade: 'in' } },  // Credit
-      { time: 14_000, action: 'overlayText', data: { index: 4, fade: 'out' } },
-      { time: 14_500, action: 'hideOverlay', data: {} },
+      { time: 0,      action: 'showIntro', data: {} },
+      { time: 2_000,  action: 'introLine', data: { index: 0 } },
+      { time: 4_800,  action: 'introLine', data: { index: 1 } },
+      { time: 8_100,  action: 'introLine', data: { index: 2 } },
+      { time: 10_900, action: 'introLine', data: { index: 3 } },
+      { time: 13_700, action: 'introLine', data: { index: 4 } },
+      { time: 17_000, action: 'introLine', data: { index: 5 } },
+      { time: 19_800, action: 'introFadeOut', data: {} },
+      { time: 20_500, action: 'hideOverlay', data: {} },
     ],
   },
 
-  // -- ch1 "Morning: Fresh Start" (0:15-0:55)
+  // -- ch1 "Morning: Fresh Start" (0:22-1:02)
   {
     title: 'Morning: Fresh Start',
     state: STATES.RELAXED,
@@ -67,7 +92,7 @@ const SCRIPT = [
     ],
   },
 
-  // -- ch2 "Deep Work: The Zone" (0:40-1:20)
+  // -- ch2 "Deep Work: The Zone"
   {
     title: 'Deep Work: The Zone',
     state: STATES.DEEP_FOCUS,
@@ -91,7 +116,7 @@ const SCRIPT = [
     ],
   },
 
-  // -- ch3 "Stress: Something Broke" (1:20-2:00)
+  // -- ch3 "Stress: Something Broke"
   {
     title: 'Stress: Something Broke',
     state: STATES.STRESSED,
@@ -130,7 +155,7 @@ const SCRIPT = [
     ],
   },
 
-  // -- ch4 "Fatigue: Running on Empty" (2:00-2:40)
+  // -- ch4 "Fatigue: Running on Empty"
   {
     title: 'Fatigue: Running on Empty',
     state: STATES.FATIGUED,
@@ -159,7 +184,7 @@ const SCRIPT = [
     ],
   },
 
-  // -- ch5 "Wired: Can't Stop" (2:40-3:10)
+  // -- ch5 "Wired: Can't Stop"
   {
     title: "Wired: Can't Stop",
     state: STATES.WIRED,
@@ -183,10 +208,10 @@ const SCRIPT = [
     ],
   },
 
-  // -- ch6 "Sleep Mode" (3:10-3:30)
+  // -- ch6 "Sleep Mode"
   {
     title: 'Sleep Mode',
-    state: null, // wind-down, no cognitive state
+    state: null,
     duration: 20_000,
     events: [
       {
@@ -207,35 +232,23 @@ const SCRIPT = [
     ],
   },
 
-  // -- ch7 "Outro" (3:30-3:35)
+  // -- ch7 "Outro" (credits sequence)
   {
     title: 'Outro',
     state: null,
-    duration: 5_000,
+    duration: 11_000,
     events: [
       { time: 0,     action: 'showOutro', data: {} },
-      { time: 4_500, action: 'hideOverlay', data: {} },
+      { time: 500,   action: 'outroLine', data: { index: 0 } },
+      { time: 2_500, action: 'outroLine', data: { index: 1 } },
+      { time: 4_500, action: 'outroLine', data: { index: 2 } },
+      { time: 6_000, action: 'outroLine', data: { index: 3 } },
+      { time: 9_500, action: 'hideOverlay', data: {} },
     ],
   },
 ];
 
 // --- DemoMode class ---
-
-// Intro text lines (shown sequentially during Chapter 0)
-const INTRO_LINES = [
-  'In the next 20 years...',
-  '...your code will change the world.',
-  'But who watches over you?',
-  'DevLife',
-  'ROG 20-Year Coding Challenge 2026',
-];
-
-// Outro text lines (shown simultaneously during Chapter 7)
-const OUTRO_LINES = [
-  'DevLife -- The Biometric Developer Simulator',
-  'A game that understands you.',
-  'ROG 20-Year Coding Challenge 2026',
-];
 
 export class DemoMode {
   // takes all the game objects so demo can control everything
@@ -256,6 +269,14 @@ export class DemoMode {
     // DOM overlay elements
     this._overlayEl = null;
     this._overlayTextEls = [];
+
+    // cinematic state
+    this._currentIntroLine = null;
+    this._currentIntroGlow = null;
+    this._heartbeatInterval = null;
+    this._heartbeatPulseEl = null;
+    this._driftRaf = null;
+    this._transitionOverlay = null;
   }
 
   // --- public api
@@ -273,6 +294,7 @@ export class DemoMode {
     this._looping = false;
     this._clearTimers();
     this._destroyOverlay();
+    this._destroyTransition();
   }
 
   isRunning() {
@@ -281,7 +303,6 @@ export class DemoMode {
 
   // --- scheduling
 
-  // schedule all events for a chapter then move to next
   _scheduleChapter(index) {
     if (!this._running) return;
     if (index >= SCRIPT.length) {
@@ -297,7 +318,17 @@ export class DemoMode {
     const chapter = SCRIPT[index];
     this._chapterIndex = index;
 
-    // Schedule each event within this chapter
+    // chapters 1-6 get a cinematic transition card before gameplay
+    if (index >= 1 && index <= 6) {
+      this._showChapterTransition(chapter, index, () => {
+        this._scheduleChapterEvents(chapter, index);
+      });
+    } else {
+      this._scheduleChapterEvents(chapter, index);
+    }
+  }
+
+  _scheduleChapterEvents(chapter, index) {
     for (const event of chapter.events) {
       const id = setTimeout(() => {
         this._executeEvent(event, chapter);
@@ -305,11 +336,88 @@ export class DemoMode {
       this._timers.push(id);
     }
 
-    // After chapter duration, advance to the next chapter
     const nextId = setTimeout(() => {
       this._scheduleChapter(index + 1);
     }, chapter.duration);
     this._timers.push(nextId);
+  }
+
+  // --- chapter transition card
+
+  _showChapterTransition(chapter, index, callback) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed; inset: 0; z-index: 5000;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    `;
+    document.body.appendChild(overlay);
+    this._transitionOverlay = overlay;
+
+    // force reflow then fade in
+    void overlay.offsetWidth;
+    overlay.style.opacity = '1';
+
+    // chapter title with typewriter
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = `
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px; color: #F5F0E8;
+      letter-spacing: 2px; text-align: center;
+    `;
+    overlay.appendChild(titleEl);
+
+    // description (hidden until title finishes)
+    const descEl = document.createElement('div');
+    descEl.style.cssText = `
+      font-family: 'Nunito', sans-serif;
+      font-size: 13px; color: #B8A88C;
+      margin-top: 10px; text-align: center;
+      opacity: 0; transition: opacity 0.5s ease;
+    `;
+    descEl.textContent = CHAPTER_DESCRIPTIONS[index] || '';
+    overlay.appendChild(descEl);
+
+    // typewriter effect
+    const fullTitle = `Chapter ${index}: ${chapter.title}`;
+    let charIdx = 0;
+    const typeInterval = setInterval(() => {
+      if (!this._running) { clearInterval(typeInterval); return; }
+      if (charIdx < fullTitle.length) {
+        titleEl.textContent += fullTitle[charIdx];
+        charIdx++;
+      } else {
+        clearInterval(typeInterval);
+        // show description after title finishes
+        descEl.style.opacity = '1';
+      }
+    }, 30);
+    this._timers.push(typeInterval);
+
+    // hold for 2.5s after typing finishes, then fade out
+    const typeTime = fullTitle.length * 30;
+    const holdEnd = 500 + typeTime + 2500; // overlay fade-in + typing + hold
+
+    const fadeOutId = setTimeout(() => {
+      if (!this._running) return;
+      overlay.style.opacity = '0';
+      const removeId = setTimeout(() => {
+        this._destroyTransition();
+        callback();
+      }, 500);
+      this._timers.push(removeId);
+    }, holdEnd);
+    this._timers.push(fadeOutId);
+  }
+
+  _destroyTransition() {
+    if (this._transitionOverlay) {
+      this._transitionOverlay.remove();
+      this._transitionOverlay = null;
+    }
   }
 
   // --- event execution
@@ -336,17 +444,23 @@ export class DemoMode {
       case 'triggerFirewall':
         this._triggerFirewall(event.data.command);
         break;
-      case 'showOverlay':
-        this._showOverlay();
+      case 'showIntro':
+        this._showIntro();
         break;
-      case 'hideOverlay':
-        this._hideOverlay();
+      case 'introLine':
+        this._introLine(event.data.index);
         break;
-      case 'overlayText':
-        this._overlayText(event.data.index, event.data.fade);
+      case 'introFadeOut':
+        this._introFadeOut();
         break;
       case 'showOutro':
         this._showOutro();
+        break;
+      case 'outroLine':
+        this._outroLine(event.data.index);
+        break;
+      case 'hideOverlay':
+        this._hideOverlay();
         break;
       case 'sleep':
         this._sleep();
@@ -356,9 +470,8 @@ export class DemoMode {
     }
   }
 
-  // --- action handlers (safe to call even if dependency isnt wired yet)
+  // --- action handlers
 
-  // push fake biometric data through the socket so the whole pipeline processes it
   _setBiometrics(data, state) {
     const message = {
       type: 'biometric_update',
@@ -374,16 +487,14 @@ export class DemoMode {
       },
     };
 
-    // Prefer socket so the entire pipeline processes it naturally.
     if (this._socket && typeof this._socket.send === 'function') {
       try {
         this._socket.send(JSON.stringify(message));
       } catch {
-        // Socket not ready -- fall through to direct update.
+        // Socket not ready
       }
     }
 
-    // Direct HUD/atmosphere update as fallback.
     if (this._hud && typeof this._hud.update === 'function') {
       this._hud.update(message.data);
     }
@@ -431,8 +542,7 @@ export class DemoMode {
   }
 
   _triggerFirewall(command) {
-    // Ghost intercepts a dangerous command
-    this._ghostSay(`⚠️ Blocked: ${command}`);
+    this._ghostSay(`\u26A0\uFE0F Blocked: ${command}`);
     if (this._ghost && typeof this._ghost.triggerFirewall === 'function') {
       this._ghost.triggerFirewall(command);
     }
@@ -445,10 +555,10 @@ export class DemoMode {
     if (this._player && typeof this._player.lieDown === 'function') {
       this._player.lieDown();
     }
-    console.log('[DemoMode] 💤 Sleep mode');
+    console.log('[DemoMode] Sleep mode');
   }
 
-  // --- overlay (intro + outro cinematic screens)
+  // --- cinematic intro overlay (chapter 0)
 
   _createOverlayEl() {
     if (this._overlayEl) return;
@@ -458,96 +568,254 @@ export class DemoMode {
       background: rgba(5, 5, 15, 0.97);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      transition: opacity 0.5s ease;
+      transition: opacity 1s ease;
       opacity: 0;
     `;
     document.body.appendChild(el);
     this._overlayEl = el;
-    // Force reflow then fade in
     void el.offsetWidth;
     el.style.opacity = '1';
   }
 
-  _showOverlay() {
+  _showIntro() {
     this._createOverlayEl();
-    this._overlayTextEls = [];
+    this._currentIntroLine = null;
+    this._currentIntroGlow = null;
 
-    // Pre-create all intro text elements (hidden)
-    for (let i = 0; i < INTRO_LINES.length; i++) {
-      const line = INTRO_LINES[i];
-      const span = document.createElement('div');
-      const isTitle = i === 3; // "DevLife" -- larger
-      const isCredit = i === 4;
-      span.textContent = line;
-      span.style.cssText = `
-        color: ${isTitle ? '#e94560' : isCredit ? '#888' : '#e0e0e0'};
-        font-family: monospace;
-        font-size: ${isTitle ? '42px' : isCredit ? '14px' : '22px'};
-        font-weight: ${isTitle ? 'bold' : 'normal'};
-        letter-spacing: ${isTitle ? '6px' : '1px'};
-        text-align: center;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-        position: absolute;
-      `;
-      this._overlayEl.appendChild(span);
-      this._overlayTextEls.push(span);
+    // heartbeat pulse element behind text
+    const pulse = document.createElement('div');
+    pulse.style.cssText = `
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at center, rgba(180, 30, 30, 0.08), transparent 60%);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease-in;
+    `;
+    this._overlayEl.appendChild(pulse);
+    this._heartbeatPulseEl = pulse;
+
+    // pulse every 1.5 seconds
+    const doPulse = () => {
+      if (!this._running || !pulse.parentNode) return;
+      pulse.style.transition = 'opacity 0.3s ease-in';
+      pulse.style.opacity = '1';
+      const fadeId = setTimeout(() => {
+        if (!pulse.parentNode) return;
+        pulse.style.transition = 'opacity 0.8s ease-out';
+        pulse.style.opacity = '0';
+      }, 300);
+      this._timers.push(fadeId);
+    };
+    doPulse();
+    this._heartbeatInterval = setInterval(doPulse, 1500);
+  }
+
+  _introLine(index) {
+    if (!this._overlayEl) return;
+    const lineData = INTRO_LINES[index];
+    if (!lineData) return;
+
+    const prevLine = this._currentIntroLine;
+    const prevGlow = this._currentIntroGlow;
+    const isTitle = lineData.style === 'title';
+
+    // create new line element
+    const el = document.createElement('div');
+    el.textContent = lineData.text;
+    el.style.cssText = `
+      color: #F5F0E8;
+      font-family: 'Fredoka', sans-serif;
+      font-size: ${isTitle ? '28px' : '20px'};
+      font-weight: ${isTitle ? '600' : '400'};
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      position: absolute;
+      pointer-events: none;
+    `;
+    this._overlayEl.appendChild(el);
+
+    // glow element (behind text, blurred)
+    const glow = document.createElement('div');
+    glow.textContent = lineData.text;
+    glow.style.cssText = `
+      color: #F5F0E8;
+      font-family: 'Fredoka', sans-serif;
+      font-size: ${isTitle ? '28px' : '20px'};
+      font-weight: ${isTitle ? '600' : '400'};
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      position: absolute;
+      pointer-events: none;
+      filter: blur(3px);
+      transform: scale(1.02);
+    `;
+    this._overlayEl.insertBefore(glow, el);
+
+    this._currentIntroLine = el;
+    this._currentIntroGlow = glow;
+
+    // fade out previous line, then fade in new
+    if (prevLine) {
+      prevLine.style.transition = 'opacity 0.5s ease';
+      prevLine.style.opacity = '0';
+      if (prevGlow) {
+        prevGlow.style.transition = 'opacity 0.5s ease';
+        prevGlow.style.opacity = '0';
+      }
+      const removeId = setTimeout(() => {
+        if (prevLine.parentNode) prevLine.remove();
+        if (prevGlow && prevGlow.parentNode) prevGlow.remove();
+      }, 600);
+      this._timers.push(removeId);
+
+      // fade in new after old fades out
+      const showId = setTimeout(() => {
+        void el.offsetWidth;
+        el.style.opacity = '1';
+        glow.style.opacity = '0.1';
+      }, 500);
+      this._timers.push(showId);
+    } else {
+      // first line -- fade in immediately
+      void el.offsetWidth;
+      el.style.opacity = '1';
+      glow.style.opacity = '0.1';
+    }
+
+    // cancel previous drift
+    if (this._driftRaf) {
+      cancelAnimationFrame(this._driftRaf);
+      this._driftRaf = null;
+    }
+
+    // start upward drift + optional scale pulse
+    let y = 0;
+    let t = 0;
+    const drift = () => {
+      if (!el.parentNode) return;
+      y -= 0.3;
+      t += 0.016;
+      let transform = `translateY(${y}px)`;
+      if (isTitle) {
+        const scale = 1.0 + Math.sin(t * Math.PI * 2 / 1.5) * 0.025;
+        transform += ` scale(${scale})`;
+      }
+      el.style.transform = transform;
+      if (glow.parentNode) {
+        glow.style.transform = transform + ' scale(1.02)';
+      }
+      this._driftRaf = requestAnimationFrame(drift);
+    };
+    this._driftRaf = requestAnimationFrame(drift);
+  }
+
+  _introFadeOut() {
+    // fade out current intro line
+    if (this._currentIntroLine) {
+      this._currentIntroLine.style.transition = 'opacity 0.5s ease';
+      this._currentIntroLine.style.opacity = '0';
+    }
+    if (this._currentIntroGlow) {
+      this._currentIntroGlow.style.transition = 'opacity 0.5s ease';
+      this._currentIntroGlow.style.opacity = '0';
+    }
+    this._currentIntroLine = null;
+    this._currentIntroGlow = null;
+
+    // stop heartbeat pulse
+    if (this._heartbeatInterval) {
+      clearInterval(this._heartbeatInterval);
+      this._heartbeatInterval = null;
+    }
+    if (this._heartbeatPulseEl) {
+      this._heartbeatPulseEl.style.opacity = '0';
+    }
+
+    // stop drift
+    if (this._driftRaf) {
+      cancelAnimationFrame(this._driftRaf);
+      this._driftRaf = null;
     }
   }
 
-  _overlayText(index, fade) {
-    const el = this._overlayTextEls[index];
-    if (!el) return;
-    el.style.opacity = fade === 'in' ? '1' : '0';
-  }
+  // --- cinematic outro overlay (chapter 7)
 
   _showOutro() {
     this._createOverlayEl();
     this._overlayTextEls = [];
-
-    // Show all outro lines at once, stacked vertically
-    for (let i = 0; i < OUTRO_LINES.length; i++) {
-      const line = OUTRO_LINES[i];
-      const span = document.createElement('div');
-      const isTitle = i === 0;
-      const isCredit = i === 2;
-      span.textContent = line;
-      span.style.cssText = `
-        color: ${isTitle ? '#e94560' : isCredit ? '#888' : '#e0e0e0'};
-        font-family: monospace;
-        font-size: ${isTitle ? '24px' : isCredit ? '14px' : '18px'};
-        font-weight: ${isTitle ? 'bold' : 'normal'};
-        letter-spacing: ${isTitle ? '3px' : '1px'};
-        text-align: center;
-        margin: 8px 0;
-        opacity: 0;
-        transition: opacity 0.6s ease;
-      `;
-      this._overlayEl.appendChild(span);
-      this._overlayTextEls.push(span);
-
-      // Stagger fade-in for each line
-      setTimeout(() => { span.style.opacity = '1'; }, 300 + i * 400);
-    }
   }
 
+  _outroLine(index) {
+    if (!this._overlayEl) return;
+    const lineData = OUTRO_LINES[index];
+    if (!lineData) return;
+
+    const el = document.createElement('div');
+    el.textContent = lineData.text;
+    el.style.cssText = `
+      color: ${lineData.color};
+      font-family: '${lineData.font}', sans-serif;
+      font-size: ${lineData.size}px;
+      font-weight: ${index === 0 ? '600' : '400'};
+      letter-spacing: ${index === 0 ? '3px' : '1px'};
+      text-align: center;
+      margin: 8px 0;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    `;
+    this._overlayEl.appendChild(el);
+    this._overlayTextEls.push(el);
+
+    // fade in
+    void el.offsetWidth;
+    el.style.opacity = '1';
+  }
+
+  // --- overlay lifecycle
+
   _hideOverlay() {
+    // stop any intro animations
+    if (this._heartbeatInterval) {
+      clearInterval(this._heartbeatInterval);
+      this._heartbeatInterval = null;
+    }
+    if (this._driftRaf) {
+      cancelAnimationFrame(this._driftRaf);
+      this._driftRaf = null;
+    }
+
     if (!this._overlayEl) return;
     this._overlayEl.style.opacity = '0';
     const el = this._overlayEl;
-    setTimeout(() => {
+    const removeId = setTimeout(() => {
       el.remove();
-    }, 600);
+    }, 1100);
+    this._timers.push(removeId);
     this._overlayEl = null;
     this._overlayTextEls = [];
+    this._currentIntroLine = null;
+    this._currentIntroGlow = null;
+    this._heartbeatPulseEl = null;
   }
 
   _destroyOverlay() {
+    if (this._heartbeatInterval) {
+      clearInterval(this._heartbeatInterval);
+      this._heartbeatInterval = null;
+    }
+    if (this._driftRaf) {
+      cancelAnimationFrame(this._driftRaf);
+      this._driftRaf = null;
+    }
     if (this._overlayEl) {
       this._overlayEl.remove();
       this._overlayEl = null;
       this._overlayTextEls = [];
     }
+    this._currentIntroLine = null;
+    this._currentIntroGlow = null;
+    this._heartbeatPulseEl = null;
   }
 
   // --- cleanup
@@ -555,7 +823,16 @@ export class DemoMode {
   _clearTimers() {
     for (const id of this._timers) {
       clearTimeout(id);
+      clearInterval(id);
     }
     this._timers = [];
+    if (this._heartbeatInterval) {
+      clearInterval(this._heartbeatInterval);
+      this._heartbeatInterval = null;
+    }
+    if (this._driftRaf) {
+      cancelAnimationFrame(this._driftRaf);
+      this._driftRaf = null;
+    }
   }
 }
