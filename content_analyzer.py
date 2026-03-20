@@ -64,27 +64,10 @@ Stuck signals:
 - undo/redo spam
 - adding and deleting the same lines""",
 
-        "terminal": """You are Ghost watching a terminal. Respond with ONLY JSON:
-{
-    "app": "terminal",
-    "activity": "what theyre doing",
-    "stuck_probability": 0.0 to 1.0,
-    "stuck_reason": "why stuck or null",
-    "mistake_detected": true/false,
-    "mistake_description": "error desc or null",
-    "help_opportunity": "how ghost could help or null",
-    "risky_action": true/false,
-    "risky_description": "whats risky or null",
-    "suggested_intervention": {
-        "type": "fix | suggestion | warning | encouragement",
-        "message": "2-3 sentences max",
-        "priority": "low | medium | high | critical",
-        "code_suggestion": "correct command or null"
-    },
-    "context_summary": "one line summary"
-}
+        "terminal": """Ghost watching terminal. JSON only:
+{"app":"terminal","activity":"what theyre doing","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":"string|null","help_opportunity":"string|null","risky_action":false,"risky_description":"string|null","suggested_intervention":{"type":"fix|suggestion|warning|encouragement","message":"2-3 sentences","priority":"low|medium|high|critical","code_suggestion":"correct cmd or null"},"context_summary":"one line"}
 
-Stuck = same command failing over and over, or rapid up-arrow spam
+Stuck = same command failing, up-arrow spam
 Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
 
         "browser": """You are Ghost looking at browser content. Respond with JSON only:

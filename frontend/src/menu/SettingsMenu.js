@@ -14,35 +14,23 @@ export class SettingsMenu {
 
     // --- root overlay ---
     const root = document.createElement('div');
-    Object.assign(root.style, {
-      position: 'fixed',
-      inset: '0',
-      zIndex: '10001',
-      background: 'rgba(5, 5, 15, 0.92)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      visibility: 'hidden',
-      opacity: '0',
-      transition: 'opacity 0.2s ease',
-    });
+    root.style.cssText = `
+        position:fixed; inset:0; z-index:10001;
+        background:rgba(5,5,15,0.92);
+        backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+        display:flex; align-items:center; justify-content:center;
+        visibility:hidden; opacity:0; transition:opacity 0.2s ease;
+    `;
     this._root = root;
 
     // --- panel ---
     const panel = document.createElement('div');
-    Object.assign(panel.style, {
-      maxWidth: '480px',
-      width: '90%',
-      maxHeight: '85vh',
-      overflowY: 'auto',
-      background: 'rgba(15, 15, 30, 0.95)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: '8px',
-      padding: '32px',
-      boxSizing: 'border-box',
-    });
+    panel.style.cssText = `
+        max-width:480px; width:90%; max-height:85vh; overflow-y:auto;
+        background:rgba(15,15,30,0.95);
+        border:1px solid rgba(255,255,255,0.08); border-radius:8px;
+        padding:32px; box-sizing:border-box;
+    `;
     root.appendChild(panel);
 
     // --- title ---
@@ -150,23 +138,17 @@ export class SettingsMenu {
       panel.appendChild(p);
     }
 
-    // --- close button ---
+    // close btn
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '\u2715 CLOSE';
-    Object.assign(closeBtn.style, {
-      display: 'block',
-      margin: '28px auto 0',
-      padding: '10px 28px',
-      fontFamily: "'Courier New', monospace",
-      fontSize: '14px',
-      color: '#aaa',
-      background: 'rgba(255,255,255,0.05)',
-      border: '1px solid rgba(255,255,255,0.12)',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      letterSpacing: '2px',
-      transition: 'border-color 0.15s, color 0.15s, box-shadow 0.15s',
-    });
+    closeBtn.style.cssText = `
+        display:block; margin:28px auto 0; padding:10px 28px;
+        font-family:'Courier New',monospace; font-size:14px; color:#aaa;
+        background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.12); border-radius:4px;
+        cursor:pointer; letter-spacing:2px;
+        transition:border-color 0.15s, color 0.15s, box-shadow 0.15s;
+    `;
     closeBtn.addEventListener('mouseenter', () => {
       closeBtn.style.color = '#00c864';
       closeBtn.style.borderColor = '#00c864';
@@ -212,6 +194,7 @@ export class SettingsMenu {
 
   // ---- internal helpers ----
 
+  // helper for section headers, kinda overkill but whatever
   _heading(text, styles) {
     const el = document.createElement('div');
     el.textContent = text;
@@ -225,26 +208,17 @@ export class SettingsMenu {
   _sectionLabel(text) {
     const el = document.createElement('div');
     el.textContent = text;
-    Object.assign(el.style, {
-      fontFamily: "'Courier New', monospace",
-      fontSize: '11px',
-      color: '#555',
-      letterSpacing: '3px',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
-      paddingBottom: '6px',
-      marginTop: '24px',
-      marginBottom: '14px',
-    });
+    el.style.cssText = `
+        font-family:'Courier New',monospace; font-size:11px; color:#555;
+        letter-spacing:3px; border-bottom:1px solid rgba(255,255,255,0.06);
+        padding-bottom:6px; margin-top:24px; margin-bottom:14px;
+    `;
     return el;
   }
 
   _row() {
     const el = document.createElement('div');
-    Object.assign(el.style, {
-      display: 'flex',
-      alignItems: 'center',
-      marginBottom: '6px',
-    });
+    el.style.cssText = 'display:flex; align-items:center; margin-bottom:6px;';
     return el;
   }
 

@@ -278,7 +278,7 @@ export class DemoMode {
     this._driftRaf = null;
     this._transitionOverlay = null;
 
-    // cinematic visibility callbacks
+    // hide hud during cinematics
     this.onCinematicStart = null;
     this.onCinematicEnd = null;
   }

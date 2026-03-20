@@ -213,15 +213,15 @@ export class DashboardOverlay {
         injectStyles();
         this._visible = false;
 
-        this._ecgColor       = STATE_COLORS.RELAXED;
-        this._ecgTargetBPM   = 72;
-        this._ecgBPM         = 72;
-        this._ecgBuffer      = [];
-        this._ecgBeatIndex   = -1;
+        this._ecgColor = STATE_COLORS.RELAXED;
+        this._ecgTargetBPM = 72;
+        this._ecgBPM = 72;
+        this._ecgBuffer = [];
+        this._ecgBeatIndex = -1;
         this._ecgMsSinceBeat = 0;
-        this._ecgLastTs      = null;
+        this._ecgLastTs = null;
 
-        this._targetHR  = 0; this._displayHR  = 0;
+        this._targetHR = 0; this._displayHR = 0;
         this._targetHRV = 0; this._displayHRV = 0;
         this._targetRec = 0; this._displayRec = 0;
         this._targetStrain = 0; this._displayStrain = 0;
@@ -230,13 +230,13 @@ export class DashboardOverlay {
         this._targetSNS = 0; this._displaySNS = 0;
         this._targetPNS = 0; this._displayPNS = 0;
 
-        this._curState      = 'RELAXED';
+        this._curState = 'RELAXED';
         this._interventions = [];
         this._intTotalCount = 0;
-        this._hrvHistory    = [];
+        this._hrvHistory = [];
         this._heartbeatTimer = null;
-        this._isConnected   = false;
-        this._sessionStart  = null;
+        this._isConnected = false;
+        this._sessionStart = null;
 
         this._buildDOM();
         this._startLoops();
@@ -398,6 +398,7 @@ export class DashboardOverlay {
 </div>`;
         document.body.appendChild(this._el);
 
+        // cache all the dom refs so we dont query every frame
         this._$ = {
             dash:         this._el.querySelector('#dov-dash'),
             clock:        this._el.querySelector('#dov-clock'),
@@ -516,6 +517,7 @@ export class DashboardOverlay {
         };
         requestAnimationFrame(ecgTick);
 
+        // lerp factor 0.12 felt smooth after testing a bunch of values
         const lerpLoop = () => {
             this._displayHR     += (this._targetHR     - this._displayHR)     * 0.12;
             this._displayHRV    += (this._targetHRV    - this._displayHRV)    * 0.12;

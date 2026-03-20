@@ -24,21 +24,13 @@ export class ToastSystem {
     this._enabled = true;
 
     this._container = document.createElement('div');
-    Object.assign(this._container.style, {
-      position: 'fixed',
-      top: '0',
-      right: '0',
-      width: '0',
-      height: '0',
-      zIndex: '9000',
-      pointerEvents: 'none',
-    });
+    this._container.style.cssText = 'position:fixed; top:0; right:0; width:0; height:0; z-index:9000; pointer-events:none;';
     document.body.appendChild(this._container);
   }
 
   // ---- public api ----
 
-  setEnabled(enabled) { this._enabled = enabled; }
+  setEnabled(enabled) { this._enabled = enabled; } // so toasts dont show over cutscenes
 
   show(type, title, message, duration = 3000) {
     if (!this._enabled) return;
