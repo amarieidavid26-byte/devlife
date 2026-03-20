@@ -21,6 +21,7 @@ export class ToastSystem {
     this._nextId = 0;
     this._toasts = new Map();          // id -> { el, timeout }
     this._unlocked = new Set();        // achievement ids already triggered
+    this._enabled = true;
 
     this._container = document.createElement('div');
     Object.assign(this._container.style, {
@@ -37,7 +38,10 @@ export class ToastSystem {
 
   // ---- public api ----
 
+  setEnabled(enabled) { this._enabled = enabled; }
+
   show(type, title, message, duration = 3000) {
+    if (!this._enabled) return;
     const id = this._nextId++;
     const cfg = ToastSystem.TYPES[type] || ToastSystem.TYPES.info;
 

@@ -277,6 +277,10 @@ export class DemoMode {
     this._heartbeatPulseEl = null;
     this._driftRaf = null;
     this._transitionOverlay = null;
+
+    // cinematic visibility callbacks
+    this.onCinematicStart = null;
+    this.onCinematicEnd = null;
   }
 
   // --- public api
@@ -345,6 +349,7 @@ export class DemoMode {
   // --- chapter transition card
 
   _showChapterTransition(chapter, index, callback) {
+    this.onCinematicStart?.();
     const overlay = document.createElement('div');
     overlay.style.cssText = `
       position: fixed; inset: 0; z-index: 5000;
@@ -406,6 +411,7 @@ export class DemoMode {
       overlay.style.opacity = '0';
       const removeId = setTimeout(() => {
         this._destroyTransition();
+        this.onCinematicEnd?.();
         callback();
       }, 500);
       this._timers.push(removeId);
@@ -578,6 +584,7 @@ export class DemoMode {
   }
 
   _showIntro() {
+    this.onCinematicStart?.();
     this._createOverlayEl();
     this._currentIntroLine = null;
     this._currentIntroGlow = null;
@@ -742,6 +749,7 @@ export class DemoMode {
   // --- cinematic outro overlay (chapter 7)
 
   _showOutro() {
+    this.onCinematicStart?.();
     this._createOverlayEl();
     this._overlayTextEls = [];
   }
@@ -797,6 +805,7 @@ export class DemoMode {
     this._currentIntroLine = null;
     this._currentIntroGlow = null;
     this._heartbeatPulseEl = null;
+    this.onCinematicEnd?.();
   }
 
   _destroyOverlay() {

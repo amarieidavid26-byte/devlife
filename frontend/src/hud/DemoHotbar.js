@@ -108,6 +108,9 @@ export class DemoHotbar {
         return el;
     }
 
+    hide() { this._el.style.display = 'none'; }
+    show() { this._el.style.display = ''; }
+
     setClickHandler(fn) { this._onClick = fn; }
 
     setSource(source) {

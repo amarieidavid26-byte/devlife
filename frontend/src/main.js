@@ -81,6 +81,7 @@ async function startGame(enableDemo = false) {
     let socket, room, furniture, ghost, atmosphere, hud, beneathView, demoHotbar, apps, activeApp, ePrompt;
     let currentGameScene = 'room';
     let coffeeCount = 0;
+    let lastRecoveryVelocity = null;
 
     socket = new GhostSocket(CONFIG.WS_URL);
 
@@ -333,10 +334,15 @@ async function startGame(enableDemo = false) {
         const cqi = Math.round((Math.min(recovery / 100, 1) * 0.4 + Math.min(hrv / 80, 1) * 0.35 + Math.max(0, 1 - stress / 3) * 0.25) * 100);
         hud.updateCQI(cqi);
 
-        // Recovery velocity toast
+        // Recovery velocity toast (deduplicated — only fire once per distinct value)
         if (data.recovery_velocity && data.recovery_velocity > 0) {
-            const mins = (data.recovery_velocity / 60).toFixed(1);
-            toastSystem.show('info', '💓 Recovery Complete', `HR returned to baseline in ${mins} minutes`, 4000);
+            if (lastRecoveryVelocity !== data.recovery_velocity) {
+                lastRecoveryVelocity = data.recovery_velocity;
+                const mins = (data.recovery_velocity / 60).toFixed(1);
+                toastSystem.show('info', '💓 Recovery Complete', `HR returned to baseline in ${mins} minutes`, 4000);
+            }
+        } else {
+            lastRecoveryVelocity = null;
         }
     });
 
@@ -485,6 +491,16 @@ async function startGame(enableDemo = false) {
     // Demo mode -- auto-play cinematic sequence
     if (enableDemo) {
         demoMode = new DemoMode({ socket, ghost, atmosphere, hud, furniture, player });
+        demoMode.onCinematicStart = () => {
+            hud.setVisible(false);
+            demoHotbar.hide();
+            toastSystem.setEnabled(false);
+        };
+        demoMode.onCinematicEnd = () => {
+            hud.setVisible(true);
+            demoHotbar.show();
+            toastSystem.setEnabled(true);
+        };
         demoMode.start({ loop: true });
         console.log('[DevLife] Demo mode started -- looping through all states');
     }

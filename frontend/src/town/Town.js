@@ -1354,10 +1354,12 @@ export class Town {
         let hr = 75;
         quoteEl.textContent = quotes[0];
 
-        // Phase text updates
+        // Phase text updates — use startTime so text stays synced with CSS animation
+        const startTime = Date.now();
         const phaseInterval = setInterval(() => {
             if (!this._meditationActive) return;
-            const t = (Date.now() % 10000) / 10000;
+            const elapsed = Date.now() - startTime;
+            const t = (elapsed % 10000) / 10000;
             if (t < 0.4) phaseEl.textContent = 'Inhale...';
             else if (t < 0.6) phaseEl.textContent = 'Hold...';
             else phaseEl.textContent = 'Exhale...';
