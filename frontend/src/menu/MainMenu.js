@@ -133,6 +133,9 @@ export class MainMenu {
 
         this._ticker = (delta) => this._update(delta);
         this._app.ticker.add(this._ticker);
+
+        this._resizeBound = () => this._onResize();
+        window.addEventListener('resize', this._resizeBound);
     }
 
     hide() {
@@ -153,6 +156,7 @@ export class MainMenu {
     }
 
     _cleanup() {
+        if (this._resizeBound) window.removeEventListener('resize', this._resizeBound);
         if (this._ticker) this._app.ticker.remove(this._ticker);
         this._domEls.forEach(el => el.remove());
         this._domEls = [];
@@ -202,22 +206,28 @@ export class MainMenu {
 
     // LAYER 2 -- room silhouette
     _buildLayer2() {
+        this._silhouette = new PIXI.Graphics();
+        this._drawSilhouette();
+        this._container.addChild(this._silhouette);
+    }
+
+    _drawSilhouette() {
         const w = this._app.screen.width;
         const h = this._app.screen.height;
         const cx = w / 2;
         const by = h * 0.52;
-        const sil = new PIXI.Graphics();
+        const sil = this._silhouette;
+        sil.clear();
 
         // chair (behind desk, dark shape)
         sil.beginFill(0x1a1510);
         sil.drawRoundedRect(cx - 35, by - 35, 70, 80, 8);
         sil.endFill();
-        // chair back
         sil.beginFill(0x1a1510);
         sil.drawRoundedRect(cx - 30, by - 80, 60, 55, 6);
         sil.endFill();
 
-        // desk -- isometric parallelogram (280px wide)
+        // desk
         sil.beginFill(0x2A2015);
         sil.moveTo(cx - 140, by);
         sil.lineTo(cx + 140, by);
@@ -232,7 +242,7 @@ export class MainMenu {
         sil.drawRect(cx + 100, by + 44, 8, 32);
         sil.endFill();
 
-        // monitor light cone hitting desk surface
+        // monitor light cone
         sil.beginFill(0x9B6AFF, 0.04);
         sil.moveTo(cx - 50, by - 30);
         sil.lineTo(cx + 50, by - 30);
@@ -241,12 +251,12 @@ export class MainMenu {
         sil.closePath();
         sil.endFill();
 
-        // monitor glow (behind monitor)
+        // monitor glow
         sil.beginFill(0x9B6AFF, 0.08);
         sil.drawRect(cx - 55, by - 115, 110, 90);
         sil.endFill();
 
-        // monitor (90px wide)
+        // monitor
         sil.beginFill(0x2A2015);
         sil.drawRect(cx - 45, by - 105, 90, 70);
         sil.endFill();
@@ -254,7 +264,7 @@ export class MainMenu {
         sil.drawRect(cx - 45, by - 105, 90, 70);
         sil.lineStyle(0);
 
-        // screen glow inside monitor
+        // screen glow
         sil.beginFill(0x9B6AFF, 0.2);
         sil.drawRect(cx - 39, by - 99, 78, 58);
         sil.endFill();
@@ -271,8 +281,6 @@ export class MainMenu {
         sil.beginFill(0x2A2015);
         sil.drawRect(cx - 7, by - 35, 14, 35);
         sil.endFill();
-
-        this._container.addChild(sil);
     }
 
     // LAYER 3 -- ECG title
@@ -551,6 +559,68 @@ export class MainMenu {
         this._domEls.push(left);
 
         this._cornerEls = [right, left];
+    }
+
+    _onResize() {
+        if (this._destroyed) return;
+        const w = this._app.screen.width;
+        const h = this._app.screen.height;
+        const cy = h * 0.28;
+
+        // background
+        if (this._bgRect) {
+            this._bgRect.clear();
+            this._bgRect.beginFill(0x0a0a14);
+            this._bgRect.drawRect(0, 0, w, h);
+            this._bgRect.endFill();
+        }
+
+        // black overlay
+        if (this._blackOverlay) {
+            this._blackOverlay.clear();
+            this._blackOverlay.beginFill(0x000000);
+            this._blackOverlay.drawRect(0, 0, w, h);
+            this._blackOverlay.endFill();
+        }
+
+        // silhouette
+        if (this._silhouette) this._drawSilhouette();
+
+        // ECG -- rebuild for new width
+        this._ecgPoints = buildECGPoints(w, cy);
+        this._ecgDrawIdx = this._ecgPoints.length;
+        if (this._ecgGlow && this._ecgLine && this._ecgPoints.length > 1) {
+            this._ecgGlow.clear();
+            this._ecgGlow.lineStyle(6, 0x6AD89A, 0.3);
+            this._ecgGlow.moveTo(this._ecgPoints[0].x, this._ecgPoints[0].y);
+            for (let i = 1; i < this._ecgPoints.length; i++) this._ecgGlow.lineTo(this._ecgPoints[i].x, this._ecgPoints[i].y);
+
+            this._ecgLine.clear();
+            this._ecgLine.lineStyle(2, 0x6AD89A, 1.0);
+            this._ecgLine.moveTo(this._ecgPoints[0].x, this._ecgPoints[0].y);
+            for (let i = 1; i < this._ecgPoints.length; i++) this._ecgLine.lineTo(this._ecgPoints[i].x, this._ecgPoints[i].y);
+        }
+
+        // title mask -- full width
+        if (this._titleMask) {
+            this._titleMask.clear();
+            this._titleMask.beginFill(0xffffff);
+            this._titleMask.drawRect(0, 0, w, h);
+            this._titleMask.endFill();
+        }
+
+        // title + glow
+        if (this._titleText) { this._titleText.x = w / 2; this._titleText.y = cy; }
+        if (this._titleGlow) { this._titleGlow.x = w / 2; this._titleGlow.y = cy; }
+
+        // subtitle
+        if (this._subtitleText) { this._subtitleText.x = w / 2; this._subtitleText.y = cy + 60; }
+
+        // ghost
+        this._ghostFinalX = w / 2 + 250;
+
+        // ROG text
+        if (this._rogText) { this._rogText.x = w / 2; this._rogText.y = h - 24; }
     }
 
     _update(delta) {

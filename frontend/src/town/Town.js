@@ -203,6 +203,14 @@ export class Town {
         document.addEventListener('keydown', this._onTownKeyDown);
     }
 
+    snapCamera() {
+        if (!this._player || !this._entityContainer || !this._container) return;
+        const playerWorldX = this._entityContainer.x + this._player.container.x;
+        const playerWorldY = this._entityContainer.y + this._player.container.y;
+        this._container.x = this._app.screen.width / 2 - playerWorldX * GAME_ZOOM;
+        this._container.y = this._app.screen.height / 2 - playerWorldY * GAME_ZOOM;
+    }
+
     exit() {
         this._closeMeditation();
 

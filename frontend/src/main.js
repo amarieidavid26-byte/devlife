@@ -529,6 +529,12 @@ async function startGame(enableDemo = false) {
     };
 
     const town = new Town(pixiApp);
+
+    // snap town camera on resize so player doesnt end up in the void
+    window.addEventListener('resize', () => {
+        if (currentGameScene === 'town' && town._player) town.snapCamera();
+    });
+
     town.onEnterHome = () => {
         sceneManager.transitionTo('room', { duration: 800 });
     };
