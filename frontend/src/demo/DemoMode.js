@@ -82,7 +82,7 @@ const SCRIPT = [
       {
         time: 15_000,
         action: 'openApp',
-        data: { app: 'code_editor' },
+        data: { app: 'desk_computer' },
       },
       {
         time: 16_000,

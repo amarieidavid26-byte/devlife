@@ -38,7 +38,7 @@ USE_MOCK_BIOMETRICS = True       # false when we are using real WHOOP metrics no
 # game mode settings 
 GAME_MODE = True
 GAME_APPS = ["code", "terminal", "browser", "notes", "chat"]
-CONTENT_REANALYZE_INTERVAL = 15
+CONTENT_REANALYZE_INTERVAL = 8
 CONTENT_MIN_LENGTH = 10
 
 
