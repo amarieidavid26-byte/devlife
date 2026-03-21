@@ -189,6 +189,8 @@ async function startGame(enableDemo = false) {
         activeApp = app;
         pixiApp.view.style.pointerEvents = 'none';
         player.sit();
+        hud.setVisible(false);
+        demoHotbar.hide();
     }
 
     function closeAllApps() {
@@ -198,12 +200,14 @@ async function startGame(enableDemo = false) {
         activeApp = null;
         pixiApp.view.style.pointerEvents = 'auto';
         player.stand();
+        hud.setVisible(true);
+        demoHotbar.show();
     }
 
     // ambient music
     // Drop ambient.mp3/ogg in /public to enable speaker toggle
     let ambientSound = new Howl({
-        src:         ['/ambient.mp3', '/ambient.ogg'],
+        src:         ['/devlife.mp3'],
         loop:        true,
         volume:      0.35,
         html5:       true,
