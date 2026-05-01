@@ -1,0 +1,425 @@
+const BOOKMARKS = {
+    'Wikipedia': 'https://en.m.wikipedia.org',
+    'W3Schools': 'https://www.w3schools.com',
+    'Python Docs': 'https://docs.python.org/3/',
+    'Google': 'https://www.google.com'
+};
+
+const HOME_HTML = `
+<div style="max-width:720px;margin:80px auto;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a2e">
+    <h1 style="font-size:32px;margin-bottom:8px">DevLife Browser</h1>
+    <p style="color:#666;margin-bottom:32px">Search or enter a URL</p>
+    <div style="width:60%;margin:0 auto 40px;position:relative">
+        <span style="position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:20px;pointer-events:none">&#128269;</span>
+        <input id="home-search" type="text" placeholder="Search Google or enter URL..."
+               style="width:100%;height:48px;background:#2a2a4a;color:#fff;border:none;border-radius:24px;padding:0 20px 0 50px;font-size:18px;outline:none;box-shadow:0 4px 16px rgba(0,0,0,0.15)"/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:480px;margin:0 auto">
+        <div data-url="https://en.m.wikipedia.org" style="background:#f8f0e3;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #e8e0d3;transition:transform 0.15s">
+            <div style="font-size:28px;margin-bottom:8px">📚</div>
+            <div style="font-weight:600">Wikipedia</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">The free encyclopedia</div>
+        </div>
+        <div data-url="https://www.w3schools.com" style="background:#e3f0f8;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #d3e0e8;transition:transform 0.15s">
+            <div style="font-size:28px;margin-bottom:8px">📖</div>
+            <div style="font-weight:600">W3Schools</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">Web tutorials</div>
+        </div>
+        <div data-url="https://docs.python.org/3/" style="background:#e8e3f8;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #d8d3e8;transition:transform 0.15s">
+            <div style="font-size:28px;margin-bottom:8px">🐍</div>
+            <div style="font-weight:600">Python Docs</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">Python 3 reference</div>
+        </div>
+        <div data-url="https://www.google.com" style="background:#f8e8e3;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #e8d8d3;transition:transform 0.15s">
+            <div style="font-size:28px;margin-bottom:8px">🔍</div>
+            <div style="font-weight:600">Google</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">Search the web</div>
+        </div>
+    </div>
+</div>
+`;
+
+export class BrowserApp {
+    constructor(socket) {
+        this.socket = socket;
+        this.appType = 'browser';
+        this.isOpen = false;
+        this.overlay = null;
+        this.addressBar = null;
+        this.iframe = null;
+        this.homeDiv = null;
+        this.backBtn = null;
+        this.forwardBtn = null;
+        this.refreshBtn = null;
+        this.blockedDiv = null;
+        this.loadTimeout = null;
+        // back/forward history is overkill for a demo lol
+        this._history = [];
+        this._historyIndex = -1;
+        this._navigatingFromHistory = false;
+    }
+
+    open() {
+        if (this.isOpen) return;
+
+        this.overlay = document.createElement('div');
+        this.overlay.id = 'browser-overlay';
+        Object.assign(this.overlay.style, {
+            position: 'fixed',
+            inset: '0',
+            background: '#1a1a2e',
+            zIndex: '1000',
+            display: 'flex',
+            flexDirection: 'column',
+            pointerEvents: 'auto'
+        });
+        document.getElementById('app-overlay-root').appendChild(this.overlay);
+        ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach(evt =>
+            this.overlay.addEventListener(evt, e => e.stopPropagation())
+        );
+
+        const chrome = document.createElement('div');
+        chrome.style.background = '#2d2d2d';
+        chrome.style.flexShrink = '0';
+
+        const row1 = document.createElement('div');
+        Object.assign(row1.style, {
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 12px',
+            gap: '8px'
+        });
+
+        const navBtnStyle = {
+            background: '#3c3c3c',
+            color: '#aaa',
+            border: 'none',
+            borderRadius: '4px',
+            width: '28px',
+            height: '28px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+        };
+
+        this.backBtn = document.createElement('button');
+        Object.assign(this.backBtn.style, navBtnStyle);
+        this.backBtn.textContent = '\u2190';
+        this.backBtn.addEventListener('click', () => {
+            if (this._historyIndex <= 0) {
+                this.showHome();
+            } else {
+                this._historyIndex--;
+                this._navigatingFromHistory = true;
+                this._loadUrl(this._history[this._historyIndex]);
+                this._updateNavButtons();
+            }
+        });
+        row1.appendChild(this.backBtn);
+
+        this.forwardBtn = document.createElement('button');
+        Object.assign(this.forwardBtn.style, navBtnStyle);
+        this.forwardBtn.textContent = '\u2192';
+        this.forwardBtn.addEventListener('click', () => {
+            if (this._historyIndex < this._history.length - 1) {
+                this._historyIndex++;
+                this._navigatingFromHistory = true;
+                this._loadUrl(this._history[this._historyIndex]);
+                this._updateNavButtons();
+            }
+        });
+        row1.appendChild(this.forwardBtn);
+
+        this.refreshBtn = document.createElement('button');
+        Object.assign(this.refreshBtn.style, navBtnStyle);
+        this.refreshBtn.textContent = '\u21BB';
+        this.refreshBtn.addEventListener('click', () => {
+            if (this.iframe && this.iframe.style.display !== 'none') {
+                try { this.iframe.contentWindow.location.reload(); } catch (e) {
+                    this.iframe.src = this.iframe.src;
+                }
+            }
+        });
+        row1.appendChild(this.refreshBtn);
+
+        this.addressBar = document.createElement('input');
+        this.addressBar.placeholder = 'Search or enter URL...';
+        Object.assign(this.addressBar.style, {
+            flex: '1',
+            background: '#3c3c3c',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '20px',
+            padding: '6px 16px',
+            fontSize: '13px',
+            outline: 'none'
+        });
+        this.addressBar.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                let url = this.addressBar.value.trim();
+                if (url && !url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('devlife://')) {
+                    if (url.includes('.') && !url.includes(' ')) {
+                        url = 'https://' + url;
+                    } else {
+                        url = 'https://www.google.com/search?igu=1&q=' + encodeURIComponent(url);
+                    }
+                }
+                if (url === 'devlife://home' || url === '') {
+                    this.showHome();
+                } else {
+                    this.navigate(url);
+                }
+            }
+        });
+        row1.appendChild(this.addressBar);
+
+        const closeBtn = document.createElement('button');
+        Object.assign(closeBtn.style, {
+            background: 'transparent',
+            color: '#888',
+            fontSize: '13px',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px 8px',
+            whiteSpace: 'nowrap'
+        });
+        closeBtn.textContent = 'ESC to close';
+        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
+        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
+        closeBtn.addEventListener('click', () => this.close());
+        row1.appendChild(closeBtn);
+
+        chrome.appendChild(row1);
+
+        const row2 = document.createElement('div');
+        Object.assign(row2.style, {
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 12px',
+            gap: '4px',
+            borderTop: '1px solid #3c3c3c'
+        });
+
+        Object.entries(BOOKMARKS).forEach(([name, url]) => {
+            const btn = document.createElement('button');
+            Object.assign(btn.style, {
+                background: 'transparent',
+                color: '#8ab4f8',
+                border: 'none',
+                fontSize: '12px',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                cursor: 'pointer'
+            });
+            btn.textContent = name;
+            btn.addEventListener('mouseenter', () => { btn.style.background = '#3c3c3c'; });
+            btn.addEventListener('mouseleave', () => { btn.style.background = 'transparent'; });
+            btn.addEventListener('click', () => this.navigate(url));
+            row2.appendChild(btn);
+        });
+
+        chrome.appendChild(row2);
+        this.overlay.appendChild(chrome);
+
+        const contentWrapper = document.createElement('div');
+        Object.assign(contentWrapper.style, {
+            flex: '1',
+            position: 'relative',
+            overflow: 'hidden'
+        });
+
+        this.homeDiv = document.createElement('div');
+        Object.assign(this.homeDiv.style, {
+            width: '100%',
+            height: '100%',
+            overflowY: 'auto',
+            background: '#ffffff',
+            position: 'absolute',
+            inset: '0'
+        });
+        this.homeDiv.innerHTML = HOME_HTML;
+        this.homeDiv.querySelector('#home-search').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                let q = e.target.value.trim();
+                if (!q) return;
+                if (q.includes('.') && !q.includes(' ') && !q.startsWith('http')) {
+                    q = 'https://' + q;
+                } else if (!q.startsWith('http')) {
+                    q = 'https://www.google.com/search?igu=1&q=' + encodeURIComponent(q);
+                }
+                this.navigate(q);
+            }
+        });
+        this.homeDiv.addEventListener('click', (e) => {
+            const tile = e.target.closest('[data-url]');
+            if (tile) this.navigate(tile.dataset.url);
+        });
+        this.homeDiv.querySelectorAll('[data-url]').forEach(tile => {
+            tile.addEventListener('mouseenter', () => { tile.style.transform = 'scale(1.03)'; });
+            tile.addEventListener('mouseleave', () => { tile.style.transform = 'scale(1)'; });
+        });
+        contentWrapper.appendChild(this.homeDiv);
+
+        this.iframe = document.createElement('iframe');
+        Object.assign(this.iframe.style, {
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            background: '#ffffff',
+            position: 'absolute',
+            inset: '0',
+            display: 'none'
+        });
+        this.iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals');
+        this.iframe.setAttribute('referrerpolicy', 'no-referrer');
+        this.iframe.addEventListener('load', () => {
+            if (!this.iframe || this.iframe.src === 'about:blank') return;
+            try {
+                const iframeUrl = this.iframe.contentWindow.location.href;
+                if (iframeUrl && iframeUrl !== 'about:blank') {
+                    this.addressBar.value = iframeUrl;
+                }
+                const doc = this.iframe.contentDocument;
+                if (doc && doc.body && doc.body.innerHTML.length < 10) {
+                    this.showBlockedMessage(this.addressBar.value);
+                }
+            } catch (e) {
+                
+            }
+        });
+        this.iframe.addEventListener('error', () => {
+            if (this.iframe && this.iframe.src !== 'about:blank') {
+                this.showBlockedMessage(this.addressBar.value);
+            }
+        });
+        contentWrapper.appendChild(this.iframe);
+
+        this.blockedDiv = document.createElement('div');
+        Object.assign(this.blockedDiv.style, {
+            width: '100%',
+            height: '100%',
+            background: '#ffffff',
+            position: 'absolute',
+            inset: '0',
+            display: 'none',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            color: '#1a1a2e',
+            textAlign: 'center',
+            padding: '40px'
+        });
+        contentWrapper.appendChild(this.blockedDiv);
+
+        this.overlay.appendChild(contentWrapper);
+
+        this.showHome();
+        this._updateNavButtons();
+        this.isOpen = true;
+    }
+
+    showHome() {
+        this.addressBar.value = 'devlife://home';
+        this.homeDiv.style.display = 'block';
+        this.iframe.style.display = 'none';
+        this.blockedDiv.style.display = 'none';
+        this.iframe.src = 'about:blank';
+        this._history = [];
+        this._historyIndex = -1;
+        this._updateNavButtons();
+        this.socket.sendContentUpdate(this.appType, 'devlife://home\nDevLife Browser Home Page', { url: 'devlife://home' });
+        const searchInput = this.homeDiv.querySelector('#home-search');
+        if (searchInput) setTimeout(() => searchInput.focus(), 150);
+    }
+
+    navigate(url) {
+        if (!this._navigatingFromHistory) {
+            this._history = this._history.slice(0, this._historyIndex + 1);
+            this._history.push(url);
+            this._historyIndex = this._history.length - 1;
+        }
+        this._navigatingFromHistory = false;
+        this._updateNavButtons();
+        this._loadUrl(url);
+    }
+
+    _loadUrl(url) {
+        this.addressBar.value = url;
+        this.homeDiv.style.display = 'none';
+        this.blockedDiv.style.display = 'none';
+        this.iframe.style.display = 'block';
+        this.iframe.src = url;
+        this.socket.sendContentUpdate(this.appType, url + '\nBrowsing: ' + url, { url: url });
+
+        clearTimeout(this.loadTimeout);
+        this.loadTimeout = setTimeout(() => {
+            if (!this.iframe) return;
+            try {
+                const doc = this.iframe.contentDocument;
+                if (doc && doc.body && doc.body.innerHTML.length < 10) {
+                    this.showBlockedMessage(url);
+                }
+            } catch (e) {
+                
+            }
+        }, 8000);
+    }
+
+    showBlockedMessage(url) {
+        if (!this.blockedDiv) return;
+        this.iframe.style.display = 'none';
+        this.blockedDiv.style.display = 'flex';
+        this.blockedDiv.innerHTML = `
+            <div>
+                <div style="font-size:48px;margin-bottom:16px">🚫</div>
+                <h2 style="font-size:20px;margin-bottom:8px">This site blocks embedding</h2>
+                <p style="color:#666;margin-bottom:24px;font-size:14px">${url.replace(/</g, '&lt;')}</p><!-- security thing idk if needed -->
+                <a href="${url.replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer"
+                   style="display:inline-block;background:#0096FF;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
+                    Open in new tab
+                </a>
+                <div style="margin-top:12px">
+                    <button id="browser-go-home" style="background:transparent;border:1px solid #ddd;color:#666;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">
+                        Back to home
+                    </button>
+                </div>
+            </div>
+        `;
+        this.blockedDiv.querySelector('#browser-go-home').addEventListener('click', () => this.showHome());
+    }
+
+    _updateNavButtons() {
+        if (!this.backBtn) return;
+        const canBack = this._historyIndex >= 0;
+        const canForward = this._historyIndex < this._history.length - 1;
+        this.backBtn.style.opacity = canBack ? '1' : '0.3';
+        this.backBtn.style.cursor = canBack ? 'pointer' : 'default';
+        this.forwardBtn.style.opacity = canForward ? '1' : '0.3';
+        this.forwardBtn.style.cursor = canForward ? 'pointer' : 'default';
+    }
+
+    close() {
+        if (!this.isOpen) return;
+        clearTimeout(this.loadTimeout);
+        if (this.iframe) {
+            this.iframe.src = 'about:blank';
+        }
+        if (this.overlay) {
+            this.overlay.remove();
+            this.overlay = null;
+        }
+        this.addressBar = null;
+        this.iframe = null;
+        this.homeDiv = null;
+        this.blockedDiv = null;
+        this.backBtn = null;
+        this.forwardBtn = null;
+        this._history = [];
+        this._historyIndex = -1;
+        this.isOpen = false;
+    }
+}
