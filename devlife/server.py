@@ -55,6 +55,7 @@ from mock_biometrics import MockBiometrics
 from ghost_brain import GhostBrain
 from context_history import ContextTracker
 from fallback_responses import get_fallback_intervention
+import persistence.db as db
 
 # instances
 content_analyzer = ContentAnalyzer(CLAUDE_API_KEY)
@@ -345,6 +346,12 @@ def ghost_loop():
                         app_state.intervention_history.append(intervention)
                         if len(app_state.intervention_history) > 50:
                             app_state.intervention_history.pop(0)
+                        db.save_intervention(
+                            state=state,
+                            source=app_type or "game",
+                            claude_text=intervention["message"],
+                            content_hash=str(content_hash) if content_hash else None,
+                        )
                         logger.info("intervention (%s/%s): %s...", state, app_type, intervention["message"][:80])
                         plant_delta = -25 if intervention.get("priority") == "critical" else -15
                         broadcast_sync({"type": "plant_update", "delta": plant_delta})
@@ -392,6 +399,12 @@ async def lifespan(app: FastAPI):
     app_state.ghost_running = True
     app_state.main_event_loop = asyncio.get_event_loop()
 
+    db.connect()
+    db.start_session(
+        mode="game" if GAME_MODE else "desktop",
+        whoop_connected=bool(bio.access_token),
+    )
+
     if not GAME_MODE and capture:
         capture.start()
         logger.info("screen capture started")
@@ -405,6 +418,7 @@ async def lifespan(app: FastAPI):
     logger.info("running on http://%s:%s", HOST, PORT)
     yield
 
+    db.end_session()
     app_state.ghost_running = False
     if not GAME_MODE and capture:
         capture.stop()
@@ -473,8 +487,11 @@ async def user_feedback(body: FeedbackBody):
 
 
 @app.get("/api/history")
-async def get_history():
-    return {"interventions": app_state.intervention_history[-20:]}
+async def get_history(since: float = 0.0, limit: int = 50):
+    rows = db.get_interventions(since=since, limit=min(limit, 200))
+    if not rows:
+        rows = app_state.intervention_history[-limit:]
+    return {"interventions": rows}
 
 
 @app.get("/api/game/apps")
