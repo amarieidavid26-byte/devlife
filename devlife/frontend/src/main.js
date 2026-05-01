@@ -52,12 +52,12 @@ window.addEventListener('resize', () => {
     pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
     if (gameContainer && player) {
         // Snap immediately to player on resize (no lerp lag)
-        gameContainer.x = window.innerWidth  / 2 - player.container.x * GAME_ZOOM;
+        gameContainer.x = window.innerWidth / 2 - player.container.x * GAME_ZOOM;
         gameContainer.y = window.innerHeight / 2 - player.container.y * GAME_ZOOM;
     }
 });
 
-// --- Sound & Toast (before menu so click-to-resume works on menu buttons) ---
+// Sound & Toast (before menu so click-to-resume works on menu buttons)
 soundManager = new SoundManager();
 document.addEventListener('click', () => soundManager.resume(), { once: true });
 toastSystem = new ToastSystem();
@@ -66,7 +66,7 @@ const settingsMenu = new SettingsMenu();
 settingsMenu.onVolumeChange((vol) => soundManager.setMasterVolume(vol));
 settingsMenu.onMuteToggle((muted) => muted ? soundManager.mute() : soundManager.unmute());
 
-// --- Main Menu ---
+// Main Menu
 const mainMenu = new MainMenu(pixiApp);
 mainMenu.show(
     () => { soundManager.playClick(); startGame(false); },
@@ -74,7 +74,7 @@ mainMenu.show(
     () => { soundManager.playClick(); settingsMenu.show(); }
 );
 
-// --- Game init (called when menu START or DEMO is clicked) ---
+// Game init (called when menu START or DEMO is clicked)
 async function startGame(enableDemo = false) {
     await Furniture.preloadTextures();
 
@@ -116,19 +116,19 @@ async function startGame(enableDemo = false) {
     gameContainer.addChild(room.container);
     gameContainer.addChild(worldContainer);
     gameContainer.scale.set(GAME_ZOOM);
-    gameContainer.x = Math.round(window.innerWidth  / 2 * (1 - GAME_ZOOM));
+    gameContainer.x = Math.round(window.innerWidth / 2 * (1 - GAME_ZOOM));
     gameContainer.y = Math.round(window.innerHeight / 2 * (1 - GAME_ZOOM));
 
     // [E] prompt above interactable
     ePrompt = new PIXI.Text('[E]', {
-        fontFamily:         'monospace',
-        fontSize:           13,
-        fill:               0xe94560,
-        fontWeight:         'bold',
-        dropShadow:         true,
-        dropShadowColor:    '#000000',
-        dropShadowBlur:     4,
-        dropShadowAlpha:    0.6,
+        fontFamily: 'monospace',
+        fontSize: 13,
+        fill: 0xe94560,
+        fontWeight: 'bold',
+        dropShadow: true,
+        dropShadowColor: '#000000',
+        dropShadowBlur: 4,
+        dropShadowAlpha: 0.6,
         dropShadowDistance: 0,
     });
     ePrompt.anchor.set(0.5, 1);
@@ -151,7 +151,7 @@ async function startGame(enableDemo = false) {
         socket.sendMockState(key);
     });
 
-    // WHOOP BLE pairing -- connects the PAIR WHOOP button to the Web Bluetooth API
+    // WHOOP BLE pairing - connects the PAIR WHOOP button to the Web Bluetooth API
     const whoop = new WHOOPBluetooth();
     window.connectWHOOP = async () => {
         const ok = await whoop.connect();
@@ -207,13 +207,13 @@ async function startGame(enableDemo = false) {
     // ambient music
     // Drop ambient.mp3/ogg in /public to enable speaker toggle
     let ambientSound = new Howl({
-        src:         ['/devlife.mp3'],
-        loop:        true,
-        volume:      0.35,
-        html5:       true,
+        src: ['/devlife.mp3'],
+        loop: true,
+        volume: 0.35,
+        html5: true,
         onloaderror: () => {
             ambientSound = null;
-            console.log('[main] No ambient audio file found -- speaker will be silent');
+            console.log('[main] No ambient audio file found - speaker will be silent');
         },
     });
     let musicPlaying = false;
@@ -245,7 +245,7 @@ async function startGame(enableDemo = false) {
             coffeeCount++;
             let message, priority, buttons;
             if (coffeeCount < 3) {
-                message = "Good idea -- coffee fuels great code. Don't forget to hydrate too! ☕";
+                message = "Good idea - coffee fuels great code. Don't forget to hydrate too! ☕";
                 priority = 'low';
                 buttons = ['Thanks!'];
                 toastSystem.show('info', '☕ Caffeine Boost', 'HR +5bpm, Alertness +15%, Recovery -3%', 4000);
@@ -279,10 +279,10 @@ async function startGame(enableDemo = false) {
         if (name === 'speaker') {
             toggleMusic();
             ghost.showSpeechBubble({
-                message:   musicPlaying ? "Music on. Let the flow state begin. 🎵" : "Music off.",
-                priority:  'low',
-                state:     ghost._state,
-                buttons:   ['Nice'],
+                message: musicPlaying ? "Music on. Let the flow state begin. 🎵" : "Music off.",
+                priority: 'low',
+                state: ghost._state,
+                buttons: ['Nice'],
                 biometric: {},
             });
             return;
@@ -298,12 +298,63 @@ async function startGame(enableDemo = false) {
         }
     });
 
-    // apply fix handler
-    ghost.setApplyFixHandler((code) => {
+    // apply fix handler — goes through preview + backend validation before applying
+    ghost.setApplyFixHandler(async (code, rationale) => {
         const editor = apps.desk_computer;
-        if (editor && editor.isOpen && code) {
-            editor.replaceContent(code);
+        if (!editor || !editor.isOpen || !code) return;
+
+        const originalText = editor.editor ? editor.editor.getValue() : '';
+        const lang = editor.currentLang || 'python';
+
+        // backend validation first
+        const patchBody = {
+            file: `demo.${lang === 'javascript' ? 'js' : lang}`,
+            language: lang,
+            range: { start_line: 1, end_line: (originalText.split('\n').length) },
+            replacement_text: code,
+            rationale: rationale || 'ghost suggestion',
+            severity: 'medium',
+            original_text: originalText,
+        };
+
+        let patchHash = null;
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/apply-fix/preview`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patchBody),
+            });
+            const json = await res.json();
+            if (!res.ok || !json.valid) {
+                toastSystem.show('warning', 'Fix respins', json.reason || 'validare esuata', 4000);
+                return;
+            }
+            patchHash = json.patch_hash;
+        } catch (e) {
+            toastSystem.show('warning', 'Fix respins', 'backend indisponibil', 3000);
+            return;
         }
+
+        // show preview — user must confirm
+        const confirmed = await editor.showPatchPreview(originalText, code, rationale);
+        if (!confirmed) {
+            toastSystem.show('info', 'Anulat', 'modificarea nu a fost aplicata', 2000);
+            return;
+        }
+
+        // confirm with backend and apply
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/apply-fix/confirm`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patch_hash: patchHash }),
+        });
+
+        editor.replaceContent(code);
+        socket.sendFeedback('Apply Fix');
+
+        // rollback button via toast
+        toastSystem.show('ghost', 'Fix aplicat', 'Apasa Revert daca vrei sa anulezi', 8000);
+        // store hash for possible rollback
+        window._lastPatchHash = patchHash;
+        window._lastPatchOriginal = originalText;
     });
 
     socket.on('connected', () => { hud.setConnected(true); beneathView.setConnected(true); });
@@ -331,7 +382,7 @@ async function startGame(enableDemo = false) {
         furniture.setMonitorState(data.state);
         soundManager.setState(data.state);
 
-        // CQI -- weighted composite of recovery, HRV, and inverse stress
+        // CQI - weighted composite of recovery, HRV, and inverse stress
         const recovery = data.recovery || 50;
         const hrv = data.hrv || 40;
         const stress = data.estimated_stress || 0;
@@ -403,7 +454,7 @@ async function startGame(enableDemo = false) {
             return;
         }
 
-        // Don't capture WASD/E when an app overlay is open -- let the app handle them
+        // Don't capture WASD/E when an app overlay is open - let the app handle them
         if (activeApp) return;
 
         // Skip game shortcuts while typing in an input field (e.g. HUD search)
@@ -437,14 +488,14 @@ async function startGame(enableDemo = false) {
         atmosphere.update(delta);
         furniture.update(delta);
 
-        // Smooth camera follow -- lerp gameContainer toward player centre
-        const camTargetX = window.innerWidth  / 2 - player.container.x * GAME_ZOOM;
+        // Smooth camera follow - lerp gameContainer toward player centre
+        const camTargetX = window.innerWidth / 2 - player.container.x * GAME_ZOOM;
         const camTargetY = window.innerHeight / 2 - player.container.y * GAME_ZOOM;
         const camLerp = 0.07 * delta;
         gameContainer.x += (camTargetX - gameContainer.x) * camLerp;
         gameContainer.y += (camTargetY - gameContainer.y) * camLerp;
 
-        // Screen shake (critical interventions -- Fatigue Firewall)
+        // Screen shake (critical interventions - Fatigue Firewall)
         atmosphere.applyScreenShake(gameContainer);
 
         // Beneath the Surface: feed screen-space positions for rings + particles
@@ -461,7 +512,7 @@ async function startGame(enableDemo = false) {
             );
         }
 
-        // z-sorting -- higher screen Y = closer to camera
+        // z-sorting - higher screen Y = closer to camera
         furniture._items.forEach(item => { item.container.zIndex = item.container.y; });
         player.container.zIndex = player.container.y;
         ghost.container.zIndex = player.container.y + 50;
@@ -487,12 +538,12 @@ async function startGame(enableDemo = false) {
     fetch(CONFIG.BACKEND_URL + '/health').then(r => r.json()).then(d => {
         console.log('[main] backend health:', d.status);
     }).catch(() => {
-        console.log('[main] backend unreachable -- running in offline/demo mode');
+        console.log('[main] backend unreachable - running in offline/demo mode');
     });
 
     console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');
 
-    // Demo mode -- auto-play cinematic sequence
+    // Demo mode - auto-play cinematic sequence
     if (enableDemo) {
         demoMode = new DemoMode({ socket, ghost, atmosphere, hud, furniture, player });
         demoMode.onCinematicStart = () => { hud.setVisible(false); demoHotbar.hide(); toastSystem.setEnabled(false); };
@@ -502,10 +553,10 @@ async function startGame(enableDemo = false) {
             toastSystem.setEnabled(true);
         };
         demoMode.start({ loop: true });
-        console.log('[DevLife] Demo mode started -- looping through all states');
+        console.log('[DevLife] Demo mode started - looping through all states');
     }
 
-    // -- Scene Manager --
+    // Scene Manager
     sceneManager = new SceneManager(pixiApp);
 
     const roomScene = {
