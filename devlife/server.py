@@ -56,6 +56,9 @@ from ghost_brain import GhostBrain
 from context_history import ContextTracker
 from fallback_responses import get_fallback_intervention
 import persistence.db as db
+from apply_fix.contract import PatchContract
+from apply_fix.validator import validate_patch
+from apply_fix.audit import make_patch_hash, record as audit_record
 
 # instances
 content_analyzer = ContentAnalyzer(CLAUDE_API_KEY)
@@ -93,6 +96,7 @@ class AppState:
     pending_content: dict = field(default_factory=dict)
     content_lock: threading.Lock = field(default_factory=threading.Lock)
     last_analyzed_hashes: dict = field(default_factory=dict)
+    pending_patches: dict = field(default_factory=dict)  # hash -> original_text
     # recovery velocity
     hr_history: list = field(default_factory=list)
     last_stress_peak: object = None
@@ -497,6 +501,43 @@ async def set_mock_state(request: Request, body: MockStateBody):
 async def user_feedback(body: FeedbackBody):
     brain.user_feedback(body.action)
     return {"ok": True, "accepted": brain.accepted_count, "ignored": brain.ignored_count}
+
+
+class PatchHashBody(BaseModel):
+    patch_hash: str = Field(..., max_length=64)
+
+
+@app.post("/api/apply-fix/preview")
+async def apply_fix_preview(body: PatchContract):
+    try:
+        ok, reason = validate_patch(body)
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"valid": False, "reason": str(e)})
+    if not ok:
+        audit_record("reject", "?", file=body.file, original_text=body.original_text, reason=reason)
+        return JSONResponse(status_code=400, content={"valid": False, "reason": reason})
+    patch_hash = make_patch_hash(body.original_text, body.replacement_text)
+    app_state.pending_patches[patch_hash] = body.original_text
+    audit_record("preview", patch_hash, file=body.file, original_text=body.original_text)
+    return {"valid": True, "patch_hash": patch_hash}
+
+
+@app.post("/api/apply-fix/confirm")
+async def apply_fix_confirm(body: PatchHashBody):
+    if body.patch_hash not in app_state.pending_patches:
+        return JSONResponse(status_code=404, content={"error": "patch not found or expired"})
+    audit_record("confirm", body.patch_hash)
+    return {"ok": True}
+
+
+@app.post("/api/apply-fix/rollback")
+async def apply_fix_rollback(body: PatchHashBody):
+    original = app_state.pending_patches.get(body.patch_hash)
+    if original is None:
+        return JSONResponse(status_code=404, content={"error": "no pre-image stored for this patch"})
+    audit_record("rollback", body.patch_hash)
+    del app_state.pending_patches[body.patch_hash]
+    return {"ok": True, "original_text": original}
 
 
 @app.get("/api/history")
