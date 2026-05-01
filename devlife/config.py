@@ -1,9 +1,14 @@
-# all configs here, API keys are loaded from .env, never commit them to git so you dont get yo shit leaked 
-import os 
+import logging
+import os
 from dotenv import load_dotenv
 
-# load variables from env 
 load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
 
 # api keys 
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY", "")
@@ -32,6 +37,7 @@ STRESS_FIREWALL_THRESHOLD = 2.0
 HOST = "0.0.0.0"
 PORT = 8000
 WHOOP_REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI", "http://localhost:8000/api/whoop/callback")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
 
 # mode settings 
 USE_MOCK_BIOMETRICS = True       # false when we are using real WHOOP metrics not this BS
