@@ -1,3 +1,5 @@
+import { i18n } from '../i18n/index.js';
+
 const KEYBINDS = [
   ['WASD', 'Move'],
   ['E', 'Interact'],
@@ -12,7 +14,7 @@ export class SettingsMenu {
     this._volumeCb = null;
     this._muteCb = null;
 
-    // --- root overlay ---
+    // root overlay
     const root = document.createElement('div');
     root.style.cssText = `
         position:fixed; inset:0; z-index:10001;
@@ -23,7 +25,7 @@ export class SettingsMenu {
     `;
     this._root = root;
 
-    // --- panel ---
+    // panel
     const panel = document.createElement('div');
     panel.style.cssText = `
         max-width:480px; width:90%; max-height:85vh; overflow-y:auto;
@@ -33,8 +35,8 @@ export class SettingsMenu {
     `;
     root.appendChild(panel);
 
-    // --- title ---
-    panel.appendChild(this._heading('SETTINGS', {
+    // title
+    panel.appendChild(this._heading(i18n.t('settings.title'), {
       fontSize: '24px',
       color: '#e0e0e0',
       letterSpacing: '4px',
@@ -42,12 +44,12 @@ export class SettingsMenu {
       marginBottom: '28px',
     }));
 
-    // --- audio section ---
-    panel.appendChild(this._sectionLabel('AUDIO'));
+    // audio section
+    panel.appendChild(this._sectionLabel(i18n.t('settings.audio')));
 
     // volume row
     const volRow = this._row();
-    const volLabel = this._label('Master Volume');
+    const volLabel = this._label(i18n.t('settings.volume'));
     const volValue = this._label('70%');
     volValue.style.color = '#e0e0e0';
     volValue.style.minWidth = '36px';
@@ -79,7 +81,7 @@ export class SettingsMenu {
     // mute row
     const muteRow = this._row();
     muteRow.style.marginTop = '12px';
-    const muteLabel = this._label('Mute All');
+    const muteLabel = this._label(i18n.t('settings.mute'));
 
     const muteBox = document.createElement('input');
     muteBox.type = 'checkbox';
@@ -97,8 +99,37 @@ export class SettingsMenu {
     muteRow.appendChild(muteBox);
     panel.appendChild(muteRow);
 
-    // --- controls section ---
-    panel.appendChild(this._sectionLabel('CONTROLS'));
+    // language section
+    panel.appendChild(this._sectionLabel(i18n.t('settings.language')));
+    const langRow = this._row();
+    langRow.style.gap = '10px';
+    for (const lang of ['ro', 'en']) {
+      const btn = document.createElement('button');
+      btn.textContent = i18n.t(`settings.lang.${lang}`);
+      btn.dataset.lang = lang;
+      const active = () => lang === i18n.getLang();
+      const style = () => {
+        btn.style.cssText = `padding:6px 16px;border-radius:4px;cursor:pointer;font-family:'Courier New',monospace;font-size:12px;border:1px solid;transition:all 0.15s;
+          background:${active() ? 'rgba(0,200,100,0.15)' : 'rgba(255,255,255,0.05)'};
+          color:${active() ? '#00c864' : '#666'};
+          border-color:${active() ? '#00c864' : 'rgba(255,255,255,0.1)'};`;
+      };
+      style();
+      btn.addEventListener('click', () => {
+        i18n.setLang(lang);
+        langRow.querySelectorAll('button').forEach(b => {
+          const isActive = b.dataset.lang === i18n.getLang();
+          b.style.background = isActive ? 'rgba(0,200,100,0.15)' : 'rgba(255,255,255,0.05)';
+          b.style.color = isActive ? '#00c864' : '#666';
+          b.style.borderColor = isActive ? '#00c864' : 'rgba(255,255,255,0.1)';
+        });
+      });
+      langRow.appendChild(btn);
+    }
+    panel.appendChild(langRow);
+
+    // controls section
+    panel.appendChild(this._sectionLabel(i18n.t('settings.controls')));
 
     for (const [key, desc] of KEYBINDS) {
       const row = this._row();
@@ -116,12 +147,12 @@ export class SettingsMenu {
       panel.appendChild(row);
     }
 
-    // --- about section ---
-    panel.appendChild(this._sectionLabel('ABOUT'));
+    // about section
+    panel.appendChild(this._sectionLabel(i18n.t('settings.about')));
 
     const aboutLines = [
       'DevLife v0.1',
-      'The Biometric Developer Simulator',
+      i18n.t('menu.subtitle'),
       'by David Amariei',
     ];
     for (const line of aboutLines) {
@@ -139,7 +170,7 @@ export class SettingsMenu {
 
     // close btn
     const closeBtn = document.createElement('button');
-    closeBtn.textContent = '\u2715 CLOSE';
+    closeBtn.textContent = i18n.t('settings.close');
     closeBtn.style.cssText = `
         display:block; margin:28px auto 0; padding:10px 28px;
         font-family:'Courier New',monospace; font-size:14px; color:#aaa;
@@ -164,7 +195,7 @@ export class SettingsMenu {
     document.body.appendChild(root);
   }
 
-  // ---- public api ----
+  // public api
 
   show() {
     this._root.style.visibility = 'visible';
@@ -191,7 +222,7 @@ export class SettingsMenu {
     this._root.remove();
   }
 
-  // ---- internal helpers ----
+  // internal helpers
 
   // helper for section headers, kinda overkill but whatever
   _heading(text, styles) {

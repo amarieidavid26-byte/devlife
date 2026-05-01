@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { i18n } from '../i18n/index.js';
 
 const STATE_COLORS = [0x6AD89A, 0x9B6AFF, 0xFF7A6A, 0xFFB84A, 0x6AB8FF];
 
@@ -330,7 +331,7 @@ export class MainMenu {
         this._titleGlow.mask = null; // glow is unmasked but starts at alpha 0
 
         // subtitle
-        this._subtitleText = new PIXI.Text('The Biometric Developer Simulator', {
+        this._subtitleText = new PIXI.Text(i18n.t('menu.subtitle'), {
             fontFamily: "'Nunito', sans-serif",
             fontSize: 20,
             fill: 0xB8A88C,
@@ -510,9 +511,9 @@ export class MainMenu {
         this._domEls.push(hoverCSS);
 
         const btns = [
-            { label: '\u25B6  START', action: () => this.hide() },
-            { label: '\u25C9  DEMO MODE', action: () => { if (this._onDemo) { this._onStart = this._onDemo; this.hide(); } } },
-            { label: '\u2699  SETTINGS', action: () => { if (this._onSettings) this._onSettings(); } },
+            { label: `\u25B6  ${i18n.t('menu.start')}`, action: () => this.hide() },
+            { label: `\u25C9  ${i18n.t('menu.demo')}`, action: () => { if (this._onDemo) { this._onStart = this._onDemo; this.hide(); } } },
+            { label: `\u2699  ${i18n.t('menu.settings')}`, action: () => { if (this._onSettings) this._onSettings(); } },
         ];
 
         btns.forEach(({ label, action }) => {
