@@ -38,6 +38,7 @@ HOST = "0.0.0.0"
 PORT = 8000
 WHOOP_REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI", "http://localhost:8000/api/whoop/callback")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
+DB_PATH = os.getenv("DB_PATH", "./devlife.db")
 
 # mode settings 
 USE_MOCK_BIOMETRICS = True       # false when we are using real WHOOP metrics not this BS
