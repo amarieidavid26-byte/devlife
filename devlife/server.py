@@ -1,23 +1,41 @@
 import asyncio
 import json
+import logging
 import os
 import time
 import threading
 import random
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from typing import Optional
+from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from config import (
     CLAUDE_API_KEY, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET,
     HOST, PORT as _CONFIG_PORT,
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH,
-    WHOOP_REDIRECT_URI,
+    WHOOP_REDIRECT_URI, ALLOWED_ORIGINS,
 )
+
+logger = logging.getLogger(__name__)
+
+limiter = Limiter(key_func=get_remote_address)
+
+
+class MockStateBody(BaseModel):
+    state: int = Field(..., ge=1, le=5)
+
+
+class FeedbackBody(BaseModel):
+    action: str = Field(..., max_length=100)
 
 PORT = int(os.environ.get("PORT", _CONFIG_PORT))
 
@@ -184,7 +202,7 @@ def _on_ble_disconnect_timeout():
     if app_state.ble_disconnected and not app_state.sleep_mode_active:
         app_state.sleep_mode_active = True
         broadcast_sync({"type": "sleep_mode", "active": True})
-        print("[bio] sleep mode on, ble disconnected for 10s")
+        logger.info("sleep mode on -- ble disconnected")
 
 
 def _check_sleep_mode(data):
@@ -197,7 +215,7 @@ def _check_sleep_mode(data):
             app_state.sleep_mode_active = False
             app_state.sleep_low_hr_count = 0
             broadcast_sync({"type": "sleep_mode", "active": False})
-            print("[bio] sleep mode off -- no BLE data")
+            logger.info("sleep mode off -- no ble data")
         return
 
     hr = bio.live_heart_rate
@@ -206,12 +224,12 @@ def _check_sleep_mode(data):
         if app_state.sleep_low_hr_count >= 5 and not app_state.sleep_mode_active:
             app_state.sleep_mode_active = True
             broadcast_sync({"type": "sleep_mode", "active": True})
-            print(f"[bio] sleep mode on -- low HR={hr} for {app_state.sleep_low_hr_count} cycles")
+            logger.info("sleep mode on -- low HR=%s for %d cycles", hr, app_state.sleep_low_hr_count)
     else:
         if app_state.sleep_mode_active:
             app_state.sleep_mode_active = False
             broadcast_sync({"type": "sleep_mode", "active": False})
-            print(f"[bio] sleep mode off, HR={hr}")
+            logger.info("sleep mode off, HR=%s", hr)
 
 
 def biometric_loop():
@@ -255,7 +273,7 @@ def biometric_loop():
 
             if is_whoop:
                 src = "ble" if ble_fresh else "whoop"
-                print(f"[bio] WHOOP state={state} rec={data.get('recovery')} strain={data.get('strain')} hrv={data.get('hrv')} hr={data.get('heartRate')} src={src}")
+                logger.info("WHOOP state=%s rec=%s strain=%s hrv=%s hr=%s src=%s", state, data.get("recovery"), data.get("strain"), data.get("hrv"), data.get("heartRate"), src)
 
             broadcast_sync(build_biometric_msg(data, state))
 
@@ -310,7 +328,7 @@ def ghost_loop():
                             with app_state.content_lock:
                                 app_state.pending_content.pop(app_type, None)
                         except Exception as e:
-                            print(f"[ghost_loop] content analysis failed: {e}")
+                            logger.warning("content analysis failed: %s", e)
 
                 if analysis:
                     tracker.update(analysis, state, bio.estimated_stress)
@@ -327,7 +345,7 @@ def ghost_loop():
                         app_state.intervention_history.append(intervention)
                         if len(app_state.intervention_history) > 50:
                             app_state.intervention_history.pop(0)
-                        print(f"[ghost] ({state}/{app_type}) {intervention['message'][:80]}...")
+                        logger.info("intervention (%s/%s): %s...", state, app_type, intervention["message"][:80])
                         plant_delta = -25 if intervention.get("priority") == "critical" else -15
                         broadcast_sync({"type": "plant_update", "delta": plant_delta})
                     else:
@@ -346,7 +364,7 @@ def ghost_loop():
                 try:
                     analysis = vision.analyze(screenshots, context_summary)
                 except Exception as e:
-                    print(f"[ghost_loop] vision analysis failed: {e}")
+                    logger.warning("vision analysis failed: %s", e)
                     time.sleep(modifiers.get("capture_interval", 3))
                     continue
 
@@ -360,10 +378,10 @@ def ghost_loop():
                     app_state.intervention_history.append(intervention)
                     if len(app_state.intervention_history) > 50:
                         app_state.intervention_history.pop(0)
-                    print(f"[ghost] ({state}) {intervention['message'][:80]}...")
+                    logger.info("intervention (%s): %s...", state, intervention["message"][:80])
 
         except Exception as e:
-            print(f"[ghost_loop] error: {e}")
+            logger.error("ghost_loop error: %s", e)
             import traceback
             traceback.print_exc()
         time.sleep(1)
@@ -376,29 +394,33 @@ async def lifespan(app: FastAPI):
 
     if not GAME_MODE and capture:
         capture.start()
-        print("[ghost] screen capture started")
+        logger.info("screen capture started")
     else:
-        print("[ghost] game mode, waiting for content from frontend")
+        logger.info("game mode -- waiting for content")
 
     bio_thread   = threading.Thread(target=biometric_loop, daemon=True)
     ghost_thread = threading.Thread(target=ghost_loop,     daemon=True)
     bio_thread.start()
     ghost_thread.start()
-    print(f"[ghost] running on http://{HOST}:{PORT}")
+    logger.info("running on http://%s:%s", HOST, PORT)
     yield
 
     app_state.ghost_running = False
     if not GAME_MODE and capture:
         capture.stop()
     app_state.main_event_loop = None
-    print("[ghost] shutdown")
+    logger.info("shutdown")
 
 
 app = FastAPI(title="DevLife Backend", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, lambda req, exc: JSONResponse(
+    status_code=429, content={"error": "too many requests"}
+))
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -435,21 +457,18 @@ async def status():
 
 
 @app.post("/api/biometric/mock")
-async def set_mock_state(body: dict):
-    state_num = body.get("state")
-    if state_num not in [1, 2, 3, 4, 5]:
-        return JSONResponse(status_code=400, content={"error": "state must be 1-5"})
-    mock.set_state(state_num)
+@limiter.limit("30/minute")
+async def set_mock_state(request: Request, body: MockStateBody):
+    mock.set_state(body.state)
     await asyncio.sleep(0.3)
     data = mock.get_data()
     new_state = bio.classify(data)
-    return {"ok": True, "preset": state_num, "state": new_state, "data": data}
+    return {"ok": True, "preset": body.state, "state": new_state, "data": data}
 
 
 @app.post("/api/feedback")
-async def user_feedback(body: dict):
-    action = body.get("action", "")
-    brain.user_feedback(action)
+async def user_feedback(body: FeedbackBody):
+    brain.user_feedback(body.action)
     return {"ok": True, "accepted": brain.accepted_count, "ignored": brain.ignored_count}
 
 
@@ -492,7 +511,7 @@ async def whoop_callback(code: str = None, error: str = None):
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     app_state.connected_clients.append(ws)
-    print(f"[ws] client connected ({len(app_state.connected_clients)} total)")
+    logger.info("ws client connected (%d total)", len(app_state.connected_clients))
 
     bio_data = mock.get_data() if (not bio.access_token or time.time() < app_state.mock_override_until) else (bio.current_data or {})
     await ws.send_json(build_biometric_msg(bio_data, bio.current_state))
@@ -558,7 +577,7 @@ async def websocket_endpoint(ws: WebSocket):
     except WebSocketDisconnect:
         if ws in app_state.connected_clients:
             app_state.connected_clients.remove(ws)
-        print(f"[ws] client offline ({len(app_state.connected_clients)} total)")
+        logger.info("ws client offline (%d total)", len(app_state.connected_clients))
 
 
 if __name__ == "__main__":

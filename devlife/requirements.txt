@@ -27,5 +27,6 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 uvicorn==0.41.0
 websockets==16.0
+slowapi>=0.1.9
 pytest>=8.0.0
 pytest-asyncio>=1.0.0
