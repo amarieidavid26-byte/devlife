@@ -1,3 +1,5 @@
+import { i18n } from '../i18n/index.js';
+
 const STARTER_CODES = {
     python: {
         file: 'demo.py',
@@ -305,7 +307,7 @@ export class CodeEditorApp {
             // header
             const header = document.createElement('div');
             header.style.cssText = 'padding:12px 16px;border-bottom:1px solid #333;color:#B8A88C;';
-            header.innerHTML = `<strong style="color:#6AD89A">Previzualizare modificare</strong>
+            header.innerHTML = `<strong style="color:#6AD89A">${i18n.t('apply_fix.preview_title')}</strong>
                 <span style="color:#666;margin-left:12px">${rationale || ''}</span>`;
             panel.appendChild(header);
 
@@ -327,8 +329,8 @@ export class CodeEditorApp {
                 return wrap;
             };
 
-            diffWrap.appendChild(makePane('Înainte', originalText, '#FF7A6A'));
-            diffWrap.appendChild(makePane('După', newText, '#6AD89A'));
+            diffWrap.appendChild(makePane(i18n.t('apply_fix.before'), originalText, '#FF7A6A'));
+            diffWrap.appendChild(makePane(i18n.t('apply_fix.after'), newText, '#6AD89A'));
             panel.appendChild(diffWrap);
 
             // buttons
@@ -342,8 +344,8 @@ export class CodeEditorApp {
                 return b;
             };
 
-            const confirmBtn = makeBtn('Confirmă', '#6AD89A', '#1a1612');
-            const cancelBtn  = makeBtn('Anulează', 'rgba(255,255,255,0.07)', '#ccc');
+            const confirmBtn = makeBtn(i18n.t('apply_fix.confirm'), '#6AD89A', '#1a1612');
+            const cancelBtn  = makeBtn(i18n.t('apply_fix.cancel'), 'rgba(255,255,255,0.07)', '#ccc');
 
             confirmBtn.onclick = () => { panel.remove(); resolve(true); };
             cancelBtn.onclick  = () => { panel.remove(); resolve(false); };

@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Howl } from 'howler';
+import { i18n } from './i18n/index.js';
 import { GhostSocket } from './network/WebSocket.js';
 import { Room } from './room/Room.js';
 import { Furniture } from './room/Furniture.js';
@@ -325,19 +326,19 @@ async function startGame(enableDemo = false) {
             });
             const json = await res.json();
             if (!res.ok || !json.valid) {
-                toastSystem.show('warning', 'Fix respins', json.reason || 'validare esuata', 4000);
+                toastSystem.show('warning', i18n.t('toast.fix_rejected'), json.reason || 'validare esuata', 4000);
                 return;
             }
             patchHash = json.patch_hash;
         } catch (e) {
-            toastSystem.show('warning', 'Fix respins', 'backend indisponibil', 3000);
+            toastSystem.show('warning', i18n.t('toast.fix_rejected'), i18n.t('toast.whoop_unavailable'), 3000);
             return;
         }
 
         // show preview — user must confirm
         const confirmed = await editor.showPatchPreview(originalText, code, rationale);
         if (!confirmed) {
-            toastSystem.show('info', 'Anulat', 'modificarea nu a fost aplicata', 2000);
+            toastSystem.show('info', i18n.t('toast.fix_cancelled'), i18n.t('toast.fix_cancelled_body'), 2000);
             return;
         }
 
@@ -351,7 +352,7 @@ async function startGame(enableDemo = false) {
         socket.sendFeedback('Apply Fix');
 
         // rollback button via toast
-        toastSystem.show('ghost', 'Fix aplicat', 'Apasa Revert daca vrei sa anulezi', 8000);
+        toastSystem.show('ghost', i18n.t('toast.fix_applied'), i18n.t('toast.fix_applied_body'), 8000);
         // store hash for possible rollback
         window._lastPatchHash = patchHash;
         window._lastPatchOriginal = originalText;

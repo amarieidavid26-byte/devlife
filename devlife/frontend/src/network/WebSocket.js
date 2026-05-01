@@ -1,4 +1,5 @@
 import { CONFIG } from '../config.js';
+import { i18n } from '../i18n/index.js';
 
 export class GhostSocket {
     constructor(url = CONFIG.WS_URL) {
@@ -86,7 +87,7 @@ export class GhostSocket {
             case 'degraded_mode':
                 this.emit('degraded_mode', msg);
                 if (this._toastSystem) {
-                    this._toastSystem.show('warning', 'Mod degradat', `Motiv: ${msg.cause}`, 8000);
+                    this._toastSystem.show('warning', i18n.t('toast.degraded'), i18n.t(`toast.${msg.cause === 'demo-offline' ? 'offline' : 'whoop_unavailable'}`), 8000);
                 }
                 break;
             default:
@@ -99,7 +100,9 @@ export class GhostSocket {
         this._retryCount++;
         const delay = Math.min(1000 * Math.pow(2, this._retryCount - 1), 30000);
         if (this._toastSystem) {
-            this._toastSystem.show('warning', 'Reconectare...', `Reconectare in ${Math.round(delay / 1000)}s (incercarea ${this._retryCount})`, delay);
+            const s = Math.round(delay / 1000);
+            this._toastSystem.show('warning', i18n.t('toast.reconnecting'),
+                i18n.t('toast.reconnecting_body', { s, n: this._retryCount }), delay);
         }
         this.reconnectTimer = setTimeout(() => this.connect(), delay);
     }
