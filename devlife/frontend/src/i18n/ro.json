@@ -1,0 +1,49 @@
+{
+  "menu.subtitle": "Simulator biometric pentru developeri",
+  "menu.start": "START",
+  "menu.demo": "DEMO",
+  "menu.settings": "SETĂRI",
+
+  "settings.title": "SETĂRI",
+  "settings.about": "DESPRE",
+  "settings.audio": "AUDIO",
+  "settings.controls": "CONTROALE",
+  "settings.language": "LIMBĂ",
+  "settings.lang.ro": "Română",
+  "settings.lang.en": "English",
+  "settings.close": "✕ ÎNCHIDE",
+  "settings.volume": "Volum",
+  "settings.mute": "Fără sunet",
+
+  "state.RELAXED": "Relaxat",
+  "state.DEEP_FOCUS": "Concentrat",
+  "state.STRESSED": "Stresat",
+  "state.FATIGUED": "Obosit",
+  "state.WIRED": "Energizat",
+
+  "hud.recovery": "Recuperare",
+  "hud.strain": "Efort",
+  "hud.hrv": "HRV",
+  "hud.heart_rate": "BPM",
+
+  "apply_fix.preview_title": "Previzualizare modificare",
+  "apply_fix.before": "Înainte",
+  "apply_fix.after": "După",
+  "apply_fix.confirm": "Confirmă",
+  "apply_fix.cancel": "Anulează",
+
+  "toast.reconnecting": "Reconectare...",
+  "toast.reconnecting_body": "Backend indisponibil. Reincerc in {s}s (incercarea {n})",
+  "toast.fix_applied": "Fix aplicat",
+  "toast.fix_applied_body": "Apasă Revert dacă vrei să anulezi",
+  "toast.fix_rejected": "Fix respins",
+  "toast.fix_cancelled": "Anulat",
+  "toast.fix_cancelled_body": "Modificarea nu a fost aplicată",
+  "toast.degraded": "Mod degradat",
+  "toast.offline": "Mod demo offline — date simulate",
+  "toast.whoop_unavailable": "WHOOP indisponibil — date simulate",
+  "toast.live_mode_locked": "WHOOP transmite date reale. Override manual dezactivat.",
+
+  "ws.connected": "Conectat la Ghost",
+  "ws.disconnected": "Deconectat"
+}
