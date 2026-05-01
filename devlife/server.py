@@ -465,6 +465,21 @@ async def health():
     return {"status": "alive", "ghost": "watching"}
 
 
+@app.get("/ready")
+async def ready():
+    reasons = []
+    if not CLAUDE_API_KEY and not DEMO_OFFLINE:
+        reasons.append("CLAUDE_API_KEY missing")
+    try:
+        from persistence.db import connect
+        connect()
+    except Exception as e:
+        reasons.append(f"db not ready: {e}")
+    if reasons:
+        return JSONResponse(status_code=503, content={"ready": False, "reasons": reasons})
+    return {"ready": True, "demo_offline": DEMO_OFFLINE, "game_mode": GAME_MODE}
+
+
 @app.get("/api/status")
 async def status():
     bio_data = mock.get_data() if (not bio.access_token or time.time() < app_state.mock_override_until) else (bio.current_data or {})
