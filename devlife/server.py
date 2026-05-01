@@ -22,7 +22,7 @@ from config import (
     CLAUDE_API_KEY, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET,
     HOST, PORT as _CONFIG_PORT,
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH,
-    WHOOP_REDIRECT_URI, ALLOWED_ORIGINS,
+    WHOOP_REDIRECT_URI, ALLOWED_ORIGINS, DEMO_OFFLINE,
 )
 
 logger = logging.getLogger(__name__)
@@ -62,13 +62,17 @@ content_analyzer = ContentAnalyzer(CLAUDE_API_KEY)
 capture = ScreenCapture() if _DESKTOP_AVAILABLE else None
 vision = VisionAnalyzer(CLAUDE_API_KEY) if _DESKTOP_AVAILABLE else None
 bio = BiometricEngine(WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET)
-mock = MockBiometrics()
+mock = MockBiometrics(seeded=DEMO_OFFLINE)
 brain = GhostBrain(CLAUDE_API_KEY)
 tracker = ContextTracker()
 
 
 def get_analyzer():
     return content_analyzer if GAME_MODE else vision
+
+
+def _degraded_banner(cause: str):
+    broadcast_sync({"type": "degraded_mode", "cause": cause})
 
 
 @dataclass
@@ -236,12 +240,13 @@ def _check_sleep_mode(data):
 def biometric_loop():
     while app_state.ghost_running:
         is_whoop = False
-        if time.time() < app_state.mock_override_until:
+        if DEMO_OFFLINE or time.time() < app_state.mock_override_until:
             data = mock.get_data()
         elif bio.access_token:
             data = bio.fetch_data()
             if data is None:
                 data = mock.get_data()
+                _degraded_banner("WHOOP API unavailable")
             else:
                 is_whoop = True
         else:
@@ -404,6 +409,14 @@ async def lifespan(app: FastAPI):
         mode="game" if GAME_MODE else "desktop",
         whoop_connected=bool(bio.access_token),
     )
+
+    if DEMO_OFFLINE:
+        logger.info("DEMO_OFFLINE active -- all external calls mocked")
+        # broadcast after event loop is ready, give frontend time to connect
+        async def _send_degraded():
+            await asyncio.sleep(2)
+            broadcast_sync({"type": "degraded_mode", "cause": "demo-offline"})
+        asyncio.ensure_future(_send_degraded())
 
     if not GAME_MODE and capture:
         capture.start()
