@@ -10,5 +10,9 @@ dist/
 *.zip
 .DS_Store
 devlife.db
+*.db-shm
+*.db-wal
+.coverage
 .pytest_cache/
 htmlcov/
+.claude/
