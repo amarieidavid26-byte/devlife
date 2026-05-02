@@ -1,33 +1,60 @@
-# DevLife 
+# DevLife
 
-## what even is this
+developerii fac greseli proaste cand sunt obositi. nu un timer. nu un pomodoro app. ceva care iti citeste biometricele in timp real si spune "hey nu da push la productie acum".
 
-so i built a game where an AI ghost watches you code. sounds weird right? but heres the thing. the ghost is connected to your actual body through a WHOOP wearable. it reads your heart rate, your recovery, your stress levels. in real time.
+DevLife e un companion AI conectat la corpul tau prin WHOOP. citeste heart rate, HRV, recovery, stress - si clasifica starea ta cognitiva. cand esti in deep focus, te lasa in pace. cand esti cooked la 2am, activeaza Fatigue Firewall-ul si blocheaza comenzile periculoase inainte sa faci ceva de care o sa iti para rau.
 
-when youre relaxed and writing clean code, ghost chills. maybe drops a suggestion here and there. but when youre exhausted at 2am trying to force push to production? ghost literally blocks you. i call it the Fatigue Firewall.
+## cum functioneaza
 
-## why tho
+biometrice (WHOOP + BLE) → clasificare stare cognitiva → ghost AI reactioneaza → interventii + firewall
 
-every dev has pushed garbage code when they were tired. i wanted to build something that actually knows when youre too fried to be making important decisions. not a timer. not a pomodoro app. something that reads your actual physiology and says "hey maybe dont delete the production database right now"
+**5 stari cognitive:** RELAXED · DEEP_FOCUS · STRESSED · FATIGUED · WIRED
 
-## the cool parts
+ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza activ comenzile de tip `git push --force`, `DROP TABLE`, `rm -rf`.
 
-- **real biometrics** — connects to WHOOP via bluetooth. your actual heartbeat shows up in the game
-- **5 cognitive states** — relaxed, stressed, fatigued, deep focus, wired. ghost changes personality for each
-- **fatigue firewall** — blocks dangerous commands when your body says youre cooked
-- **apply fix** — ghost spots bugs in your code and can fix them with one click - this feature still needs time for developing, a bit hardcoded for the demo
-- **sleep mode** — take off the wearable and the whole room goes dark. ghost whispers goodnight
-- **the plant** — write good code, your plant grows. write bad code, it dies. simple as that. it should do that but there is a lot of testing to be done.
+## features
+
+- **biometrice reale** — WHOOP API + chrome bluetooth pentru bpm live. hartbatu tau apare pe ecran
+- **fatigue firewall** — detecteaza comenzile periculoase si le blocheaza cand starea ta e FATIGUED
+- **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback
+- **sleep mode** — dai jos wearable-ul si camera se intuneca automat
+- **fallback offline** — merge complet si fara WHOOP, cu biometrice simulate
 
 ## tech stack
 
-- for **fronted** i used: vanilla js, pixi js for the isometric room and canvas for ecg
-- for **backend**: python, fastapi and websockets 
-- **ai**:  claude api (for the best performance), claude vision api for the screen analysis
-- **biometrics**: whoop api (dev one which token refreshes after 1h) and chrome bluetooth for the live bpm because the api doesnt transmit it
-- **other**: vite and node for dev server
+- frontend: vanilla JS + PixiJS (camera izometrica procedurala, fara sprite-uri)
+- backend: Python + FastAPI + WebSockets
+- AI: Claude API (Anthropic) — analiza cod + ghost brain
+- biometrice: WHOOP API + Chrome Web Bluetooth
+- persistenta: SQLite
+- deploy: Railway
 
-we have bad bunny playin on the in-game speaker so enjoy the puerto rican music while coding high on caffeine!
+## arhitectura
 
-## yt demo 
-https://youtu.be/g5IB-aBAqK4
+```
+Browser (PixiJS)  <──ws://──>  FastAPI (Python)  <──>  Claude API
+                                     │
+                               SQLite (sessions,
+                               interventions, audit)
+                                     │
+                              WHOOP API / BLE mock
+```
+
+## instalare
+
+```bash
+git clone <repo>
+cd devlife
+./scripts/setup.sh    # venv + deps
+./scripts/dev.sh      # porneste backend + frontend
+```
+
+vezi `docs/install-runbook.md` pentru setup complet cu .env.
+
+## resurse externe
+
+- [Kenney.nl](https://kenney.nl) — assets izometrice (CC0)
+- [PixiJS](https://pixijs.com) — rendering canvas (MIT)
+- [FastAPI](https://fastapi.tiangolo.com) — web framework (MIT)
+- [Claude API](https://anthropic.com) — Anthropic
+- [WHOOP API](https://developer.whoop.com) — WHOOP
