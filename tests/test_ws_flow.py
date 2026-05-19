@@ -59,3 +59,58 @@ def test_ws_feedback_accepted():
             ws.receive_json()
             ws.send_text(json.dumps({"type": "feedback", "action": "Thanks"}))
             # no crash = feedback processed
+
+
+def test_ws_heart_rate_accepted():
+    import server
+    import time
+
+    server.bio.live_heart_rate = 0
+    server.bio.live_hr_timestamp = 0
+
+    with _client() as client:
+        with client.websocket_connect("/ws") as ws:
+            ws.receive_json()  # initial biometric
+            ws.send_text(json.dumps({"type": "heart_rate", "bpm": 72}))
+            # round-trip with a follow-up message so the handler runs before we assert
+            ws.send_text(json.dumps({"type": "mock_state", "state": 1}))
+            ws.receive_json()
+
+    assert server.bio.live_heart_rate == 72
+    assert time.time() - server.bio.live_hr_timestamp < 2
+
+
+def test_ws_heart_rate_out_of_range_rejected():
+    import server
+    server.bio.live_heart_rate = 0
+    server.bio.live_hr_timestamp = 0
+
+    with _client() as client:
+        with client.websocket_connect("/ws") as ws:
+            ws.receive_json()
+            ws.send_text(json.dumps({"type": "heart_rate", "bpm": 9}))    # too low
+            ws.send_text(json.dumps({"type": "heart_rate", "bpm": 300}))  # too high
+            ws.send_text(json.dumps({"type": "heart_rate", "bpm": -50}))  # negative
+            ws.send_text(json.dumps({"type": "mock_state", "state": 1}))
+            ws.receive_json()
+
+    assert server.bio.live_heart_rate == 0  # never updated
+
+
+def test_ws_heart_rate_wrong_type_ignored():
+    import server
+    server.bio.live_heart_rate = 0
+    server.bio.live_hr_timestamp = 0
+
+    with _client() as client:
+        with client.websocket_connect("/ws") as ws:
+            ws.receive_json()
+            ws.send_text(json.dumps({"type": "heart_rate", "bpm": "fast"}))
+            ws.send_text(json.dumps({"type": "heart_rate", "bpm": None}))
+            ws.send_text(json.dumps({"type": "heart_rate"}))  # missing bpm
+            # server should still be alive
+            ws.send_text(json.dumps({"type": "mock_state", "state": 1}))
+            msg = ws.receive_json()
+            assert msg["type"] == "biometric_update"
+
+    assert server.bio.live_heart_rate == 0
