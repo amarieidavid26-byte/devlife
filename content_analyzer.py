@@ -83,8 +83,11 @@ Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
 {"app":"chat","activity":"string","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":"string|null","help_opportunity":"string|null","risky_action":false,"risky_description":null,"suggested_intervention":{"type":"suggestion|warning|encouragement","message":"2-3 sentences","priority":"low|medium|high","code_suggestion":null},"context_summary":"one-line summary"}"""
     }
 
+    # 15s timeout so a hung Claude API does not block the ghost loop
+    CLAUDE_TIMEOUT_SECONDS = 15.0
+
     def __init__(self, api_key):
-        self.client = Anthropic(api_key = api_key)
+        self.client = Anthropic(api_key=api_key, timeout=self.CLAUDE_TIMEOUT_SECONDS)
         self.last_analysis = None
         self.last_analysis_time = 0
         self.content_history = {}
