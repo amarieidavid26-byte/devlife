@@ -131,6 +131,8 @@ export class CodeEditorApp {
         this._isRunning = false;
         this._lastRunCode = '';
         this._jsRunner = null;
+        this._lastRunErrorKey = '';
+        this._lastRunErrorTime = 0;
     }
 
     open() {
@@ -487,6 +489,18 @@ export class CodeEditorApp {
         }
 
         this._stdoutEl.scrollTop = this._stdoutEl.scrollHeight;
+
+        // notify Ghost about real runtime errors (skip user-stop / timeout fluctuation)
+        // exit 130 = SIGINT (user pressed Stop); we don't want feedback for that
+        if (err && result.exit !== 130 && this._lastRunCode && this.socket && this.socket.sendRunError) {
+            const fingerprint = `${this.currentLang}|${err.slice(0, 200)}`;
+            const now = Date.now();
+            if (fingerprint !== this._lastRunErrorKey || now - this._lastRunErrorTime > 5000) {
+                this._lastRunErrorKey = fingerprint;
+                this._lastRunErrorTime = now;
+                this.socket.sendRunError(this._lastRunCode, err, this.currentLang);
+            }
+        }
 
         if (this._badgeEl) {
             this._badgeEl.innerHTML = '';

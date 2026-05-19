@@ -65,7 +65,11 @@ Look for bugs like:
 Stuck signals:
 - same code unchanged for a while
 - undo/redo spam
-- adding and deleting the same lines""",
+- adding and deleting the same lines
+
+If extra_context contains "Runtime error:", diagnose THAT specific error.
+Put the fix in code_suggestion (full corrected snippet, same language as input).
+priority = "high" for runtime errors, type = "fix".""",
 
         "terminal": """Ghost watching terminal. JSON only:
 {"app":"terminal","activity":"what theyre doing","stuck_probability":0.0-1.0,"stuck_reason":"string|null","mistake_detected":false,"mistake_description":"string|null","help_opportunity":"string|null","risky_action":false,"risky_description":"string|null","suggested_intervention":{"type":"fix|suggestion|warning|encouragement","message":"2-3 sentences","priority":"low|medium|high|critical","code_suggestion":"correct cmd or null"},"context_summary":"one line"}

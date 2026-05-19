@@ -16,3 +16,4 @@ devlife.db
 .pytest_cache/
 htmlcov/
 .claude/
+frontend/public/lib/pyodide/
