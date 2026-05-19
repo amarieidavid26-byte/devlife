@@ -19,3 +19,4 @@ de adaugat inainte de predare:
 - `runner-python-error-then-ghost.png` — Python runtime error in rosu + bubble ghost cu Apply Fix
 - `runner-js-timeout.png` — JS tab cu `while(1){}` → dupa 5s, rosu "Execution timed out (5s limit)"
 - `runner-review-only-hint.png` — tab C++ sau GO, butonul Run ascuns, hint "Doar review AI — comuta pe PY/JS pentru a rula"
+- `whoop-ble-live-bpm.png` — HUD cu puls real venit de la strap WHOOP prin Web Bluetooth (DemoHotbar arata indicator BLE verde)
