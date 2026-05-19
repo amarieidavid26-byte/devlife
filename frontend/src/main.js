@@ -161,8 +161,21 @@ async function startGame(enableDemo = false) {
     // WHOOP BLE pairing - connects the PAIR WHOOP button to the Web Bluetooth API
     const whoop = new WHOOPBluetooth();
     window.connectWHOOP = async () => {
-        const ok = await whoop.connect();
-        if (ok) demoHotbar.setBLEConnected(true);
+        const res = await whoop.connect();
+        if (res.ok) {
+            demoHotbar.setBLEConnected(true);
+            toastSystem.show('info', '\u2764\uFE0F ' + i18n.t('ble.connected'), i18n.t('ble.connected_body'), 2500);
+            return;
+        }
+        // user cancelled the browser picker -- silent, expected
+        if (res.errorName === 'NotFoundError') return;
+        if (res.errorName === 'SecurityError') {
+            toastSystem.show('warning', '\uD83D\uDD12 ' + i18n.t('ble.pair_failed_https'), '', 6000);
+        } else if (res.errorName === 'NotSupportedError') {
+            toastSystem.show('warning', '\u26A0\uFE0F ' + i18n.t('ble.pair_failed_not_supported'), '', 6000);
+        } else {
+            toastSystem.show('warning', '\uD83D\uDCE1 ' + i18n.t('ble.pair_failed_generic', { err: res.errorMessage }), '', 5000);
+        }
     };
     whoop.onUpdate((bpm, connected) => {
         demoHotbar.setBLEConnected(connected);
@@ -171,8 +184,11 @@ async function startGame(enableDemo = false) {
             hud.update({ heart_rate: bpm });
         }
         if (!connected) {
-            toastSystem.show('warning', '\uD83D\uDCF4 WHOOP Disconnected', 'Falling back to demo states. Reconnecting...', 4000);
+            toastSystem.show('warning', '\uD83D\uDCF4 ' + i18n.t('ble.disconnected'), i18n.t('ble.disconnected_body'), 4000);
         }
+    });
+    whoop.onGiveUp(() => {
+        toastSystem.show('warning', '\uD83D\uDCF4 ' + i18n.t('ble.reconnect_giveup'), i18n.t('ble.reconnect_giveup_body'), 8000);
     });
 
     // app overlays

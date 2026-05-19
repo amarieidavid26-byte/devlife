@@ -46,6 +46,16 @@
   "runner.no_output": "(fără ieșire)",
   "runner.interrupted": "Întrerupt de utilizator",
 
+  "ble.connected": "WHOOP conectat",
+  "ble.connected_body": "Pulsul live se vede in HUD",
+  "ble.disconnected": "WHOOP deconectat",
+  "ble.disconnected_body": "Cad pe stari demo. Reconectare...",
+  "ble.pair_failed_https": "Web Bluetooth necesita HTTPS",
+  "ble.pair_failed_not_supported": "Browserul nu suporta Web Bluetooth (foloseste Chrome sau Edge)",
+  "ble.pair_failed_generic": "Pairing esuat: {err}",
+  "ble.reconnect_giveup": "WHOOP indisponibil",
+  "ble.reconnect_giveup_body": "Apasa Pair din nou cand strapul e gata.",
+
   "toast.reconnecting": "Reconectare...",
   "toast.reconnecting_body": "Backend indisponibil. Reincerc in {s}s (incercarea {n})",
   "toast.fix_applied": "Fix aplicat",
