@@ -660,6 +660,14 @@ async def websocket_endpoint(ws: WebSocket):
                         "timestamp": time.time(),
                     })
 
+            elif data.get("type") == "heart_rate":
+                # live BPM from frontend Web Bluetooth pairing (WHOOPBluetooth.js)
+                # downstream: biometric_loop reads bio.live_heart_rate when ble_fresh
+                bpm = data.get("bpm")
+                if isinstance(bpm, (int, float)) and 30 <= bpm <= 220:
+                    bio.live_heart_rate = int(bpm)
+                    bio.live_hr_timestamp = time.time()
+
             elif data.get("type") == "run_error":
                 # user clicked Run in the desk code editor and got a runtime error
                 # bypass the pending_content loop -- this is an explicit, user-initiated event
