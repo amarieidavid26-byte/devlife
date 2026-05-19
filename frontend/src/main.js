@@ -11,6 +11,7 @@ import { HUD } from './hud/HUD.js';
 import { DashboardOverlay } from './hud/DashboardOverlay.js';
 import { DemoHotbar } from './hud/DemoHotbar.js';
 import { CodeEditorApp } from './apps/CodeEditor.js';
+import { PythonRunner } from './apps/runners/PythonRunner.js';
 import { TerminalApp } from './apps/Terminal.js';
 import { BrowserApp } from './apps/Browser.js';
 import { NotesApp } from './apps/Notes.js';
@@ -78,6 +79,11 @@ mainMenu.show(
 // Game init (called when menu START or DEMO is clicked)
 async function startGame(enableDemo = false) {
     await Furniture.preloadTextures();
+
+    // background-load Pyodide so the desk code editor is ready when opened
+    PythonRunner.get().preload().catch(() => {
+        // silent — code editor surfaces the error on first Run if pyodide missing
+    });
 
     let socket, room, furniture, ghost, atmosphere, hud, beneathView, demoHotbar, apps, activeApp, ePrompt;
     let currentGameScene = 'room';
