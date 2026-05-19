@@ -1,45 +1,53 @@
 # rubric matrix — InfoEducație Software Utilitar
 
-total: 100 puncte
+total: 100 puncte. matricea de mai jos mapeaza fiecare sub-criteriu la artefactele concrete din repo.
 
-| sectiune | puncte | ce trebuie demonstrat | task | artifact |
-|----------|--------|----------------------|------|----------|
-| **I.1 Analiza pieței** | 10 | comparatie cu solutii existente (RescueTime, Pomodoro, Oura etc.) — ce aduce DevLife in plus: biometrice reale + firewall activ + AI context-aware | T01 | `docs/positioning.md` |
-| **I.2 Planificarea dezvoltarii** | 5 | plan de dezvoltare cu task-uri, dependinte, prioritati | T01, T13 | `OLIMPIADA_PLAN_AGENT.md`, `evidence/team-process/` |
-| **II.1 Proiectarea arhitecturala** | 20 | arhitectura FastAPI + PixiJS + WebSocket; pipeline biometric→clasificare stare→interventie→apply-fix; desk code runner reutilizeaza pipeline-ul existent prin runtime-error → ghost loop; justificarea fiecarui layer | T03, T05, code-editor-remake | `README.md`, `docs/install-runbook.md`, `docs/desk-code-runner.md` |
-| **II.2 Tehnologiile folosite** | 5 | justificarea fiecarei tehnologii: WHOOP API, BLE, Claude API, FastAPI, PixiJS, SQLite, Pyodide (Python in browser), Web Worker (sandbox JS) | T03, T11, code-editor-remake | `README.md`, `docs/assets-compliance.md`, `docs/desk-code-runner.md` |
-| **II.3 Stabilitatea aplicatiei** | 5 | fara memory leaks, degradare gratiosa cand WHOOP/Claude sunt offline, demo rulabil end-to-end | T06, T08 | `evidence/tests/junit.xml`, `evidence/perf/latency-table.md` |
-| **II.4 Securitatea aplicatiei** | 5 | validare input Pydantic, CORS restrictionat, logging fara secrete, rate limiting, error handling Claude API | T04 | `docs/security-checklist.md` |
-| **II.5 Testarea produsului** | 5 | pytest cu unit + integration tests pe critical path; GitHub issues pentru bug tracking | T08, T13 | `evidence/tests/junit.xml`, `evidence/tests/coverage.html` |
-| **II.6 Maturitatea aplicatiei** | 5 | app functionala online si offline, deployed pe Railway, public tinta clar (developeri) | T06, T10 | `evidence/demo-proof/`, `/ready` endpoint |
-| **II.7 Sistem de versionare** | 5 | git history cu mesaje clare, branch-uri, stari intermediare | T13 | `evidence/team-process/git-graph.txt` |
-| **III.1 Interfata** | 5 | camera izometrica, HUD biometric, layout responsive, stare vizuala clara per cognitive state | T09 | `evidence/screenshots/` |
-| **III.2 Experienta utilizatorului** | 10 | tranzitii fluente, raspuns rapid, flow intuitiv, mesaje de eroare clare, i18n RO/EN; demo set-piece: buggy code → Run → eroare → Ghost suggest fix → Apply Fix → diff preview → swap → Run reusit (~60s) | T09, code-editor-remake | `evidence/screenshots/`, `evidence/demo-proof/`, `docs/desk-code-runner.md` |
-| **IV.1 Prezentare** | 5 | walkthrough de 7-10 min, demo live online + offline, raspuns la intrebari | T12 | `docs/demo-playbook.md`, `evidence/screenshots/` |
-| **IV.2 Documentatia proiectului** | 5 | problema, solutia, public tinta, functionalitati, arhitectura, ghid instalare, justificari tehnologii, testimoniale | T01, T10 | `README.md`, `docs/install-runbook.md` |
-| **V.1 Distributia rolurilor** | 5 | David: backend + infra; Matei: frontend + PixiJS — demonstrat prin commit history per autor | T13 | `docs/authorship.md`, `evidence/team-process/` |
-| **V.2 Modul de lucru in echipa** | 5 | GitHub issues/PRs, branch graph, comunicare documentata | T13 | `evidence/team-process/` |
-| **VI.1 Codul sursa** *(obligatoriu)* | — | cod structurat, comentarii unde e necesar, design patterns clare | T02–T07 | tot repo-ul |
-| **VI.2 Resurse externe** *(obligatoriu)* | — | lista completa: Kenney CC0, Claude API, WHOOP API, PixiJS, FastAPI, Pydantic, librarii Python | T11, T13 | `docs/assets-compliance.md`, `docs/authorship.md` |
-
----
-
-## puncte slabe actuale (de rezolvat)
-
-- **II.1 (20 pts)** — arhitectura e buna tehnic dar nedocumentata. prioritate maxima.
-- **II.4 (5 pts)** — CORS e prea permisiv, input validation lipsa pe mai multe endpoint-uri. fix in T04.
-- **II.5 (5 pts)** — `test_ghost.py` exista dar nu e un test suite real. de scris in T08.
-- **IV.2 (5 pts)** — README-ul actual nu acopera toate cerintele sectiunii. fix in T01.
-- **V.1/V.2 (10 pts)** — lipsa issues/PRs documentate pe GitHub. de adaugat retroactiv unde e posibil in T13.
+| sectiune | puncte | ce trebuie demonstrat | artefacte |
+|----------|--------|----------------------|-----------|
+| **I.1 Analiza pieței** | 10 | comparatie cu solutii existente (RescueTime, Pomodoro, Oura, Copilot, WHOOP app) — ce aduce DevLife in plus: biometrice reale + firewall activ + AI context-aware + Apply Fix cu audit | `docs/positioning.md` (detaliat), `README.md` (tabel rezumat) |
+| **I.2 Planificarea dezvoltarii** | 5 | plan de dezvoltare cu task-uri T01-T14, dependinte, criterii succes, risc + mitigare | `docs/development-plan.md`, `docs/rubric-matrix.md` |
+| **II.1 Proiectarea arhitecturala** | 20 | 5 layer-uri detaliate (frontend → WS → backend → Apply Fix → persistence), 2 thread-uri daemon, decizii arhitecturale, paradigme programare, extensibilitate; desk code runner reutilizeaza pipeline-ul existent prin runtime-error → ghost loop | `docs/architecture.md`, `docs/desk-code-runner.md`, `README.md` sectiunea arhitectura |
+| **II.2 Tehnologiile folosite** | 5 | justificarea fiecarei tehnologii: Python+FastAPI, PixiJS, SQLite WAL, Anthropic SDK, WHOOP API + Web Bluetooth, slowapi, Pydantic, Pyodide (Python in browser), Web Worker (sandbox JS) | `docs/architecture.md` sectiunea decizii, `docs/desk-code-runner.md`, `docs/assets-compliance.md` |
+| **II.3 Stabilitatea aplicatiei** | 5 | fara memory leaks (RSS stabil 60min), degradare gratioasa (Claude timeout 15s, WHOOP fallback la mock), demo rulabil end-to-end | `evidence/perf/latency-table.md`, `evidence/tests/SUMMARY.md` |
+| **II.4 Securitatea aplicatiei** | 5 | validare input Pydantic, CORS strict, logging fara secrete, rate limiting 30/min, timeout Claude, bounds WS, audit Apply Fix, OWASP API Top 10 mapping | `docs/security-checklist.md` |
+| **II.5 Testarea produsului** | 5 | 43 teste pytest (apply_fix, classifier, fallback, server_smoke, ws_flow, run_error_routing), automatizare prin scripts/run-tests.sh + coverage HTML | `evidence/tests/junit.xml`, `evidence/tests/coverage/`, `evidence/tests/SUMMARY.md` |
+| **II.6 Maturitatea aplicatiei** | 5 | app functionala online + offline, deployed pe Railway, public tinta clar definit, `/ready` endpoint, demo playbook | `docs/demo-playbook.md`, `docs/deploy-runbook.md`, `docs/positioning.md` sectiunea public tinta |
+| **II.7 Sistem de versionare** | 5 | git history cu mesaje structurate t02-t13 + code-editor-remake, 9 tag-uri semantice (v0.1-mvp → v1.1-hardening), branch strategy documentat | `evidence/team-process/git-graph.txt`, `evidence/team-process/branch-strategy.md`, `evidence/team-process/commit-timeline.md` |
+| **III.1 Interfata** | 5 | camera izometrica 2.5D, HUD biometric (CQI, ECG, autonomic balance), layout responsive, paleta Animal Crossing, ghost personality vizuala | `docs/ui-ux-decisions.md`, `evidence/screenshots/*.png` |
+| **III.2 Experienta utilizatorului** | 10 | tranzitii fluente intre scene (Room, Town, Cafe, Cowork), raspuns rapid (< 10ms fallback), flow intuitiv (WASD + E + 1-5 + ESC), i18n RO/EN, accesibilitate keyboard-first; demo set-piece: buggy code → Run → eroare → Ghost suggest fix → Apply Fix → diff preview → swap → Run reusit (~60s) | `docs/ui-ux-decisions.md`, `docs/desk-code-runner.md`, `frontend/src/i18n/`, `evidence/screenshots/` |
+| **IV.1 Prezentare** | 5 | walkthrough 7-10 min cu scenariu pre-rehearsed, failure recovery table, Q&A pregatite, demo online + offline | `docs/demo-playbook.md` |
+| **IV.2 Documentatia proiectului** | 5 | problema, solutia, public tinta, functionalitati, arhitectura, ghid instalare, justificari tehnologii, testimoniale, roadmap | `documentatie-finala.docx` + toate docs/*.md |
+| **V.1 Distributia rolurilor** | 5 | David: frontend visual + cinematic + WHOOP BLE + scene + code runner; Matei: backend + persistence + security + tests + docs | `docs/authorship.md`, `evidence/team-process/contributor-stats.md` |
+| **V.2 Modul de lucru in echipa** | 5 | git workflow cu branch-uri (`infoeducatie-hardening`, `code-editor-remake`), pair-programming, AI-assisted coding declarat, merge-uri vizibile in graph | `evidence/team-process/branch-strategy.md`, `evidence/team-process/git-graph.txt` |
+| **VI.1 Codul sursa** *(obligatoriu)* | — | cod structurat in module dedicate (apply_fix/, persistence/, frontend/src/{apps,apps/runners,room,town,hud,...}), docstrings unde necesar, type hints, Pydantic models | tot repo-ul, vezi `docs/architecture.md` pentru tour ghidat |
+| **VI.2 Resurse externe** *(obligatoriu)* | — | toate dependintele declarate cu licenta: Kenney CC0, Fredoka/Nunito SIL OFL, FastAPI/PixiJS/Pydantic/Pyodide/etc MIT, Anthropic + WHOOP APIs | `docs/assets-compliance.md` |
 
 ---
 
-## competitors comparatie (pentru I.1)
+## status la momentul submission (v1.1-hardening)
 
-| tool | ce face | ce nu face |
-|------|---------|-----------|
-| RescueTime | tracking timp per app | nu citeste biometrice, nu blocheaza activ |
-| Pomodoro apps | timer simplu | nu stie daca esti chiar obosit sau doar plictisit |
-| Oura / Garmin apps | tracking sanatate | nu sunt integrate in fluxul de cod |
-| GitHub Copilot | sugereaza cod | nu stie nimic despre starea ta fizica |
-| **DevLife** | biometrice reale → clasificare stare → interventie AI + firewall activ | — |
+| arie | acoperire | restant |
+|------|-----------|---------|
+| backend + persistence | ✅ 100% | — |
+| security + hardening | ✅ 100% | — |
+| testing (43/43 verzi) | ✅ 100% | — |
+| desk code runner (Pyodide + Web Worker) | ✅ 100% | — |
+| documentatie (docs/) | ✅ 95% | DOCX final pentru predare |
+| evidence pack | ✅ 95% | screenshots PNG efective (de capturat) |
+| git workflow + tags | ✅ 100% | — |
+| deploy (Railway) | ✅ 100% | — |
+
+---
+
+## competitor comparatie rezumat (pentru I.1)
+
+vezi `docs/positioning.md` pentru analiza detaliata pe fiecare competitor.
+
+| tool | biometrice | blocheaza activ | context cod | pret |
+|------|-----------|-----------------|-------------|------|
+| RescueTime | ❌ | ❌ | ❌ | $9-12/luna |
+| Pomodoro apps | ❌ | partial | ❌ | gratis-$5 |
+| Oura/Garmin/Fitbit | ✅ | ❌ | ❌ | $5-30/luna + hw |
+| GitHub Copilot | ❌ | ❌ | ✅ | $10-20/luna |
+| WHOOP app | ✅ | ❌ | ❌ | $25-30/luna + hw |
+| **DevLife** | ✅ | ✅ | ✅ | open source |
