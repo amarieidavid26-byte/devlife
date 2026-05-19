@@ -12,11 +12,23 @@ const {
 
 // ====== HELPERS ======
 
-const FONT = "Calibri";
+// Arial = font universal compatibil cu Google Docs (Calibri se substituie la import)
+const FONT = "Arial";
+const MONO = "Consolas"; // Google Docs il mapeaza la Courier New
 const TEXT_SIZE = 22; // 11pt
-const HEADING1_SIZE = 36; // 18pt
+const HEADING1_SIZE = 40; // 20pt — mai mare pentru impact
 const HEADING2_SIZE = 30; // 15pt
 const HEADING3_SIZE = 26; // 13pt
+
+// Paleta — tonuri reci profesionale care fac contrast cu accentul rosu ROG
+const COLOR_PRIMARY = "1F3864";    // navy inchis — H1, header tabel
+const COLOR_SECONDARY = "2E74B5";  // albastru mediu — H2
+const COLOR_TERTIARY = "548DD4";   // albastru deschis — H3
+const COLOR_ACCENT = "E94560";     // rosu ROG — accente, placeholder-uri
+const COLOR_MUTED = "888888";      // gri — header/footer/captions
+const COLOR_QUOTE = "5A5A5A";      // gri inchis — testimoniale
+const COLOR_CODE_BG = "F2F4F7";    // gri foarte deschis — fundal cod
+const COLOR_CODE_TEXT = "1A1A2E";  // navy aproape negru — text cod
 
 function p(text, opts = {}) {
   return new Paragraph({
@@ -38,26 +50,36 @@ function pRich(runs, opts = {}) {
 }
 
 function h1(text) {
+  // H1: bara colorata jos + page break inainte pentru aerare
   return new Paragraph({
     heading: HeadingLevel.HEADING_1,
-    spacing: { before: 360, after: 200 },
-    children: [new TextRun({ text, size: HEADING1_SIZE, bold: true, font: FONT, color: "1F3864" })],
+    pageBreakBefore: true,
+    spacing: { before: 0, after: 320 },
+    border: {
+      bottom: { style: BorderStyle.SINGLE, size: 18, color: COLOR_ACCENT, space: 4 },
+    },
+    children: [new TextRun({ text, size: HEADING1_SIZE, bold: true, font: FONT, color: COLOR_PRIMARY })],
   });
 }
 
 function h2(text) {
+  // H2: bara stanga colorata pentru a-l face vizual distinct
   return new Paragraph({
     heading: HeadingLevel.HEADING_2,
-    spacing: { before: 280, after: 160 },
-    children: [new TextRun({ text, size: HEADING2_SIZE, bold: true, font: FONT, color: "2E74B5" })],
+    spacing: { before: 320, after: 160 },
+    border: {
+      left: { style: BorderStyle.SINGLE, size: 24, color: COLOR_SECONDARY, space: 12 },
+    },
+    children: [new TextRun({ text, size: HEADING2_SIZE, bold: true, font: FONT, color: COLOR_PRIMARY })],
   });
 }
 
 function h3(text) {
+  // H3: italic + culoare diferentiata vs H2
   return new Paragraph({
     heading: HeadingLevel.HEADING_3,
-    spacing: { before: 220, after: 120 },
-    children: [new TextRun({ text, size: HEADING3_SIZE, bold: true, font: FONT, color: "2E74B5" })],
+    spacing: { before: 260, after: 120 },
+    children: [new TextRun({ text, size: HEADING3_SIZE, bold: true, italics: true, font: FONT, color: COLOR_TERTIARY })],
   });
 }
 
@@ -81,35 +103,55 @@ function bulletRich(runs, level = 0) {
 }
 
 function screenshot(num, desc) {
+  // Placeholder screenshot: chenar gros punctat + iconita + descriere
   return new Paragraph({
-    spacing: { before: 200, after: 200, line: 280 },
+    spacing: { before: 240, after: 240, line: 300 },
     alignment: AlignmentType.CENTER,
     border: {
-      top: { style: BorderStyle.SINGLE, size: 6, color: "999999" },
-      bottom: { style: BorderStyle.SINGLE, size: 6, color: "999999" },
-      left: { style: BorderStyle.SINGLE, size: 6, color: "999999" },
-      right: { style: BorderStyle.SINGLE, size: 6, color: "999999" },
+      top: { style: BorderStyle.DASHED, size: 12, color: COLOR_ACCENT, space: 8 },
+      bottom: { style: BorderStyle.DASHED, size: 12, color: COLOR_ACCENT, space: 8 },
+      left: { style: BorderStyle.DASHED, size: 12, color: COLOR_ACCENT, space: 8 },
+      right: { style: BorderStyle.DASHED, size: 12, color: COLOR_ACCENT, space: 8 },
     },
-    shading: { fill: "F2F2F2", type: ShadingType.CLEAR },
+    shading: { fill: "FFF5F5", type: ShadingType.CLEAR },
+    indent: { left: 200, right: 200 },
     children: [
-      new TextRun({ text: `[ SCREENSHOT NR. ${num} ]`, bold: true, size: TEXT_SIZE, font: FONT, color: "E94560" }),
-      new TextRun({ text: ` — ${desc}`, italics: true, size: TEXT_SIZE - 2, font: FONT, color: "555555" }),
+      new TextRun({ text: `📷  SCREENSHOT ${num}`, bold: true, size: TEXT_SIZE + 2, font: FONT, color: COLOR_ACCENT }),
+      new TextRun({ break: 1 }),
+      new TextRun({ text: desc, italics: true, size: TEXT_SIZE - 2, font: FONT, color: COLOR_QUOTE }),
     ],
   });
 }
 
 function code(text) {
-  // Bloc cod — folosim shading gri + font monospaced
+  // Bloc cod: fundal subtil + chenar accentuat la stanga + font mono
   return new Paragraph({
-    spacing: { before: 100, after: 100, line: 260 },
+    spacing: { before: 160, after: 160, line: 280 },
     border: {
-      top: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
-      bottom: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
-      left: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
-      right: { style: BorderStyle.SINGLE, size: 4, color: "CCCCCC" },
+      top: { style: BorderStyle.SINGLE, size: 4, color: "D0D7DE" },
+      bottom: { style: BorderStyle.SINGLE, size: 4, color: "D0D7DE" },
+      left: { style: BorderStyle.SINGLE, size: 24, color: COLOR_SECONDARY, space: 8 },
+      right: { style: BorderStyle.SINGLE, size: 4, color: "D0D7DE" },
     },
-    shading: { fill: "F7F7F7", type: ShadingType.CLEAR },
-    children: [new TextRun({ text, font: "Consolas", size: 20, color: "333333" })],
+    shading: { fill: COLOR_CODE_BG, type: ShadingType.CLEAR },
+    indent: { left: 100 },
+    children: [new TextRun({ text, font: MONO, size: 20, color: COLOR_CODE_TEXT })],
+  });
+}
+
+function quote(text, attribution) {
+  // Testimonial: bara stanga colorata + italic + atribuire pe rand nou
+  return new Paragraph({
+    spacing: { before: 200, after: 200, line: 320 },
+    border: {
+      left: { style: BorderStyle.SINGLE, size: 24, color: COLOR_ACCENT, space: 16 },
+    },
+    indent: { left: 200 },
+    children: [
+      new TextRun({ text: `„${text}"`, italics: true, size: TEXT_SIZE, font: FONT, color: COLOR_QUOTE }),
+      new TextRun({ break: 1 }),
+      new TextRun({ text: `— ${attribution}`, size: TEXT_SIZE - 2, font: FONT, color: COLOR_MUTED }),
+    ],
   });
 }
 
@@ -163,56 +205,80 @@ function table(headers, rows, colWidths) {
 const children = [];
 
 // ====== COPERTĂ ======
+// Bara colorata sus + titlu mare + linie subtila + subtitlu
 children.push(
-  new Paragraph({ spacing: { before: 2000 }, children: [new TextRun("")] }),
+  // Bara colorata accent sus
   new Paragraph({
-    alignment: AlignmentType.CENTER,
-    spacing: { after: 400 },
-    children: [new TextRun({ text: "DevLife", bold: true, size: 96, font: FONT, color: "1F3864" })],
+    spacing: { before: 0, after: 0 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 48, color: COLOR_ACCENT, space: 0 } },
+    children: [new TextRun({ text: "", size: 2 })],
   }),
-  new Paragraph({
-    alignment: AlignmentType.CENTER,
-    spacing: { after: 800 },
-    children: [new TextRun({ text: "AI Companion biometric pentru dezvoltatori", italics: true, size: 32, font: FONT, color: "2E74B5" })],
-  }),
+  new Paragraph({ spacing: { before: 2400 }, children: [new TextRun("")] }),
+  // Titlu mare
   new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { after: 200 },
-    children: [new TextRun({ text: "Documentația proiectului", bold: true, size: 36, font: FONT })],
+    children: [new TextRun({ text: "DevLife", bold: true, size: 120, font: FONT, color: COLOR_PRIMARY })],
   }),
+  // Linie despartitoare
+  new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 100, after: 300 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: COLOR_ACCENT, space: 4 } },
+    indent: { left: 3000, right: 3000 },
+    children: [new TextRun({ text: "", size: 2 })],
+  }),
+  // Subtitlu
   new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { after: 1200 },
-    children: [new TextRun({ text: "InfoEducație 2026 — Secțiunea Software Utilitar", size: 28, font: FONT })],
+    children: [new TextRun({ text: "AI Companion biometric pentru dezvoltatori", italics: true, size: 36, font: FONT, color: COLOR_SECONDARY })],
+  }),
+  // Sectiune metadate proiect (box cu shading)
+  new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 200, after: 100 },
+    children: [new TextRun({ text: "DOCUMENTAȚIA PROIECTULUI", bold: true, size: 28, font: FONT, color: COLOR_MUTED })],
   }),
   new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { after: 200 },
-    children: [new TextRun({ text: "Autori:", size: 26, font: FONT })],
+    spacing: { after: 1400 },
+    children: [new TextRun({ text: "InfoEducație 2026  ·  Secțiunea Software Utilitar", size: 26, font: FONT, color: COLOR_PRIMARY })],
+  }),
+  // Autori
+  new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 160 },
+    children: [new TextRun({ text: "AUTORI", bold: true, size: 22, font: FONT, color: COLOR_MUTED })],
   }),
   new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { after: 100 },
-    children: [new TextRun({ text: "David Amariei", bold: true, size: 30, font: FONT })],
+    children: [new TextRun({ text: "David Amariei", bold: true, size: 32, font: FONT, color: COLOR_PRIMARY })],
   }),
   new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { after: 400 },
-    children: [new TextRun({ text: "Matei Vultur", bold: true, size: 30, font: FONT })],
+    spacing: { after: 1800 },
+    children: [new TextRun({ text: "Matei Vultur", bold: true, size: 32, font: FONT, color: COLOR_PRIMARY })],
+  }),
+  // Footer copertă
+  new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 100 },
+    children: [new TextRun({ text: "Repository", size: 20, font: FONT, color: COLOR_MUTED })],
   }),
   new Paragraph({
     alignment: AlignmentType.CENTER,
-    spacing: { after: 2000 },
-    children: [new TextRun({ text: "Repository: github.com/amarieidavid26-byte/devlife", italics: true, size: 22, font: FONT, color: "666666" })],
+    spacing: { after: 200 },
+    children: [new TextRun({ text: "github.com/amarieidavid26-byte/devlife", italics: true, size: 22, font: FONT, color: COLOR_SECONDARY })],
   }),
-  new Paragraph({ children: [new PageBreak()] }),
 );
 
 // ====== CUPRINS ======
+// h1() pune automat page break inainte, deci nu mai e nevoie de PageBreak explicit
 children.push(
   h1("Cuprins"),
   new TableOfContents("Cuprins automat", { hyperlink: true, headingStyleRange: "1-3" }),
-  new Paragraph({ children: [new PageBreak()] }),
 );
 
 // ====== 1. INTRODUCERE ======
@@ -561,24 +627,22 @@ children.push(
   h1("9. Testimoniale"),
   p("Următoarele testimoniale au fost colectate informal în faza alpha (martie-aprilie 2026) de la utilizatori beta. Pentru lansarea publică, autorii vor colecta sistematic feedback prin formular dedicat."),
   spacer(),
-  pRich([
-    { text: "„Am rulat DevLife o săptămână în faza alpha. Când mi-a blocat un ", italic: true },
-    { text: "rm -rf", italic: true },
-    { text: " la 11 PM într-o seară când HRV-ul meu era praf, am realizat că aplicația chiar funcționează. M-am dus la culcare.\"", italic: true },
-    " — A.M., student informatică, beta tester",
-  ]),
-  pRich([
-    { text: "„Camera izometrică m-a făcut să o las deschisă. Dacă era doar un dashboard, o închideam. Faptul că Ghost-ul are personalitate per stare e ce face diferența.\"", italic: true },
-    " — R.P., dezvoltator freelance, beta tester",
-  ]),
-  pRich([
-    { text: "„Am verificat patch-urile pe care le propune Ghost-ul — sunt sub-optimale uneori, dar previzualizarea și rollback fac ca să nu te temi să apeși Apply Fix. Aceasta este cheia.\"", italic: true },
-    " — D.I., student informatică, beta tester",
-  ]),
-  pRich([
-    { text: "„Avem în echipa noastră un on-call rotation. Am sugerat să testăm DevLife pe membrii care au tura de noapte — dacă poate preveni un singur incident în producție, s-a plătit deja.\"", italic: true },
-    " — C.S., SRE lead, early reviewer",
-  ]),
+  quote(
+    "Am rulat DevLife o săptămână în faza alpha. Când mi-a blocat un rm -rf la 11 PM într-o seară când HRV-ul meu era praf, am realizat că aplicația chiar funcționează. M-am dus la culcare.",
+    "A.M., student informatică, beta tester",
+  ),
+  quote(
+    "Camera izometrică m-a făcut să o las deschisă. Dacă era doar un dashboard, o închideam. Faptul că Ghost-ul are personalitate per stare e ce face diferența.",
+    "R.P., dezvoltator freelance, beta tester",
+  ),
+  quote(
+    "Am verificat patch-urile pe care le propune Ghost-ul — sunt sub-optimale uneori, dar previzualizarea și rollback fac ca să nu te temi să apeși Apply Fix. Aceasta este cheia.",
+    "D.I., student informatică, beta tester",
+  ),
+  quote(
+    "Avem în echipa noastră un on-call rotation. Am sugerat să testăm DevLife pe membrii care au tura de noapte — dacă poate preveni un singur incident în producție, s-a plătit deja.",
+    "C.S., SRE lead, early reviewer",
+  ),
 );
 
 // ====== 10. RESURSE EXTERNE ======
@@ -633,18 +697,18 @@ const doc = new Document({
     paragraphStyles: [
       {
         id: "Heading1", name: "Heading 1", basedOn: "Normal", next: "Normal", quickFormat: true,
-        run: { size: HEADING1_SIZE, bold: true, font: FONT, color: "1F3864" },
-        paragraph: { spacing: { before: 360, after: 200 }, outlineLevel: 0 },
+        run: { size: HEADING1_SIZE, bold: true, font: FONT, color: COLOR_PRIMARY },
+        paragraph: { spacing: { before: 0, after: 320 }, outlineLevel: 0 },
       },
       {
         id: "Heading2", name: "Heading 2", basedOn: "Normal", next: "Normal", quickFormat: true,
-        run: { size: HEADING2_SIZE, bold: true, font: FONT, color: "2E74B5" },
-        paragraph: { spacing: { before: 280, after: 160 }, outlineLevel: 1 },
+        run: { size: HEADING2_SIZE, bold: true, font: FONT, color: COLOR_PRIMARY },
+        paragraph: { spacing: { before: 320, after: 160 }, outlineLevel: 1 },
       },
       {
         id: "Heading3", name: "Heading 3", basedOn: "Normal", next: "Normal", quickFormat: true,
-        run: { size: HEADING3_SIZE, bold: true, font: FONT, color: "2E74B5" },
-        paragraph: { spacing: { before: 220, after: 120 }, outlineLevel: 2 },
+        run: { size: HEADING3_SIZE, bold: true, italics: true, font: FONT, color: COLOR_TERTIARY },
+        paragraph: { spacing: { before: 260, after: 120 }, outlineLevel: 2 },
       },
     ],
   },
@@ -668,26 +732,48 @@ const doc = new Document({
           size: { width: 11906, height: 16838 }, // A4
           margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 },
         },
+        titlePage: true, // header/footer separat pe prima pagina (coperta)
       },
       headers: {
+        first: new Header({ children: [new Paragraph({ children: [new TextRun({ text: "" })] })] }),
         default: new Header({
-          children: [new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            children: [new TextRun({ text: "DevLife — InfoEducație 2026", size: 18, font: FONT, color: "888888", italics: true })],
-          })],
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              spacing: { after: 80 },
+              children: [
+                new TextRun({ text: "DevLife", bold: true, size: 18, font: FONT, color: COLOR_PRIMARY }),
+                new TextRun({ text: "  ·  InfoEducație 2026", size: 18, font: FONT, color: COLOR_MUTED, italics: true }),
+              ],
+            }),
+            new Paragraph({
+              spacing: { before: 0, after: 0 },
+              border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: COLOR_ACCENT, space: 1 } },
+              children: [new TextRun({ text: "", size: 2 })],
+            }),
+          ],
         }),
       },
       footers: {
+        first: new Footer({ children: [new Paragraph({ children: [new TextRun({ text: "" })] })] }),
         default: new Footer({
-          children: [new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-              new TextRun({ text: "Pag. ", size: 18, font: FONT, color: "888888" }),
-              new TextRun({ children: [PageNumber.CURRENT], size: 18, font: FONT, color: "888888" }),
-              new TextRun({ text: " din ", size: 18, font: FONT, color: "888888" }),
-              new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18, font: FONT, color: "888888" }),
-            ],
-          })],
+          children: [
+            new Paragraph({
+              spacing: { before: 0, after: 80 },
+              border: { top: { style: BorderStyle.SINGLE, size: 6, color: COLOR_ACCENT, space: 1 } },
+              children: [new TextRun({ text: "", size: 2 })],
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({ text: "David Amariei & Matei Vultur", size: 18, font: FONT, color: COLOR_MUTED }),
+                new TextRun({ text: "   ·   ", size: 18, font: FONT, color: COLOR_MUTED }),
+                new TextRun({ children: [PageNumber.CURRENT], bold: true, size: 18, font: FONT, color: COLOR_PRIMARY }),
+                new TextRun({ text: " / ", size: 18, font: FONT, color: COLOR_MUTED }),
+                new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18, font: FONT, color: COLOR_MUTED }),
+              ],
+            }),
+          ],
         }),
       },
       children,
