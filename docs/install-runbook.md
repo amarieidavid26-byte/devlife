@@ -81,3 +81,7 @@ curl http://localhost:8000/health
 **ghost nu raspunde** — verifica `CLAUDE_API_KEY` in .env; fara cheie merge cu fallback_responses
 
 **desk code runner zice "Pyodide nu este disponibil"** — ruleaza `./scripts/setup-pyodide.sh` din root
+
+**WHOOP pairing nu apare / BPM ramane 0** — Web Bluetooth merge doar pe HTTPS sau localhost si doar in Chrome/Edge. Verifica toast-ul de eroare (HTTPS lipsa / browser nesuportat). Daca pairing reuseste dar HUD-ul nu arata puls live, deschide DevTools → Network → WS si verifica ca frame-uri `{"type":"heart_rate","bpm":...}` ajung la server. Backend-ul foloseste apoi `bio.live_heart_rate` (vezi `biometric_engine.py:38`).
+
+**WHOOP s-a deconectat si nu se reconecteaza** — sunt 8 incercari cu backoff exponential (~2 min total). Dupa give-up apare toast-ul "WHOOP indisponibil. Apasa Pair din nou". Apasa butonul Pair WHOOP a doua oara.
