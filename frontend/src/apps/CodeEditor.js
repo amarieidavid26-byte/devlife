@@ -1,4 +1,6 @@
 import { i18n } from '../i18n/index.js';
+import { JsRunner } from './runners/JsRunner.js';
+import { PythonRunner } from './runners/PythonRunner.js';
 
 const STARTER_CODES = {
     python: {
@@ -115,6 +117,20 @@ export class CodeEditorApp {
         this._tabEl = null;
         this._langBtns = {};
         this._monaco = null;
+        // runner state
+        this._runBtn = null;
+        this._stopBtn = null;
+        this._reviewOnlyEl = null;
+        this._outputPanel = null;
+        this._stdinEl = null;
+        this._stdoutEl = null;
+        this._badgeEl = null;
+        this._outputTabBtns = null;
+        this._stdinValue = '';
+        this._currentOutputTab = 'stdout';
+        this._isRunning = false;
+        this._lastRunCode = '';
+        this._jsRunner = null;
     }
 
     open() {
@@ -185,6 +201,34 @@ export class CodeEditorApp {
         leftGroup.appendChild(langRow);
         topBar.appendChild(leftGroup);
 
+        // right group: review-only hint (go/cpp) | Run | Stop | close
+        const rightGroup = document.createElement('div');
+        rightGroup.style.cssText = 'display:flex;align-items:center;gap:10px;';
+
+        const reviewOnly = document.createElement('span');
+        reviewOnly.style.cssText = 'color:#777;font-family:"Nunito",sans-serif;font-size:11px;display:none;';
+        reviewOnly.textContent = i18n.t('runner.review_only_hint');
+        this._reviewOnlyEl = reviewOnly;
+        rightGroup.appendChild(reviewOnly);
+
+        const runBtn = document.createElement('button');
+        runBtn.style.cssText = "display:flex;align-items:center;gap:5px;height:24px;padding:0 10px;background:#0e7a3c;color:#ffffff;border:none;border-radius:3px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:background 0.15s;";
+        runBtn.innerHTML = `<span style="font-size:9px;">▶</span><span>${i18n.t('runner.run')}</span>`;
+        runBtn.addEventListener('mouseenter', () => { runBtn.style.background = '#0fa551'; });
+        runBtn.addEventListener('mouseleave', () => { runBtn.style.background = '#0e7a3c'; });
+        runBtn.addEventListener('click', () => this.runCode());
+        this._runBtn = runBtn;
+        rightGroup.appendChild(runBtn);
+
+        const stopBtn = document.createElement('button');
+        stopBtn.style.cssText = "display:none;align-items:center;gap:5px;height:24px;padding:0 10px;background:#7a1e1e;color:#ffffff;border:none;border-radius:3px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.5px;transition:background 0.15s;";
+        stopBtn.innerHTML = `<span style="font-size:9px;">■</span><span>${i18n.t('runner.stop')}</span>`;
+        stopBtn.addEventListener('mouseenter', () => { stopBtn.style.background = '#a52828'; });
+        stopBtn.addEventListener('mouseleave', () => { stopBtn.style.background = '#7a1e1e'; });
+        stopBtn.addEventListener('click', () => this.stopRun());
+        this._stopBtn = stopBtn;
+        rightGroup.appendChild(stopBtn);
+
         const closeBtn = document.createElement('button');
         closeBtn.style.background = 'transparent';
         closeBtn.style.color = '#888';
@@ -196,14 +240,22 @@ export class CodeEditorApp {
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
         closeBtn.addEventListener('click', () => this.close());
-        topBar.appendChild(closeBtn);
+        rightGroup.appendChild(closeBtn);
+
+        topBar.appendChild(rightGroup);
 
         this.overlay.appendChild(topBar);
+
+        this._setRunButtonVisibility(this.currentLang);
 
         const editorContainer = document.createElement('div');
         editorContainer.style.flex = '1';
         editorContainer.style.position = 'relative';
         this.overlay.appendChild(editorContainer);
+
+        // output panel below editor (stdin / stdout tabs)
+        this._outputPanel = this._buildOutputPanel();
+        this.overlay.appendChild(this._outputPanel);
 
         // grabbed this from stackoverflow
         if (!this.monacoLoaded) {
@@ -274,11 +326,188 @@ export class CodeEditorApp {
             this.editor.setValue(starter.code);
             this.editor.focus();
         }
+
+        this._setRunButtonVisibility(lang);
     }
 
     _applyLangBtnStyle(btn, active) {
         btn.style.background = active ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)';
         btn.style.color = active ? '#ffffff' : '#888';
+    }
+
+    _buildOutputPanel() {
+        const panel = document.createElement('div');
+        panel.style.cssText = 'height:180px;background:#252526;border-top:1px solid #3c3c3c;display:flex;flex-direction:column;flex-shrink:0;';
+
+        const tabStrip = document.createElement('div');
+        tabStrip.style.cssText = 'height:26px;background:#1e1e1e;display:flex;align-items:center;padding:0 8px;gap:2px;border-bottom:1px solid #3c3c3c;flex-shrink:0;';
+
+        const mkTabBtn = (key, label) => {
+            const b = document.createElement('button');
+            b.textContent = label;
+            b.style.cssText = "background:transparent;border:none;color:#888;font-family:'Nunito',sans-serif;font-size:11px;padding:4px 12px;cursor:pointer;letter-spacing:0.5px;border-radius:3px;";
+            b.addEventListener('click', () => this._switchOutputTab(key));
+            return b;
+        };
+
+        const stdinTab = mkTabBtn('stdin', i18n.t('runner.stdin_tab'));
+        const stdoutTab = mkTabBtn('stdout', i18n.t('runner.stdout_tab'));
+        this._outputTabBtns = { stdin: stdinTab, stdout: stdoutTab };
+        tabStrip.appendChild(stdinTab);
+        tabStrip.appendChild(stdoutTab);
+
+        const badges = document.createElement('div');
+        badges.style.cssText = "margin-left:auto;display:flex;gap:8px;align-items:center;font-family:'Courier New',monospace;font-size:10px;color:#888;";
+        this._badgeEl = badges;
+        tabStrip.appendChild(badges);
+
+        panel.appendChild(tabStrip);
+
+        const stdin = document.createElement('textarea');
+        stdin.spellcheck = false;
+        stdin.style.cssText = "flex:1;background:#1e1e1e;color:#ccc;border:none;outline:none;padding:10px;font-family:'Courier New',monospace;font-size:13px;resize:none;display:none;";
+        stdin.value = this._stdinValue || '';
+        stdin.addEventListener('input', () => { this._stdinValue = stdin.value; });
+        this._stdinEl = stdin;
+        panel.appendChild(stdin);
+
+        const stdout = document.createElement('pre');
+        stdout.style.cssText = "flex:1;margin:0;padding:10px;overflow:auto;background:#1e1e1e;color:#ccc;font-family:'Courier New',monospace;font-size:13px;white-space:pre-wrap;word-break:break-word;display:block;";
+        stdout.textContent = '';
+        this._stdoutEl = stdout;
+        panel.appendChild(stdout);
+
+        this._switchOutputTab('stdout');
+        return panel;
+    }
+
+    _switchOutputTab(which) {
+        this._currentOutputTab = which;
+        if (this._stdinEl) this._stdinEl.style.display = which === 'stdin' ? 'block' : 'none';
+        if (this._stdoutEl) this._stdoutEl.style.display = which === 'stdout' ? 'block' : 'none';
+        if (this._outputTabBtns) {
+            for (const [k, b] of Object.entries(this._outputTabBtns)) {
+                b.style.color = (k === which) ? '#ffffff' : '#888';
+                b.style.background = (k === which) ? 'rgba(255,255,255,0.08)' : 'transparent';
+            }
+        }
+    }
+
+    _canRunCurrentLang() {
+        return this.currentLang === 'python' || this.currentLang === 'javascript';
+    }
+
+    _setRunButtonVisibility(lang) {
+        const canRun = lang === 'python' || lang === 'javascript';
+        if (this._runBtn) this._runBtn.style.display = (canRun && !this._isRunning) ? 'flex' : 'none';
+        if (this._stopBtn) this._stopBtn.style.display = (canRun && this._isRunning) ? 'flex' : 'none';
+        if (this._reviewOnlyEl) this._reviewOnlyEl.style.display = canRun ? 'none' : 'inline';
+    }
+
+    _renderRunningState(running) {
+        this._isRunning = running;
+        this._setRunButtonVisibility(this.currentLang);
+    }
+
+    async runCode() {
+        if (this._isRunning) return;
+        if (!this.editor) return;
+        if (!this._canRunCurrentLang()) return;
+
+        const code = this.editor.getValue();
+        const stdin = this._stdinValue || '';
+        this._lastRunCode = code;
+        this._switchOutputTab('stdout');
+        this._renderRunningState(true);
+        this._writeRunningPlaceholder();
+
+        let result;
+        if (this.currentLang === 'javascript') {
+            if (!this._jsRunner) this._jsRunner = new JsRunner();
+            result = await this._jsRunner.run(code, stdin);
+        } else if (this.currentLang === 'python') {
+            result = await PythonRunner.get().run(code, stdin);
+        } else {
+            result = {
+                stdout: '',
+                stderr: `Unsupported language: ${this.currentLang}`,
+                exit: 1,
+                ms: 0,
+            };
+        }
+        this.displayRunResult(result);
+    }
+
+    stopRun() {
+        if (!this._isRunning) return;
+        if (this.currentLang === 'javascript' && this._jsRunner) {
+            this._jsRunner.stop();
+        } else if (this.currentLang === 'python') {
+            PythonRunner.get().stop();
+        }
+    }
+
+    _writeRunningPlaceholder() {
+        if (!this._stdoutEl) return;
+        this._stdoutEl.innerHTML = '';
+        const span = document.createElement('span');
+        span.style.color = '#888';
+        span.textContent = i18n.t('runner.running');
+        this._stdoutEl.appendChild(span);
+        if (this._badgeEl) this._badgeEl.innerHTML = '';
+    }
+
+    displayRunResult(result) {
+        this._renderRunningState(false);
+        this._switchOutputTab('stdout');
+        if (!this._stdoutEl) return;
+
+        this._stdoutEl.innerHTML = '';
+        const out = result.stdout || '';
+        const err = result.stderr || '';
+
+        if (out) {
+            const span = document.createElement('span');
+            span.style.color = '#6AD89A';
+            span.textContent = out;
+            this._stdoutEl.appendChild(span);
+        }
+        if (err) {
+            if (out) this._stdoutEl.appendChild(document.createTextNode('\n'));
+            const span = document.createElement('span');
+            span.style.color = '#FF7A6A';
+            span.textContent = err;
+            this._stdoutEl.appendChild(span);
+        }
+        if (!out && !err) {
+            const span = document.createElement('span');
+            span.style.color = '#666';
+            span.textContent = i18n.t('runner.no_output');
+            this._stdoutEl.appendChild(span);
+        }
+
+        this._stdoutEl.scrollTop = this._stdoutEl.scrollHeight;
+
+        if (this._badgeEl) {
+            this._badgeEl.innerHTML = '';
+            if (typeof result.exit === 'number') {
+                const ex = document.createElement('span');
+                ex.style.color = result.exit === 0 ? '#6AD89A' : '#FF7A6A';
+                ex.textContent = i18n.t('runner.exit_code', { code: result.exit });
+                this._badgeEl.appendChild(ex);
+            }
+            if (typeof result.ms === 'number') {
+                if (this._badgeEl.children.length) {
+                    const sep = document.createElement('span');
+                    sep.style.color = '#444';
+                    sep.textContent = '•';
+                    this._badgeEl.appendChild(sep);
+                }
+                const t = document.createElement('span');
+                t.textContent = i18n.t('runner.elapsed_ms', { ms: result.ms });
+                this._badgeEl.appendChild(t);
+            }
+        }
     }
 
     replaceContent(newCode) {
@@ -360,6 +589,10 @@ export class CodeEditorApp {
 
     close() {
         if (!this.isOpen) return;
+        if (this._jsRunner) {
+            this._jsRunner.stop();
+            this._jsRunner = null;
+        }
         if (this.editor) {
             this.editor.dispose();
             this.editor = null;
@@ -369,5 +602,6 @@ export class CodeEditorApp {
             this.overlay = null;
         }
         this.isOpen = false;
+        this._isRunning = false;
     }
 }
