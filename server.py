@@ -37,6 +37,15 @@ class MockStateBody(BaseModel):
 class FeedbackBody(BaseModel):
     action: str = Field(..., max_length=100)
 
+
+# WS payload bounds — keep these aligned with the Pydantic models above so HTTP and WS
+# share the same input contract. Without these a malicious or buggy client could
+# blow up memory or run up Claude token costs.
+WS_MAX_CONTENT_CHARS = 50000
+WS_MAX_ACTION_CHARS = 100
+WS_MAX_KWARG_CHARS = 500
+WS_VALID_APP_TYPES = {"code", "terminal", "browser", "notes", "chat"}
+
 PORT = int(os.environ.get("PORT", _CONFIG_PORT))
 
 # import both module sets unconditionally — route at runtime, not import time
@@ -614,6 +623,8 @@ async def websocket_endpoint(ws: WebSocket):
 
             if data.get("type") == "feedback":
                 action = data.get("action", "")
+                if not isinstance(action, str) or len(action) > WS_MAX_ACTION_CHARS:
+                    continue
                 brain.user_feedback(action)
                 if action == "Apply Fix":
                     app_state.intervention_cooldown_until = 0
@@ -627,13 +638,21 @@ async def websocket_endpoint(ws: WebSocket):
 
             elif data.get("type") == "content_update":
                 app_type = data.get("app_type", "code")
+                if app_type not in WS_VALID_APP_TYPES:
+                    continue
+                content = data.get("content", "")
+                if not isinstance(content, str) or len(content) > WS_MAX_CONTENT_CHARS:
+                    continue
                 kwargs = {}
                 for key in ("language", "cursor_line", "url", "shell", "platform"):
-                    if data.get(key):
-                        kwargs[key] = data[key]
+                    val = data.get(key)
+                    if isinstance(val, str) and len(val) <= WS_MAX_KWARG_CHARS:
+                        kwargs[key] = val
+                    elif isinstance(val, int):
+                        kwargs[key] = val
                 with app_state.content_lock:
                     app_state.pending_content[app_type] = {
-                        "content": data.get("content", ""),
+                        "content": content,
                         "timestamp": time.time(),
                         "changed": True,
                         "kwargs": kwargs,
@@ -653,6 +672,8 @@ async def websocket_endpoint(ws: WebSocket):
 
             elif data.get("type") == "app_focus":
                 app_type = data.get("app_type")
+                if app_type is not None and app_type not in WS_VALID_APP_TYPES:
+                    continue
                 if app_type:
                     broadcast_sync({
                         "type": "app_focus_change",
