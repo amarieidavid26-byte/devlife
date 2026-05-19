@@ -13,5 +13,9 @@ de adaugat inainte de predare:
 - `degraded-mode.png` — banner "Mod degradat" cand WHOOP e offline
 - `ws-reconnect.png` — toast reconectare cu backoff
 - `audit-log.png` — sqlite3 apply_fix_audit cu randuri preview/confirm/rollback
-- `pytest-green.png` — pytest -v cu 37 teste verzi
+- `pytest-green.png` — pytest -v cu toate testele verzi (inclusiv test_run_error_routing)
 - `db-persistence.png` — /api/history dupa restart (date persistente)
+- `runner-python-happy.png` — desk code editor cu Python, `print(sum(range(100)))` → output `4950` exit 0
+- `runner-python-error-then-ghost.png` — Python runtime error in rosu + bubble ghost cu Apply Fix
+- `runner-js-timeout.png` — JS tab cu `while(1){}` → dupa 5s, rosu "Execution timed out (5s limit)"
+- `runner-review-only-hint.png` — tab C++ sau GO, butonul Run ascuns, hint "Doar review AI — comuta pe PY/JS pentru a rula"

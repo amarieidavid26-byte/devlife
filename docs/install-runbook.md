@@ -16,6 +16,16 @@ cd <repo>/devlife
 
 creeaza venv, instaleaza deps Python si Node.
 
+## pyodide (pentru desk code runner)
+
+odata, dupa setup:
+
+```bash
+./scripts/setup-pyodide.sh
+```
+
+descarca Pyodide 0.26.4 (~30MB) in `frontend/public/lib/pyodide/`. Fara asta, JS-ul ruleaza dar tab-ul Python afiseaza eroare cand apesi Run. Folder-ul e in `.gitignore`, deci scriptul trebuie rulat pe fiecare masina.
+
 ## pornire locala
 
 ```bash
@@ -69,3 +79,5 @@ curl http://localhost:8000/health
 **frontend nu porneste** — `cd devlife/frontend && npm install`
 
 **ghost nu raspunde** — verifica `CLAUDE_API_KEY` in .env; fara cheie merge cu fallback_responses
+
+**desk code runner zice "Pyodide nu este disponibil"** — ruleaza `./scripts/setup-pyodide.sh` din root
