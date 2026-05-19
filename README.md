@@ -17,6 +17,7 @@ ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza ac
 - **biometrice reale** — WHOOP API + chrome bluetooth pentru bpm live. hartbatu tau apare pe ecran
 - **fatigue firewall** — detecteaza comenzile periculoase si le blocheaza cand starea ta e FATIGUED
 - **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback
+- **desk code runner** — editorul ruleaza Python (Pyodide) si JavaScript (Web Worker) direct in browser; runtime errors sunt trimise inapoi la ghost, care propune fix prin acelasi flow apply-fix. detalii in `docs/desk-code-runner.md`
 - **sleep mode** — dai jos wearable-ul si camera se intuneca automat
 - **fallback offline** — merge complet si fara WHOOP, cu biometrice simulate
 
