@@ -158,6 +158,16 @@ export class GhostSocket {
         });
     }
 
+    sendRunError(code, error, language) {
+        this.send({
+            type: 'run_error',
+            code,
+            error,
+            language,
+            timestamp: new Date().toISOString()
+        });
+    }
+
     send(obj) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(obj));

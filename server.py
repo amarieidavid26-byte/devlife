@@ -660,6 +660,59 @@ async def websocket_endpoint(ws: WebSocket):
                         "timestamp": time.time(),
                     })
 
+            elif data.get("type") == "run_error":
+                # user clicked Run in the desk code editor and got a runtime error
+                # bypass the pending_content loop -- this is an explicit, user-initiated event
+                code = (data.get("code") or "")[:50000]
+                error = (data.get("error") or "")[:50000]
+                lang = data.get("language") or "python"
+                if not isinstance(lang, str) or len(lang) > 50:
+                    lang = "python"
+                if not code or not error:
+                    continue
+
+                loop = asyncio.get_event_loop()
+                try:
+                    analysis = await loop.run_in_executor(
+                        None,
+                        lambda: content_analyzer.analyze(
+                            app_type="code",
+                            content=code,
+                            extra_context=f"Runtime error from user execution:\n{error}",
+                            language=lang,
+                        ),
+                    )
+                except Exception as e:
+                    logger.warning("run_error analysis failed: %s", e)
+                    continue
+
+                if not analysis:
+                    continue
+
+                state = bio.current_state
+                modifiers = bio.get_personality_modifiers(state)
+                intervention = brain.process(analysis, state, modifiers)
+                if intervention:
+                    app_state.intervention_cooldown_until = time.time() + 8
+                    bio_data = mock.get_data() if (not bio.access_token or time.time() < app_state.mock_override_until) else (bio.current_data or {})
+                    intervention["biometric"] = build_biometric_msg(bio_data, state)
+                    intervention["app_type"] = "code"
+                    intervention["source"] = "runtime_error"
+                    await broadcast(intervention)
+                    app_state.intervention_history.append(intervention)
+                    if len(app_state.intervention_history) > 50:
+                        app_state.intervention_history.pop(0)
+                    try:
+                        db.save_intervention(
+                            state=state,
+                            source="runtime_error",
+                            claude_text=intervention["message"],
+                            content_hash=None,
+                        )
+                    except Exception as e:
+                        logger.warning("db.save_intervention failed: %s", e)
+                    logger.info("run_error intervention (%s): %s...", state, intervention["message"][:80])
+
     except WebSocketDisconnect:
         if ws in app_state.connected_clients:
             app_state.connected_clients.remove(ws)
