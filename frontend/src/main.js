@@ -27,6 +27,7 @@ import { CafeScene } from './town/CafeScene.js';
 import { CoworkScene } from './town/CoworkScene.js';
 import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
 import { CONFIG } from './config.js';
+import { initSession } from './network/session.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -452,6 +453,10 @@ async function startGame(enableDemo = false) {
 
     // keyboard
     document.addEventListener('keydown', (e) => {
+        // a focused real terminal/editor needs every key (digits, Escape for vim, Tab…) —
+        // don't let game shortcuts steal them. The app provides its own close button.
+        if (activeApp && activeApp.capturesKeyboard) return;
+
         // 1-5: change mock biometric state (disabled when WHOOP BLE is streaming live data)
         if (e.key >= '1' && e.key <= '5') {
             e.preventDefault();
@@ -562,6 +567,11 @@ async function startGame(enableDemo = false) {
         console.log('[main] backend health:', d.status);
     }).catch(() => {
         console.log('[main] backend unreachable - running in offline/demo mode');
+    });
+
+    // fetch the session token for privileged local endpoints (terminal/files/lsp/inline AI)
+    initSession().then(d => {
+        if (d) console.log('[main] session ready, features:', d.features);
     });
 
     console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');

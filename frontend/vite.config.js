@@ -13,6 +13,17 @@ export default defineConfig({
         outDir: 'dist',
         assetsDir: 'assets',
         sourcemap: false,
-        minify: 'terser'
-    }
+        // esbuild minify is much lighter/faster than terser on the large Monaco bundle
+        minify: 'esbuild',
+        chunkSizeWarningLimit: 6000,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('monaco-editor')) return 'monaco';
+                    if (id.includes('@xterm')) return 'xterm';
+                    if (id.includes('pixi.js')) return 'pixi';
+                },
+            },
+        },
+    },
 });
