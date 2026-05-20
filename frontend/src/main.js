@@ -27,6 +27,7 @@ import { CoworkScene } from './town/CoworkScene.js';
 import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
 import { CONFIG } from './config.js';
 import { initSession } from './network/session.js';
+import { OfflineBiometrics } from './network/offlineBiometrics.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -92,6 +93,15 @@ async function startGame(enableDemo = false) {
 
     socket = new GhostSocket(CONFIG.WS_URL);
 
+    // client-side biometric demo when there's no backend; the real backend takes over
+    // the moment the WS connects (see the 'connected'/'disconnected' handlers below).
+    const offlineBio = new OfflineBiometrics(socket);
+    offlineBio.start();
+    const applyMockState = (key) => {
+        if (offlineBio.isActive()) offlineBio.setState(key);
+        else socket.sendMockState(key);
+    };
+
     room = new Room(pixiApp.stage);
     furniture = new Furniture(pixiApp.stage, room);
     player = new Player(pixiApp.stage, room, furniture);
@@ -155,7 +165,7 @@ async function startGame(enableDemo = false) {
             toastSystem.show('warning', '\uD83D\uDD12 Live Mode', 'WHOOP is streaming real data. Manual override disabled.', 3000);
             return;
         }
-        socket.sendMockState(key);
+        applyMockState(key);
     });
 
     // WHOOP BLE pairing - connects the PAIR WHOOP button to the Web Bluetooth API
@@ -375,8 +385,8 @@ async function startGame(enableDemo = false) {
         window._lastPatchOriginal = originalText;
     });
 
-    socket.on('connected', () => { hud.setConnected(true); beneathView.setConnected(true); });
-    socket.on('disconnected', () => { hud.setConnected(false); beneathView.setConnected(false); });
+    socket.on('connected', () => { hud.setConnected(true); beneathView.setConnected(true); offlineBio.stop(); });
+    socket.on('disconnected', () => { hud.setConnected(false); beneathView.setConnected(false); offlineBio.start(); });
 
     socket.on('intervention', (data) => {
         ghost.showSpeechBubble(data);
@@ -458,7 +468,7 @@ async function startGame(enableDemo = false) {
                 toastSystem.show('warning', '\uD83D\uDD12 Live Mode', 'WHOOP is streaming real data. Manual override disabled.', 3000);
                 return;
             }
-            socket.sendMockState(parseInt(e.key));
+            applyMockState(parseInt(e.key));
             return;
         }
 
