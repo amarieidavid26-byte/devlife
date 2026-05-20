@@ -204,7 +204,6 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
         # hardcoded responses for risky commands so we dont waste an api call
         cmd = vision_analysis.get("risky_description", "unknown command")
         hrv = f"{modifiers.get('hrv_baseline', 50):.0f}"
-        rec = f"{modifiers.get('estimated_stress', 0):.1f}"
         stress = f"{modifiers.get('estimated_stress', 0):.1f}"
 
         if reason == "fatigue_firewall":

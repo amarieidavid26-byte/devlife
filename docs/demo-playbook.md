@@ -103,10 +103,11 @@ puncte de mentionat:
 sau arata rapid: `pytest tests/ -v`
 
 puncte:
-- 37 teste (unit + integration + WS flow)
+- 43 teste (unit + integration + WS flow + heart_rate + run_error routing)
 - test_biometric_classifier: clasele de stare cognitive
 - test_apply_fix: contract, validator, lifecycle complet
-- test_ws_flow: conexiune WebSocket end-to-end
+- test_ws_flow: conexiune WebSocket end-to-end + handler heart_rate
+- test_run_error_routing: desk code runner → ghost intervention
 
 ---
 
