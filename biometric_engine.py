@@ -44,16 +44,20 @@ class BiometricEngine:
     TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token"
     API_BASE = "https://api.prod.whoop.com/developer/v2"
 
+    # the `offline` scope is required for WHOOP to issue a refresh token; without it
+    # the connection silently dies after the first access token expires (~1h).
+    SCOPES = "offline read:recovery read:cycles read:sleep read:workout read:body_measurement read:profile"
+
     # oauth flow
-    def get_auth_url(self, redirect_uri):
+    def get_auth_url(self, redirect_uri, state):
         # generate the WHOOP oauth url
         # user visits this URL, logs in and whoop redirects back with a code
         params = {
             "client_id": self.client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
-            "scope": "read:recovery read:cycles read:sleep read:workout read:body_measurement",
-            "state": "devlife_whoop_auth_2026"
+            "scope": self.SCOPES,
+            "state": state,
         }
         query = "&".join(f"{k}={v}" for k, v in params.items())
         return f"{self.AUTH_URL}?{query}"
@@ -80,6 +84,8 @@ class BiometricEngine:
             self.refresh_token = data.get("refresh_token")
             expires_in = data.get("expires_in", 3600)
             self.token_expiry = time.time() + expires_in
+            if self.access_token:
+                self._save_tokens()
             return self.access_token is not None
         except Exception as e:
             logger.error("token exchange error: %s", e)
@@ -94,7 +100,9 @@ class BiometricEngine:
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
                 "refresh_token": self.refresh_token,
-                "grant_type": "refresh_token"
+                "grant_type": "refresh_token",
+                # WHOOP drops the refresh token unless `offline` is re-requested on refresh
+                "scope": "offline",
             })
             if response.status_code == 200:
                 data = response.json()
@@ -102,6 +110,7 @@ class BiometricEngine:
                 self.refresh_token = data.get("refresh_token", self.refresh_token)
                 expires_in = data.get("expires_in", 3600)
                 self.token_expiry = time.time() + expires_in
+                self._save_tokens()
                 logger.info("token refreshed")
                 return True
             else:

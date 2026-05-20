@@ -17,3 +17,4 @@ devlife.db
 htmlcov/
 .claude/
 frontend/public/lib/pyodide/
+workspace/

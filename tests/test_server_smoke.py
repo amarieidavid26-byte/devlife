@@ -10,9 +10,26 @@ def _reload_server():
     return server
 
 
-# defect: WHOOP callback dead code - exchange_token never runs
 @pytest.mark.asyncio
 async def test_whoop_callback_happy_path():
+    from httpx import AsyncClient, ASGITransport
+    import server
+    import security
+    state = security.new_state()  # mirror the real flow: /auth issues, /callback consumes
+    with patch.object(server.bio, "exchange_token", return_value=True) as mock_exchange:
+        async with AsyncClient(
+            transport=ASGITransport(app=server.app), base_url="http://test"
+        ) as client:
+            resp = await client.get(
+                f"/api/whoop/callback?code=fake_code&state={state}", follow_redirects=False
+            )
+    assert resp.status_code in (302, 307), f"expected redirect, got {resp.status_code}"
+    mock_exchange.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_whoop_callback_rejects_bad_state():
+    # CSRF guard: a code without a valid issued state must be rejected (and never exchanged)
     from httpx import AsyncClient, ASGITransport
     import server
     with patch.object(server.bio, "exchange_token", return_value=True) as mock_exchange:
@@ -20,10 +37,10 @@ async def test_whoop_callback_happy_path():
             transport=ASGITransport(app=server.app), base_url="http://test"
         ) as client:
             resp = await client.get(
-                "/api/whoop/callback?code=fake_code", follow_redirects=False
+                "/api/whoop/callback?code=fake_code&state=forged", follow_redirects=False
             )
-    assert resp.status_code in (302, 307), f"expected redirect, got {resp.status_code}"
-    mock_exchange.assert_called_once()
+    assert resp.status_code == 400
+    mock_exchange.assert_not_called()
 
 
 @pytest.mark.asyncio

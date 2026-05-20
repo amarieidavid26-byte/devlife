@@ -7,10 +7,11 @@ import threading
 import random
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -23,7 +24,14 @@ from config import (
     HOST, PORT as _CONFIG_PORT,
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH,
     WHOOP_REDIRECT_URI, ALLOWED_ORIGINS, DEMO_OFFLINE,
+    WORKSPACE_ROOT, TERMINAL_ENABLED, FILES_ENABLED, LSP_ENABLED, INLINE_AI_ENABLED,
 )
+
+import security
+import terminal_pty
+import file_api
+import lsp_bridge
+from inline_completer import InlineCompleter
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +85,7 @@ bio = BiometricEngine(WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET)
 mock = MockBiometrics(seeded=DEMO_OFFLINE)
 brain = GhostBrain(CLAUDE_API_KEY)
 tracker = ContextTracker()
+inline_completer = InlineCompleter(CLAUDE_API_KEY)
 
 
 def get_analyzer():
@@ -469,6 +478,107 @@ app.add_middleware(
 app.mount("/public", StaticFiles(directory="public"), name="public")
 
 
+@app.get("/api/session")
+async def get_session():
+    """Per-process token for the privileged local endpoints. CORS keeps this response
+    unreadable cross-origin, so a malicious site can never obtain the token."""
+    return {
+        "token": security.SESSION_TOKEN,
+        "features": {
+            "terminal": TERMINAL_ENABLED,
+            "files": FILES_ENABLED,
+            "lsp": LSP_ENABLED,
+            "inline_ai": INLINE_AI_ENABLED,
+        },
+        "workspace_root": WORKSPACE_ROOT,
+    }
+
+
+def require_token(x_devlife_token: str = Header(None)):
+    """HTTP dependency: require the session token header for privileged file ops."""
+    if not security.verify_token(x_devlife_token):
+        raise HTTPException(status_code=403, detail="invalid or missing session token")
+
+
+def _files_enabled():
+    if not FILES_ENABLED:
+        raise HTTPException(status_code=404, detail="file API disabled")
+
+
+def _fs_error_response(e: Exception) -> JSONResponse:
+    if isinstance(e, PermissionError):
+        return JSONResponse(status_code=403, content={"error": str(e)})
+    if isinstance(e, (FileNotFoundError, NotADirectoryError)):
+        return JSONResponse(status_code=404, content={"error": str(e)})
+    if isinstance(e, (ValueError, IsADirectoryError)):
+        return JSONResponse(status_code=400, content={"error": str(e)})
+    logger.warning("file op failed: %s", e)
+    return JSONResponse(status_code=500, content={"error": "file operation failed"})
+
+
+class FileWriteBody(BaseModel):
+    path: str = Field(..., max_length=4096)
+    content: str = Field(..., max_length=5_000_000)
+
+
+class FilePathBody(BaseModel):
+    path: str = Field(..., max_length=4096)
+    kind: str = Field("file", max_length=8)
+
+
+class FileRenameBody(BaseModel):
+    src: str = Field(..., max_length=4096)
+    dst: str = Field(..., max_length=4096)
+
+
+@app.get("/api/files/tree", dependencies=[Depends(require_token)])
+async def files_tree(path: str = "", _=Depends(_files_enabled)):
+    try:
+        return file_api.list_dir(path)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.get("/api/files/read", dependencies=[Depends(require_token)])
+async def files_read(path: str, _=Depends(_files_enabled)):
+    try:
+        return file_api.read_file(path)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.post("/api/files/write", dependencies=[Depends(require_token)])
+async def files_write(body: FileWriteBody, _=Depends(_files_enabled)):
+    try:
+        return file_api.write_file(body.path, body.content)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.post("/api/files/create", dependencies=[Depends(require_token)])
+async def files_create(body: FilePathBody, _=Depends(_files_enabled)):
+    try:
+        return file_api.create(body.path, body.kind)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.post("/api/files/rename", dependencies=[Depends(require_token)])
+async def files_rename(body: FileRenameBody, _=Depends(_files_enabled)):
+    try:
+        return file_api.rename(body.src, body.dst)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.post("/api/files/delete", dependencies=[Depends(require_token)])
+async def files_delete(body: FilePathBody, _=Depends(_files_enabled)):
+    try:
+        return file_api.delete(body.path)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
 @app.get("/health")
 async def health():
     return {"status": "alive", "ghost": "watching"}
@@ -588,22 +698,30 @@ async def get_game_apps():
 
 @app.get("/api/whoop/auth")
 async def whoop_auth():
-    auth_url = bio.get_auth_url(WHOOP_REDIRECT_URI)
+    state = security.new_state()
+    auth_url = bio.get_auth_url(WHOOP_REDIRECT_URI, state)
     return RedirectResponse(url=auth_url)
 
 
 @app.get("/api/whoop/callback")
-async def whoop_callback(code: str = None, error: str = None):
+async def whoop_callback(code: str = None, state: str = None, error: str = None):
     if error or not code:
         return JSONResponse({"error": error or "No code received"}, status_code=400)
+    if not security.consume_state(state):
+        # CSRF guard: the state must match one we issued and hasn't expired/been used
+        return JSONResponse({"error": "Invalid or expired state"}, status_code=400)
     success = bio.exchange_token(code, WHOOP_REDIRECT_URI)
     if success:
-        return RedirectResponse(url="http://localhost:5173")
+        broadcast_sync({"type": "whoop_connected"})
+        return RedirectResponse(url=ALLOWED_ORIGINS[0])
     return JSONResponse({"error": "Token exchange failed"}, status_code=500)
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
+    if not security.check_origin(ws):
+        await ws.close(code=1008)
+        return
     await ws.accept()
     app_state.connected_clients.append(ws)
     logger.info("ws client connected (%d total)", len(app_state.connected_clients))
@@ -746,6 +864,183 @@ async def websocket_endpoint(ws: WebSocket):
         if ws in app_state.connected_clients:
             app_state.connected_clients.remove(ws)
         logger.info("ws client offline (%d total)", len(app_state.connected_clients))
+
+
+async def _gate_privileged_ws(ws: WebSocket, enabled: bool) -> bool:
+    """Origin + feature-flag + session-token gate for the privileged local WS endpoints.
+    Returns True if accepted (and the socket is already accept()-ed), False if rejected."""
+    if not enabled:
+        await ws.close(code=1008)
+        return False
+    if not security.check_origin(ws):
+        await ws.close(code=1008)
+        return False
+    if not security.verify_token(ws.query_params.get("token")):
+        await ws.close(code=1008)
+        return False
+    await ws.accept()
+    return True
+
+
+async def _run_inline(ws: WebSocket, req_id, prefix, suffix, language, path):
+    try:
+        async for delta in inline_completer.stream(prefix, suffix, language, path):
+            await ws.send_json({"id": req_id, "delta": delta})
+        await ws.send_json({"id": req_id, "done": True})
+    except asyncio.CancelledError:
+        pass  # superseded by a newer keystroke
+    except Exception as e:
+        logger.warning("inline run failed: %s", e)
+        try:
+            await ws.send_json({"id": req_id, "done": True})
+        except Exception:
+            pass
+
+
+@app.websocket("/lsp/{language}")
+async def lsp_ws(ws: WebSocket, language: str):
+    if not await _gate_privileged_ws(ws, LSP_ENABLED):
+        return
+    if not lsp_bridge.server_available(language):
+        try:
+            await ws.send_json({"error": "language server not installed", "language": language})
+            await ws.close(code=1011)
+        except Exception:
+            pass
+        return
+    await lsp_bridge.run_bridge(ws, language)
+
+
+@app.websocket("/inline")
+async def inline_ws(ws: WebSocket):
+    if not await _gate_privileged_ws(ws, INLINE_AI_ENABLED):
+        return
+    current = None
+    try:
+        while True:
+            msg = await ws.receive()
+            if msg.get("type") == "websocket.disconnect":
+                break
+            text = msg.get("text")
+            if not text:
+                continue
+            try:
+                req = json.loads(text)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            # a newer request cancels the in-flight one (stale completions are useless)
+            if current and not current.done():
+                current.cancel()
+            current = asyncio.create_task(_run_inline(
+                ws,
+                req.get("id"),
+                (req.get("prefix") or "")[-6000:],
+                (req.get("suffix") or "")[:2000],
+                req.get("language") or "plaintext",
+                req.get("path") or "",
+            ))
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if current and not current.done():
+            current.cancel()
+
+
+@app.websocket("/files/watch")
+async def files_watch_ws(ws: WebSocket):
+    if not await _gate_privileged_ws(ws, FILES_ENABLED):
+        return
+    from watchfiles import awatch
+    root = Path(WORKSPACE_ROOT).resolve()
+    stop = asyncio.Event()
+
+    async def watcher():
+        try:
+            async for changes in awatch(str(root), stop_event=stop):
+                payload = []
+                for change, path in changes:
+                    try:
+                        rel = str(Path(path).resolve().relative_to(root))
+                    except Exception:
+                        continue
+                    payload.append({"change": change.name, "path": rel})
+                if payload:
+                    await ws.send_json({"type": "fs_change", "changes": payload})
+        except Exception:
+            pass
+
+    task = asyncio.create_task(watcher())
+    try:
+        while True:
+            msg = await ws.receive()
+            if msg.get("type") == "websocket.disconnect":
+                break
+    except WebSocketDisconnect:
+        pass
+    finally:
+        stop.set()
+        task.cancel()
+
+
+@app.websocket("/terminal")
+async def terminal_ws(ws: WebSocket):
+    if not await _gate_privileged_ws(ws, TERMINAL_ENABLED):
+        return
+
+    loop = asyncio.get_running_loop()
+    out_queue: asyncio.Queue = asyncio.Queue()
+    session = terminal_pty.PtySession(cwd=WORKSPACE_ROOT)
+    try:
+        session.spawn()
+    except Exception as e:
+        logger.error("pty spawn failed: %s", e)
+        await ws.close(code=1011)
+        return
+    logger.info("terminal session started (pid %s)", session.pid)
+
+    # add_reader runs in the loop thread, so put_nowait is safe; a single sender task
+    # drains the queue in order to preserve byte ordering on the socket.
+    session.attach_reader(loop, lambda data: out_queue.put_nowait(data))
+
+    async def pump_output():
+        while True:
+            data = await out_queue.get()
+            if data is None:  # EOF — child exited
+                break
+            try:
+                await ws.send_bytes(data)
+            except Exception:
+                break
+        try:
+            await ws.close()
+        except Exception:
+            pass
+
+    sender = asyncio.create_task(pump_output())
+    try:
+        while True:
+            msg = await ws.receive()
+            if msg.get("type") == "websocket.disconnect":
+                break
+            if msg.get("bytes") is not None:
+                session.write(msg["bytes"])  # keystrokes
+            elif msg.get("text") is not None:
+                text = msg["text"]
+                try:
+                    ctrl = json.loads(text)
+                except (json.JSONDecodeError, TypeError):
+                    session.write(text.encode())
+                    continue
+                if isinstance(ctrl, dict) and ctrl.get("type") == "resize":
+                    session.resize(int(ctrl.get("rows", 24)), int(ctrl.get("cols", 80)))
+                else:
+                    session.write(text.encode())
+    except WebSocketDisconnect:
+        pass
+    finally:
+        sender.cancel()
+        session.close()
+        logger.info("terminal session closed")
 
 
 if __name__ == "__main__":

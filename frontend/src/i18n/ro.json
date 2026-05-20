@@ -67,6 +67,8 @@
   "toast.offline": "Mod demo offline — date simulate",
   "toast.whoop_unavailable": "WHOOP indisponibil — date simulate",
   "toast.live_mode_locked": "WHOOP transmite date reale. Override manual dezactivat.",
+  "toast.whoop_connected": "WHOOP conectat",
+  "toast.whoop_connected_body": "Contul tău e legat. Se încarcă recovery, somn și strain.",
 
   "ws.connected": "Conectat la Ghost",
   "ws.disconnected": "Deconectat"
