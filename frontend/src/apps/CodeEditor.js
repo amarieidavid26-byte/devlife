@@ -3,6 +3,7 @@ import { JsRunner } from './runners/JsRunner.js';
 import { PythonRunner } from './runners/PythonRunner.js';
 import { initMonaco } from './monaco/monacoSetup.js';
 import { FileTree } from './ide/FileTree.js';
+import { registerInlineCompletions } from './ide/inlineCompletions.js';
 import { readFile, writeFile, createPath } from '../network/files.js';
 import { getWorkspaceRoot, getFeatures, privilegedWsUrl } from '../network/session.js';
 
@@ -151,6 +152,7 @@ export class CodeEditorApp {
         // bundled Monaco — synchronous, no CDN
         const monaco = initMonaco();
         this._monaco = monaco;
+        registerInlineCompletions(monaco); // Cursor-style ghost text (once)
         this.createEditor(monaco, editorContainer);
 
         if (filesEnabled) {

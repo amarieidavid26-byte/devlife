@@ -30,6 +30,7 @@ from config import (
 import security
 import terminal_pty
 import file_api
+from inline_completer import InlineCompleter
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ bio = BiometricEngine(WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET)
 mock = MockBiometrics(seeded=DEMO_OFFLINE)
 brain = GhostBrain(CLAUDE_API_KEY)
 tracker = ContextTracker()
+inline_completer = InlineCompleter(CLAUDE_API_KEY)
 
 
 def get_analyzer():
@@ -877,6 +879,56 @@ async def _gate_privileged_ws(ws: WebSocket, enabled: bool) -> bool:
         return False
     await ws.accept()
     return True
+
+
+async def _run_inline(ws: WebSocket, req_id, prefix, suffix, language, path):
+    try:
+        async for delta in inline_completer.stream(prefix, suffix, language, path):
+            await ws.send_json({"id": req_id, "delta": delta})
+        await ws.send_json({"id": req_id, "done": True})
+    except asyncio.CancelledError:
+        pass  # superseded by a newer keystroke
+    except Exception as e:
+        logger.warning("inline run failed: %s", e)
+        try:
+            await ws.send_json({"id": req_id, "done": True})
+        except Exception:
+            pass
+
+
+@app.websocket("/inline")
+async def inline_ws(ws: WebSocket):
+    if not await _gate_privileged_ws(ws, INLINE_AI_ENABLED):
+        return
+    current = None
+    try:
+        while True:
+            msg = await ws.receive()
+            if msg.get("type") == "websocket.disconnect":
+                break
+            text = msg.get("text")
+            if not text:
+                continue
+            try:
+                req = json.loads(text)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            # a newer request cancels the in-flight one (stale completions are useless)
+            if current and not current.done():
+                current.cancel()
+            current = asyncio.create_task(_run_inline(
+                ws,
+                req.get("id"),
+                (req.get("prefix") or "")[-6000:],
+                (req.get("suffix") or "")[:2000],
+                req.get("language") or "plaintext",
+                req.get("path") or "",
+            ))
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if current and not current.done():
+            current.cancel()
 
 
 @app.websocket("/files/watch")
