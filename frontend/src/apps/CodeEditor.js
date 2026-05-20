@@ -163,8 +163,19 @@ export class CodeEditorApp {
             this._bootstrapWorkspace();
             this._connectWatch();
         } else {
-            this._showPlaceholder('File access is disabled on this server.');
+            // deployed / no local file API: fall back to an in-memory demo buffer so the
+            // editor still works (Run via Pyodide, ghost interventions, Apply Fix).
+            this._openScratch();
         }
+    }
+
+    _openScratch() {
+        const monaco = this._monaco;
+        const path = 'demo.py';
+        const model = monaco.editor.createModel(WELCOME_FILES['welcome.py'], 'python');
+        this.models.set(path, { model, language: 'python', scratch: true });
+        this.tabs.push(path);
+        this._switchTo(path);
     }
 
     createEditor(monaco, container) {
@@ -289,6 +300,8 @@ export class CodeEditorApp {
 
     async saveActive() {
         if (!this.activePath || !this.editor) return;
+        const entry = this.models.get(this.activePath);
+        if (entry && entry.scratch) return; // in-memory demo buffer, nothing to persist
         try {
             await writeFile(this.activePath, this.editor.getValue());
             this.dirty.delete(this.activePath);

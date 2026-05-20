@@ -54,12 +54,13 @@ DEMO_OFFLINE = os.getenv("DEMO_OFFLINE", "false").lower() == "true"
 WORKSPACE_ROOT = os.path.abspath(os.getenv("WORKSPACE_ROOT", "./workspace"))
 os.makedirs(WORKSPACE_ROOT, exist_ok=True)
 
-# privileged-feature flags — keep ALL of these OFF on any hosted/non-local deploy.
-# They expose a real shell, real filesystem writes, and LSP subprocesses on the host.
-TERMINAL_ENABLED = os.getenv("TERMINAL_ENABLED", "true").lower() == "true"
-FILES_ENABLED = os.getenv("FILES_ENABLED", "true").lower() == "true"
-LSP_ENABLED = os.getenv("LSP_ENABLED", "true").lower() == "true"
-INLINE_AI_ENABLED = os.getenv("INLINE_AI_ENABLED", "true").lower() == "true"
+# privileged-feature flags — they expose a real shell, real filesystem writes, and LSP
+# subprocesses on the host, so they default to OFF (fail-safe). Enable them ONLY on a
+# local machine via .env. A public deploy with no env override therefore stays safe.
+TERMINAL_ENABLED = os.getenv("TERMINAL_ENABLED", "false").lower() == "true"
+FILES_ENABLED = os.getenv("FILES_ENABLED", "false").lower() == "true"
+LSP_ENABLED = os.getenv("LSP_ENABLED", "false").lower() == "true"
+INLINE_AI_ENABLED = os.getenv("INLINE_AI_ENABLED", "false").lower() == "true"
 
 # mode settings 
 USE_MOCK_BIOMETRICS = True       # false when we are using real WHOOP metrics not this BS
