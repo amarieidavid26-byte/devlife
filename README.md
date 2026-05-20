@@ -17,13 +17,14 @@ ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza ac
 - **biometrice reale** — WHOOP API (recovery/somn/strain) + Chrome Web Bluetooth pentru bpm live. heart rate-ul tau apare pe ecran cu badge `● LIVE`
 - **IDE real in joc** — editorul Monaco (acelasi din VS Code) editeaza **fisiere reale** de pe PC: file tree, taburi, deschide/salveaza (Cmd/Ctrl+S). detalii in `docs/local-ide.md`
 - **terminal real** — un shell adevarat (zsh) in joc via xterm.js + PTY pe backend; ruleaza orice comanda, inclusiv TUI-uri (vim, htop)
-- **completari AI inline** — sugestii ghost-text in stil Cursor, generate de Claude Haiku, acceptate cu Tab
+- **biometric Cursor** — completari AI inline (ghost-text in stil Cursor, Claude Haiku, accepti cu Tab) care se **adapteaza la starea ta cognitiva**: prudente/safety-first cand esti FATIGUED/STRESSED, minimale in DEEP_FOCUS. badge `🧠 <STARE>` in editor.
 - **inteligenta de limbaj (LSP)** — diagnostice, autocomplete si hover reale prin pyright / typescript-language-server
+- **Open in full VS Code** — buton care lanseaza code-server (VS Code real, 1:1) in iframe pe acelasi workspace, pentru editare „power". local-only.
 - **fatigue firewall** — detecteaza comenzile periculoase si le blocheaza cand starea ta e FATIGUED
 - **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback
 - **desk code runner** — butonul Run executa Python (Pyodide) si JavaScript (Web Worker) in sandbox; runtime errors merg la ghost prin flow-ul apply-fix. detalii in `docs/desk-code-runner.md`
 - **sleep mode** — dai jos wearable-ul si camera se intuneca automat
-- **fallback offline** — merge complet si fara WHOOP, cu biometrice simulate
+- **demo offline** — fara backend, biometricele sunt simulate client-side: starile (1-5), HUD-ul, ghost-ul si ECG-ul functioneaza complet (doar replicile AI ale ghost-ului au nevoie de backend)
 
 ## tech stack
 
@@ -78,19 +79,29 @@ Ca să vezi datele tale reale (recovery, somn, strain) și heart rate live:
 
 ## IDE local, terminal & LSP
 
+> **Rulează LOCAL pentru experiența completă.** Terminalul real, editarea fișierelor de pe
+> PC, LSP, completările AI și „Open in VS Code" funcționează **doar local** (`./scripts/dev.sh`)
+> — un site public nu poate atinge fișierele de pe calculatorul unui vizitator, deci pe
+> deploy ele sunt dezactivate intenționat. Versiunea de pe Vercel e un teaser (joc +
+> biometrice + ghost + demo offline).
+
 Editorul si terminalul din joc lucreaza cu **fisiere reale** de pe masina ta, fiindca
 backend-ul ruleaza local. Totul e limitat la un singur director (`WORKSPACE_ROOT`).
 
 - **Workspace**: implicit `./workspace`. Pointeaza-l catre un proiect real cu
   `WORKSPACE_ROOT=/cale/catre/proiect` in `.env`.
+- **Flag-uri locale** (in `.env`, default OFF — vezi `.env.example`): `TERMINAL_ENABLED`,
+  `FILES_ENABLED`, `LSP_ENABLED`, `INLINE_AI_ENABLED`, `CODE_SERVER_ENABLED`.
 - **Inteligenta de limbaj (optional)**: instaleaza serverele LSP local —
   `pip install pyright` (Python) si `npm i -g typescript-language-server typescript`
   (JS/TS). Daca lipsesc, editorul merge fara diagnostice/autocomplete LSP.
+- **Open in full VS Code (optional)**: instaleaza code-server o singura data —
+  `curl -fsSL https://code-server.dev/install.sh | sh` — apoi `CODE_SERVER_ENABLED=true`
+  in `.env`. Butonul „Open in VS Code" lanseaza VS Code real (1:1) in iframe pe workspace.
 - **Browser**: Chrome/Edge (Web Bluetooth pentru WHOOP BLE; restul merge si in altele).
 - **Securitate**: backend-ul asculta doar pe `127.0.0.1`, fiecare endpoint privilegiat
-  (terminal/fisiere/LSP/inline) cere un token de sesiune + verifica Origin, iar accesul
-  la fisiere e blocat in afara `WORKSPACE_ROOT`. Pe deploy hostat aceste functii sunt
-  dezactivate (`TERMINAL_ENABLED`/`FILES_ENABLED`/`LSP_ENABLED`/`INLINE_AI_ENABLED=false`).
+  cere un token de sesiune + verifica Origin, iar accesul la fisiere e blocat in afara
+  `WORKSPACE_ROOT`. Pe deploy hostat toate aceste functii raman OFF (fail-safe by default).
 
 Detalii de arhitectura: `docs/local-ide.md`.
 

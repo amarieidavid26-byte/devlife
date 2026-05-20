@@ -30,7 +30,7 @@ export class HUD {
             recovery:         '--',
             strain:           '--',
             hrv:              '--',
-            state:            'CONNECTING',
+            state:            '—',
             estimated_stress: 0,
         };
 
