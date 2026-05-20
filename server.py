@@ -607,17 +607,22 @@ async def get_game_apps():
 
 @app.get("/api/whoop/auth")
 async def whoop_auth():
-    auth_url = bio.get_auth_url(WHOOP_REDIRECT_URI)
+    state = security.new_state()
+    auth_url = bio.get_auth_url(WHOOP_REDIRECT_URI, state)
     return RedirectResponse(url=auth_url)
 
 
 @app.get("/api/whoop/callback")
-async def whoop_callback(code: str = None, error: str = None):
+async def whoop_callback(code: str = None, state: str = None, error: str = None):
     if error or not code:
         return JSONResponse({"error": error or "No code received"}, status_code=400)
+    if not security.consume_state(state):
+        # CSRF guard: the state must match one we issued and hasn't expired/been used
+        return JSONResponse({"error": "Invalid or expired state"}, status_code=400)
     success = bio.exchange_token(code, WHOOP_REDIRECT_URI)
     if success:
-        return RedirectResponse(url="http://localhost:5173")
+        broadcast_sync({"type": "whoop_connected"})
+        return RedirectResponse(url=ALLOWED_ORIGINS[0])
     return JSONResponse({"error": "Token exchange failed"}, status_code=500)
 
 

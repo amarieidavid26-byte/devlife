@@ -310,14 +310,26 @@ export class HUD {
         const hrvFmt    = d.hrv       !== '--' ? `${Math.round(d.hrv)}ms`         : '--';
         const bpmFmt    = d.heartRate !== '--' ? `${Math.round(d.heartRate)}`     : '--';
 
-        const connDot = this._connected
-            ? '<span class="live-dot" style="color:#6AD89A;font-size:10px;letter-spacing:0.05em">● LIVE</span>'
-            : '<span style="color:#444;font-size:10px;letter-spacing:0.05em">● OFFLINE</span>';
+        // data-source honesty: live BLE heart rate vs WHOOP morning summary vs demo mock
+        const src = d.source || 'mock';
+        const srcBadge = src === 'ble'
+            ? '<span class="live-dot" style="color:#6AD89A;font-size:10px;letter-spacing:0.05em" title="live heart rate over Bluetooth">● LIVE</span>'
+            : src === 'whoop'
+            ? '<span style="color:#7FB0FF;font-size:10px;letter-spacing:0.05em" title="from your WHOOP account">WHOOP</span>'
+            : '<span style="color:#C9A227;font-size:10px;letter-spacing:0.05em" title="simulated demo data">DEMO</span>';
+        const statusBadge = !this._connected
+            ? '<span style="color:#444;font-size:10px;letter-spacing:0.05em">● OFFLINE</span>'
+            : srcBadge;
+        // when not live over BLE, the heart rate shown is the resting HR from the summary
+        const hrSuffix = src === 'whoop' ? ' <span style="font-size:9px;color:#8a7a5c">resting</span>' : '';
+        const summaryNote = src === 'whoop'
+            ? '<div style="font-size:9px;color:#8a7a5c;margin-bottom:4px;font-style:italic">recovery · HRV · strain — today’s morning summary</div>'
+            : '';
 
         this._textEl.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span class="hr-pulse" style="display:inline-block">❤️ <strong style="font-family:monospace">${bpmFmt}</strong> bpm</span>
-                <span>${connDot}</span>
+                <span class="hr-pulse" style="display:inline-block">❤️ <strong style="font-family:monospace">${bpmFmt}</strong> bpm${hrSuffix}</span>
+                <span>${statusBadge}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                 <span>${recDot} Rec: <strong>${recFmt}</strong></span>
@@ -326,10 +338,11 @@ export class HUD {
                 <span>Strain: <strong>${strainFmt}</strong></span>
                 <span>HRV: <strong style="font-family:monospace">${hrvFmt}</strong></span>
             </div>
+            ${summaryNote}
             <div style="margin:6px 0 4px">
                 State: <strong style="color:${stateColor};font-family:'Fredoka',sans-serif;font-weight:600">${stateLabel}</strong>${this._cqi != null ? ` · <span style="font-size:11px;color:${this._cqi >= 80 ? '#6AD89A' : this._cqi >= 50 ? '#FFB84A' : '#FF7A6A'}">CQI: ${Math.round(this._cqi)}%</span>` : ''}
             </div>
-            <div style="font-size:11px;color:#B8A88C;margin-bottom:4px">
+            <div style="font-size:11px;color:#B8A88C;margin-bottom:4px" title="derived from your HRV deviation vs 14-day baseline — not a WHOOP-reported value">
                 Stress ${stress.toFixed(1)}/3.0
             </div>
             <div style="background:rgba(255,228,181,0.08);border-radius:4px;height:6px;overflow:hidden">

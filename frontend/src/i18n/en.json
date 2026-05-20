@@ -60,6 +60,8 @@
   "toast.offline": "Demo offline mode — simulated data",
   "toast.whoop_unavailable": "WHOOP unavailable — simulated data",
   "toast.live_mode_locked": "WHOOP streaming live data. Manual override disabled.",
+  "toast.whoop_connected": "WHOOP connected",
+  "toast.whoop_connected_body": "Your account is linked. Recovery, sleep & strain will load.",
   "ws.connected": "Connected to Ghost",
   "ws.disconnected": "Disconnected"
 }

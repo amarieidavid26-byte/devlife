@@ -52,6 +52,25 @@ cd devlife
 
 vezi `docs/install-runbook.md` pentru setup complet cu .env.
 
+## conectare WHOOP (date reale)
+
+Ca să vezi datele tale reale (recovery, somn, strain) și heart rate live:
+
+1. **Înregistrează o aplicație** la [developer.whoop.com](https://developer.whoop.com) → obții `client_id` și `client_secret`.
+2. **Redirect URI** în dashboard-ul WHOOP trebuie să fie exact `http://localhost:8000/api/whoop/callback` (string-match — păstrează `localhost`, nu `127.0.0.1`).
+3. **Scopes**: bifează `offline` + `read:recovery` `read:cycles` `read:sleep` `read:workout` `read:body_measurement` `read:profile`. `offline` e obligatoriu — fără el conexiunea moare după ~1h.
+4. Pune valorile în `.env`:
+   ```
+   WHOOP_CLIENT_ID=...
+   WHOOP_CLIENT_SECRET=...
+   WHOOP_REDIRECT_URI=http://localhost:8000/api/whoop/callback
+   ```
+5. Pornește appul, apasă **Connect WHOOP** → consimțământ → te întorci în joc, tokenul se salvează în `.whoop_tokens.json` și se reîncarcă automat la următoarea pornire.
+
+**Heart rate live** (BLE): pe telefon, în WHOOP app → **Device Settings → Broadcast Heart Rate = ON**, apoi apasă **Pair** în joc. Necesită **Chrome sau Edge** (Web Bluetooth nu există în Safari/Firefox).
+
+**De reținut, ca să fim corecți:** doar HR-ul prin BLE e live (badge `● LIVE`). Recovery / HRV / strain / somn sunt **sumarul de dimineață** de la WHOOP (calculat o dată pe zi, badge `WHOOP`), nu în timp real. "Stress" e **derivat** din deviația HRV față de baseline-ul tău de 14 zile — WHOOP nu expune un câmp de stress în API.
+
 ## resurse externe
 
 - [Kenney.nl](https://kenney.nl) — assets izometrice (CC0)
