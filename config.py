@@ -61,6 +61,9 @@ TERMINAL_ENABLED = os.getenv("TERMINAL_ENABLED", "false").lower() == "true"
 FILES_ENABLED = os.getenv("FILES_ENABLED", "false").lower() == "true"
 LSP_ENABLED = os.getenv("LSP_ENABLED", "false").lower() == "true"
 INLINE_AI_ENABLED = os.getenv("INLINE_AI_ENABLED", "false").lower() == "true"
+# "Open in full VS Code" — launches code-server locally. Local-only; never on a public host.
+CODE_SERVER_ENABLED = os.getenv("CODE_SERVER_ENABLED", "false").lower() == "true"
+CODE_SERVER_PORT = int(os.getenv("CODE_SERVER_PORT", "8080"))
 
 # mode settings 
 USE_MOCK_BIOMETRICS = True       # false when we are using real WHOOP metrics not this BS

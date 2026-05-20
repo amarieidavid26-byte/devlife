@@ -6,7 +6,8 @@ import { FileTree } from './ide/FileTree.js';
 import { registerInlineCompletions } from './ide/inlineCompletions.js';
 import { LspManager } from './ide/languageClient.js';
 import { readFile, writeFile, createPath } from '../network/files.js';
-import { getWorkspaceRoot, getFeatures, privilegedWsUrl } from '../network/session.js';
+import { getWorkspaceRoot, getFeatures, privilegedWsUrl, authHeaders } from '../network/session.js';
+import { CONFIG } from '../config.js';
 
 // Seeded into an empty workspace so the editor (and the ghost bug-detection demo) has
 // something to open on first run.
@@ -132,6 +133,16 @@ export class CodeEditorApp {
         saveBtn.textContent = '⌘S Save';
         saveBtn.addEventListener('click', () => this.saveActive());
         rightGroup.appendChild(saveBtn);
+
+        // "Open in full VS Code" (code-server) — power editing; local-only, feature-flagged
+        if (getFeatures().code_server) {
+            const vscodeBtn = document.createElement('button');
+            vscodeBtn.style.cssText = "height:24px;padding:0 10px;background:#0e639c;color:#fff;border:none;border-radius:3px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;";
+            vscodeBtn.textContent = '⧉ Open in VS Code';
+            vscodeBtn.title = 'Open the full VS Code (code-server) on this workspace';
+            vscodeBtn.addEventListener('click', () => this.openVsCode(vscodeBtn));
+            rightGroup.appendChild(vscodeBtn);
+        }
 
         const closeBtn = document.createElement('button');
         closeBtn.style.cssText = 'background:transparent;color:#888;font-size:13px;border:none;cursor:pointer;padding:4px 8px;';
@@ -331,6 +342,48 @@ export class CodeEditorApp {
 
     _showToastLikeError(msg) {
         console.warn('[ide]', msg);
+    }
+
+    async openVsCode(btn) {
+        const label = btn ? btn.textContent : null;
+        if (btn) { btn.textContent = 'starting…'; btn.disabled = true; }
+        try {
+            const r = await fetch(CONFIG.BACKEND_URL + '/api/codeserver/start', { method: 'POST', headers: authHeaders() });
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok || !data.url) {
+                window.alert(data.hint || data.error || 'code-server is not available.');
+                return;
+            }
+            this._showVsCodeOverlay(data.url);
+        } catch (_) {
+            window.alert('Could not reach the backend to start VS Code.');
+        } finally {
+            if (btn) { btn.textContent = label; btn.disabled = false; }
+        }
+    }
+
+    _showVsCodeOverlay(url) {
+        const panel = document.createElement('div');
+        panel.style.cssText = 'position:absolute;inset:0;z-index:200;background:#1e1e1e;display:flex;flex-direction:column;';
+        const bar = document.createElement('div');
+        bar.style.cssText = 'height:32px;background:#252526;border-bottom:1px solid #3c3c3c;display:flex;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0;';
+        const title = document.createElement('span');
+        title.textContent = 'VS Code (code-server) — ghost is not watching here';
+        title.style.cssText = 'color:#9a9a9a;font-size:12px;';
+        const back = document.createElement('button');
+        back.textContent = '← Back to DevLife editor';
+        back.style.cssText = "background:transparent;border:none;color:#9a9a9a;cursor:pointer;font-size:12px;font-family:'Nunito',sans-serif;";
+        back.addEventListener('mouseenter', () => { back.style.color = '#fff'; });
+        back.addEventListener('mouseleave', () => { back.style.color = '#9a9a9a'; });
+        back.addEventListener('click', () => panel.remove());
+        bar.appendChild(title);
+        bar.appendChild(back);
+        const iframe = document.createElement('iframe');
+        iframe.src = url; // trusted localhost code-server; plain iframe so its workers function
+        iframe.style.cssText = 'flex:1;border:none;width:100%;';
+        panel.appendChild(bar);
+        panel.appendChild(iframe);
+        this.overlay.appendChild(panel);
     }
 
     // fed from main.js biometric updates — surfaces the state inline AI is tuned to

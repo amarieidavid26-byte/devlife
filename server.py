@@ -25,12 +25,14 @@ from config import (
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH,
     WHOOP_REDIRECT_URI, ALLOWED_ORIGINS, DEMO_OFFLINE,
     WORKSPACE_ROOT, TERMINAL_ENABLED, FILES_ENABLED, LSP_ENABLED, INLINE_AI_ENABLED,
+    CODE_SERVER_ENABLED,
 )
 
 import security
 import terminal_pty
 import file_api
 import lsp_bridge
+import code_server
 from inline_completer import InlineCompleter
 
 logger = logging.getLogger(__name__)
@@ -489,6 +491,7 @@ async def get_session():
             "files": FILES_ENABLED,
             "lsp": LSP_ENABLED,
             "inline_ai": INLINE_AI_ENABLED,
+            "code_server": CODE_SERVER_ENABLED,
         },
         "workspace_root": WORKSPACE_ROOT,
     }
@@ -577,6 +580,24 @@ async def files_delete(body: FilePathBody, _=Depends(_files_enabled)):
         return file_api.delete(body.path)
     except Exception as e:
         return _fs_error_response(e)
+
+
+@app.post("/api/codeserver/start", dependencies=[Depends(require_token)])
+async def codeserver_start():
+    if not CODE_SERVER_ENABLED:
+        raise HTTPException(status_code=404, detail="code-server disabled")
+    loop = asyncio.get_running_loop()
+    try:
+        url = await loop.run_in_executor(None, code_server.ensure_running)
+        return {"url": url}
+    except FileNotFoundError:
+        return JSONResponse(status_code=503, content={
+            "error": "code-server not installed",
+            "hint": "Install: curl -fsSL https://code-server.dev/install.sh | sh",
+        })
+    except Exception as e:
+        logger.warning("code-server start failed: %s", e)
+        return JSONResponse(status_code=500, content={"error": "failed to start code-server"})
 
 
 @app.get("/health")
