@@ -157,7 +157,7 @@ async function startGame(enableDemo = false) {
     ghost.setAtmosphere(atmosphere);
 
     hud = new HUD();
-    hud.setSleepData({ hours: 5.8, efficiency: 72, rem_pct: 18, deep_pct: 14, score: 55 });
+    // real "last night" sleep arrives via biometric_update (WHOOP sleep endpoint) — no placeholder
     beneathView = new DashboardOverlay();
     demoHotbar = new DemoHotbar();
     demoHotbar.setClickHandler((key) => {
@@ -411,6 +411,17 @@ async function startGame(enableDemo = false) {
         soundManager.setState(data.state);
         if (apps && apps.desk_computer && apps.desk_computer.isOpen) {
             apps.desk_computer.setBiometricState(data.state); // biometric Cursor indicator
+        }
+
+        // real "last night" sleep from WHOOP's sleep endpoint (null until it's scored)
+        if (data.sleepHours != null && data.sleepScore != null) {
+            hud.setSleepData({
+                hours: data.sleepHours,
+                efficiency: data.sleepEfficiency ?? 0,
+                rem_pct: data.sleepRemPct ?? 0,
+                deep_pct: data.sleepDeepPct ?? 0,
+                score: data.sleepScore,
+            });
         }
 
         // CQI - weighted composite of recovery, HRV, and inverse stress
