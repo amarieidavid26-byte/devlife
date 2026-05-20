@@ -7,7 +7,7 @@
 import { CONFIG } from '../config.js';
 
 let _token = null;
-let _features = { terminal: false, files: false, lsp: false, inline_ai: false };
+let _features = { terminal: false, files: false, lsp: false, inline_ai: false, code_server: false };
 let _workspaceRoot = null;
 let _ready = null;
 
