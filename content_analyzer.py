@@ -26,7 +26,7 @@ RISKY_COMMAND_PATTERNS = [
     (r'DELETE\s+FROM\s+\w+', 'DELETE FROM, removes db rows'),
     (r'docker\s+rm\s+-f', 'force removing a running container'),
     (r'npm\s+publish\b', 'publishing to npm'),
-    (r'\benv\b', 'env dump, might leak secrets'),
+    (r'^\s*env\s*$', 'env dump, might leak secrets'),  # anchored to whole line so 'environment', '.env.example' etc dont false-positive
     # might need more patterns later
 ]
 
