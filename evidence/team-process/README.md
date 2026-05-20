@@ -15,7 +15,7 @@ dovada pentru capitolul V (Lucrul in echipa, 10 puncte) si II.7 (Folosirea unui 
 
 | tag | commit | reprezentare |
 |-----|--------|--------------|
-| `v0.1-mvp` | d88f077 | MVP initial: fork DevLife ROG Challenge cu main menu |
+| `v0.1-mvp` | d88f077 | MVP initial: DevLife cu main menu |
 | `v0.3-cinematics` | 865e93d | Cinematice: intro main menu, capitole demo, outro credits |
 | `v0.5-architecture` | 6b9d816 | T02: refactor backend — AppState centralizat, fix WHOOP callback |
 | `v0.6-persistence` | 15d81cf | T05: persistence SQLite cu sessions, interventions, audit |

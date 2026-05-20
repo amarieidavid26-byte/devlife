@@ -28,7 +28,7 @@ b7ce5d1 WHOOP live mode priority, disable manual override during BLE
 8f8af42 WHOOP BLE wired, park garden with pond/flowers/fence, ambient room glow
 95f4122 animal crossing warm palette: room, furniture, player, ghost, HUD
 908ba08 added town dialogue, camera follow, settings menu
-c5f7b49 added ROG theme branding, demo intro/outro, deployment config
+f9e1385 visual polish: vignette, furniture details, character outline, ghost trail + aura
 ```
 
 Fisiere atinse predominant:

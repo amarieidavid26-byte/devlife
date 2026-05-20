@@ -1,4 +1,25 @@
-* 48e1010 2026-05-19 amarieidavid26-byte: hardening: timeout pe Claude API + bounds explicite pe WS payload
+* f69def1 2026-05-19 amarieidavid26-byte: docx: polish vizual pentru import curat in Google Docs
+* 577a9d0 2026-05-19 amarieidavid26-byte: documentatie-finala: DOCX A4 ~9100 cuvinte cu diacritice complete
+* fafd0e0 2026-05-19 amarieidavid26-byte: screenshots: checklist extins cu 23 capturi mapate pe rubric + instructiuni pas-cu-pas
+* cacdd67 2026-05-19 amarieidavid26-byte: rubric-matrix: actualizat cu toate artefactele noi + status submission v1.1
+* 06753aa 2026-05-19 amarieidavid26-byte: docs: development plan, positioning, architecture, ui-ux decisions
+* 7e08f55 2026-05-19 amarieidavid26-byte: evidence: junit + coverage HTML + perf table extins + team-process pack
+* 070fcc1 2026-05-19 amarieidavid26-byte: hardening: timeout pe Claude API + bounds explicite pe WS payload
+* 2fe1659 2026-05-19 mateivul: tests refresh junit.xml with heart_rate + run_error cases
+* 351ca55 2026-05-19 mateivul: whoop ble troubleshooting
+* 8583dee 2026-05-19 mateivul: backoff reconnect, tab visibility, pair error toasts
+* c1165cd 2026-05-19 mateivul: ws heart_rate handler + bounds tests
+* 9ef55d0 2026-05-19 mateivul: desk code runner readme, rubric rows
+* df20aa5 2026-05-19 mateivul: run_error ws branch + ghost intervention loop
+* decc9b3 2026-05-19 mateivul: code editor run/stop buttons, js + python runners and output panel
+| * 5152b55 2026-05-19 amarieidavid26-byte: docx: polish vizual pentru import curat in Google Docs
+| * 7a07b9f 2026-05-19 amarieidavid26-byte: documentatie-finala: DOCX A4 ~9100 cuvinte cu diacritice complete
+| * c2262b7 2026-05-19 amarieidavid26-byte: screenshots: checklist extins cu 23 capturi mapate pe rubric + instructiuni pas-cu-pas
+| * 96447d6 2026-05-19 amarieidavid26-byte: rubric-matrix: actualizat cu toate artefactele noi + status submission v1.1
+| * 12fd439 2026-05-19 amarieidavid26-byte: docs: development plan, positioning, architecture, ui-ux decisions
+| * e2994a0 2026-05-19 amarieidavid26-byte: evidence: junit + coverage HTML + perf table extins + team-process pack
+| * 48e1010 2026-05-19 amarieidavid26-byte: hardening: timeout pe Claude API + bounds explicite pe WS payload
+|/  
 * a4ffc7c 2026-05-02 mateivul: move project from devlife/ subfolder to root
 * 7672dd3 2026-05-01 mateivul: procfile devlife, frontend gitignore, dashboard
 * e8af8f4 2026-05-01 mateivul: completare fisiere proiect: frontend, assets, teste, gitignore

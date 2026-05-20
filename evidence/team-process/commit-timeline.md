@@ -4,8 +4,8 @@ extras din `git log --tags --simplify-by-decoration --pretty=format:'%ad %d %s' 
 
 | data aprox. | tag | continut |
 |-------------|-----|----------|
-| martie 2026 | v0.1-mvp | MVP initial: fork DevLife ROG Challenge, main menu, primele scene |
-| martie 2026 | v0.3-cinematics | Cinematice ROG (intro + outro), 5 stari cognitive prelucrate vizual |
+| martie 2026 | v0.1-mvp | MVP initial: DevLife, main menu, primele scene |
+| martie 2026 | v0.3-cinematics | Cinematice (intro + outro), 5 stari cognitive prelucrate vizual |
 | martie-aprilie 2026 | v0.5-architecture | Refactor backend: AppState dataclass, fix WHOOP OAuth callback, GAME_MODE routing |
 | aprilie 2026 | v0.6-persistence | Persistence SQLite cu WAL, 6 tabele (sessions, interventions, biometric_samples, feedback, apply_fix_audit, consent) |
 | aprilie 2026 | v0.7-apply-fix | Apply Fix complet: PatchContract, validator (max 50 linii + shell metacharacters), audit, endpoints preview/confirm/rollback |

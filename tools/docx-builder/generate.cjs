@@ -20,11 +20,11 @@ const HEADING1_SIZE = 40; // 20pt — mai mare pentru impact
 const HEADING2_SIZE = 30; // 15pt
 const HEADING3_SIZE = 26; // 13pt
 
-// Paleta — tonuri reci profesionale care fac contrast cu accentul rosu ROG
+// Paleta — tonuri reci profesionale care fac contrast cu accentul rosu
 const COLOR_PRIMARY = "1F3864";    // navy inchis — H1, header tabel
 const COLOR_SECONDARY = "2E74B5";  // albastru mediu — H2
 const COLOR_TERTIARY = "548DD4";   // albastru deschis — H3
-const COLOR_ACCENT = "E94560";     // rosu ROG — accente, placeholder-uri
+const COLOR_ACCENT = "E94560";     // rosu accent — accente, placeholder-uri
 const COLOR_MUTED = "888888";      // gri — header/footer/captions
 const COLOR_QUOTE = "5A5A5A";      // gri inchis — testimoniale
 const COLOR_CODE_BG = "F2F4F7";    // gri foarte deschis — fundal cod
@@ -288,7 +288,7 @@ children.push(
   h2("1.1. Prezentarea generală a proiectului"),
   p("DevLife este un companion AI biometric destinat dezvoltatorilor software, care monitorizează în timp real starea fiziologică a utilizatorului prin senzori de tip wearable și intervine activ când detectează că deciziile cognitive ale acestuia sunt compromise. Aplicația combină trei piloni tehnologici care, până la momentul acestei lucrări, nu au fost integrați niciodată într-un singur produs: biometrice reale provenite din ceasul WHOOP și dintr-o bandă cardiacă conectată prin Bluetooth, înțelegere contextuală asistată de inteligență artificială prin API-ul Anthropic Claude, și mecanism de blocare activă a comenzilor periculoase, denumit Fatigue Firewall."),
   p("Din punct de vedere al utilizatorului, aplicația se prezintă ca o cameră izometrică 2.5D explorabilă, populată de un companion vizual numit „Ghost\", care reacționează în timp real la starea biometrică detectată. Sub această interfață prietenoasă, însă, există un sistem complet de procesare a datelor fiziologice, clasificare cognitivă în cinci stări distincte și raționament asistat de un model de limbaj de ultimă generație. Această dualitate — un companion vizual deasupra unui sistem tehnic robust — este o decizie de design deliberată, motivată în secțiunea 1.4."),
-  screenshot(1, "Meniul principal al aplicației, cu intro cinematic ROG branding și butoanele START / DEMO / SETTINGS. Paleta caldă Animal Crossing și font Fredoka."),
+  screenshot(1, "Meniul principal al aplicației, cu intro cinematic animat și butoanele START / DEMO / SETTINGS. Paleta caldă Animal Crossing și font Fredoka."),
 
   h2("1.2. Problema adresată"),
   p("Performanța cognitivă a dezvoltatorilor software nu este o constantă, ci o funcție directă a stării lor fiziologice. Această afirmație nu este o speculație, ci un fapt cu o literatură clinică solidă. Yerkes-Dodson (1908) a demonstrat că performanța cognitivă urmează o curbă în U inversat: prea puțin arousal — oboseală, plictiseală — duce la decizii proaste, iar prea mult arousal — stres, frică — la fel. Optimumul se află undeva la mijloc, într-o zonă pe care literatura modernă o numește „flow state\". Peifer și colaboratorii (2014) au arătat că flow-ul corelează cu HRV crescut și activare simpatică ușoară — un profil biometric distinct, măsurabil cu echipamentele actuale. Cai și colaboratorii (2018) au demonstrat că privarea de somn reduce capacitatea de evaluare a riscului advers cu până la 30%, în special pentru decizii ireversibile."),
@@ -445,7 +445,7 @@ children.push(
   screenshot(17, "Plant procedural în trei stadii — mic, mediu, mare — în trei capturi side-by-side."),
 
   h2("3.12. Cinematice — intro main menu, capitole, outro credits"),
-  p("Aplicația include două seturi de cinematice. Primul este intro-ul main menu, o secvență animată la pornire care prezintă brand-ul ROG și face fade in lumea izometrică. Al doilea este DemoMode-ul cu chapter transitions: capitole numerotate marchează etapele demonstrației (intro → biometric setup → first intervention → fatigue firewall → apply fix → outro), fiecare cu o tranziție vizuală distinctă. La finalul DemoMode-ului, outro-ul derulează credits cu numele autorilor."),
+  p("Aplicația include două seturi de cinematice. Primul este intro-ul main menu, o secvență animată la pornire care prezintă brand-ul DevLife și face fade in lumea izometrică. Al doilea este DemoMode-ul cu chapter transitions: capitole numerotate marchează etapele demonstrației (intro → biometric setup → first intervention → fatigue firewall → apply fix → outro), fiecare cu o tranziție vizuală distinctă. La finalul DemoMode-ului, outro-ul derulează credits cu numele autorilor."),
   p("Componentele implicate sunt `TransitionOverlay.js` pentru fade-uri între scene, `DemoMode.js` pentru orchestrarea capitolelor, `DemoHotbar.js` pentru indicatorul capitolului curent, și `BeneathView.js` pentru vederea alternativă „sub suprafață\" disponibilă utilizatorului oricând prin TAB."),
   screenshot(18, "Frame din cinematic outro credits cu numele autorilor: David Amariei și Matei Vultur."),
 
@@ -455,7 +455,7 @@ children.push(
   screenshot(19, "Modul desktop (GAME_MODE=False): screenshot capturat din VS Code real cu Ghost intervenind overlay peste fereastra IDE-ului."),
 
   h2("3.14. Fluxul de utilizare (User Flow)"),
-  p("Utilizatorul pornește aplicația și vede main menu-ul cu intro cinematic ROG. Apasă START și intră în scena Room, cu starea inițială RELAXED și HUD-ul vizibil. Dacă are WHOOP, click pe „Pair WHOOP\" inițiază OAuth flow-ul; dacă nu, hotbar-ul 1-5 permite schimbarea manuală a stărilor (sau aplicația rulează cu mock în DEMO_OFFLINE). Utilizatorul se apropie de obiecte din cameră (folosind WASD pentru navigare), apare prompt [E] deasupra obiectului, apăsarea tastei E deschide aplicația respectivă (Code, Terminal, Browser, Notes, Chat)."),
+  p("Utilizatorul pornește aplicația și vede main menu-ul cu intro cinematic. Apasă START și intră în scena Room, cu starea inițială RELAXED și HUD-ul vizibil. Dacă are WHOOP, click pe „Pair WHOOP\" inițiază OAuth flow-ul; dacă nu, hotbar-ul 1-5 permite schimbarea manuală a stărilor (sau aplicația rulează cu mock în DEMO_OFFLINE). Utilizatorul se apropie de obiecte din cameră (folosind WASD pentru navigare), apare prompt [E] deasupra obiectului, apăsarea tastei E deschide aplicația respectivă (Code, Terminal, Browser, Notes, Chat)."),
   p("În timp ce utilizatorul scrie cod sau comenzi, backend-ul analizează conținutul, detectează probleme, iar Ghost-ul intervine prin speech bubble. Pentru sugestii normale, butoanele sunt „Thanks\" / „Not Now\". Pentru sugestii cu cod, „Apply Fix\" / „Show More\" / „Not Now\". Pentru intervenții critice (Fatigue Firewall), „Save Draft\" / „Do It Anyway\" / „Remind Later\". Apăsarea tastei T tranzitionează la Town, de unde utilizatorul poate intra în Cafe sau Cowork. ESC închide aplicații deschise sau dismiss-uiește speech bubble. TAB deschide overlay-ul Dashboard extins."),
 
   h2("3.15. Schema bazei de date"),
