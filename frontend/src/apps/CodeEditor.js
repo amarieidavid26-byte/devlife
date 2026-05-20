@@ -4,6 +4,7 @@ import { PythonRunner } from './runners/PythonRunner.js';
 import { initMonaco } from './monaco/monacoSetup.js';
 import { FileTree } from './ide/FileTree.js';
 import { registerInlineCompletions } from './ide/inlineCompletions.js';
+import { LspManager } from './ide/languageClient.js';
 import { readFile, writeFile, createPath } from '../network/files.js';
 import { getWorkspaceRoot, getFeatures, privilegedWsUrl } from '../network/session.js';
 
@@ -43,6 +44,7 @@ export class CodeEditorApp {
         this.activePath = null;
         this.dirty = new Set();
         this.fileTree = null;
+        this.lsp = null;
         this._tabBar = null;
         this._watchWs = null;
         this._watchTimer = null;
@@ -153,6 +155,8 @@ export class CodeEditorApp {
         const monaco = initMonaco();
         this._monaco = monaco;
         registerInlineCompletions(monaco); // Cursor-style ghost text (once)
+        this.lsp = new LspManager(monaco);
+        this.lsp.registerProviders(); // pyright/tsserver completion + hover + diagnostics
         this.createEditor(monaco, editorContainer);
 
         if (filesEnabled) {
@@ -187,6 +191,7 @@ export class CodeEditorApp {
                 language: this.currentLang,
                 cursor_line: position ? position.lineNumber : 1,
             });
+            if (this.lsp) this.lsp.onModelChange(this.editor.getModel());
         });
 
         this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => this.saveActive());
@@ -230,6 +235,7 @@ export class CodeEditorApp {
         this.models.set(path, { model, language: data.language });
         if (!this.tabs.includes(path)) this.tabs.push(path);
         this._switchTo(path);
+        if (this.lsp) this.lsp.onModelOpen(model);
     }
 
     _switchTo(path) {
@@ -558,6 +564,7 @@ export class CodeEditorApp {
         if (!this.isOpen) return;
         if (this._jsRunner) { this._jsRunner.stop(); this._jsRunner = null; }
         if (this._watchWs) { try { this._watchWs.close(); } catch (_) {} this._watchWs = null; }
+        if (this.lsp) { this.lsp.dispose(); this.lsp = null; }
         clearTimeout(this._watchTimer);
         for (const { model } of this.models.values()) { try { model.dispose(); } catch (_) {} }
         this.models.clear();

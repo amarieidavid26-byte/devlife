@@ -30,6 +30,7 @@ from config import (
 import security
 import terminal_pty
 import file_api
+import lsp_bridge
 from inline_completer import InlineCompleter
 
 logger = logging.getLogger(__name__)
@@ -894,6 +895,20 @@ async def _run_inline(ws: WebSocket, req_id, prefix, suffix, language, path):
             await ws.send_json({"id": req_id, "done": True})
         except Exception:
             pass
+
+
+@app.websocket("/lsp/{language}")
+async def lsp_ws(ws: WebSocket, language: str):
+    if not await _gate_privileged_ws(ws, LSP_ENABLED):
+        return
+    if not lsp_bridge.server_available(language):
+        try:
+            await ws.send_json({"error": "language server not installed", "language": language})
+            await ws.close(code=1011)
+        except Exception:
+            pass
+        return
+    await lsp_bridge.run_bridge(ws, language)
 
 
 @app.websocket("/inline")
