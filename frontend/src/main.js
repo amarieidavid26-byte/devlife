@@ -27,6 +27,7 @@ import { CafeScene } from './town/CafeScene.js';
 import { CoworkScene } from './town/CoworkScene.js';
 import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
 import { CONFIG } from './config.js';
+import { initSession } from './network/session.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -562,6 +563,11 @@ async function startGame(enableDemo = false) {
         console.log('[main] backend health:', d.status);
     }).catch(() => {
         console.log('[main] backend unreachable - running in offline/demo mode');
+    });
+
+    // fetch the session token for privileged local endpoints (terminal/files/lsp/inline AI)
+    initSession().then(d => {
+        if (d) console.log('[main] session ready, features:', d.features);
     });
 
     console.log('[DevLife] Running. WASD=move, E/click=interact, 1-5=state, ESC=close');
