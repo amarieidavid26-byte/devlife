@@ -7,10 +7,11 @@ import threading
 import random
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -28,6 +29,7 @@ from config import (
 
 import security
 import terminal_pty
+import file_api
 
 logger = logging.getLogger(__name__)
 
@@ -489,6 +491,91 @@ async def get_session():
     }
 
 
+def require_token(x_devlife_token: str = Header(None)):
+    """HTTP dependency: require the session token header for privileged file ops."""
+    if not security.verify_token(x_devlife_token):
+        raise HTTPException(status_code=403, detail="invalid or missing session token")
+
+
+def _files_enabled():
+    if not FILES_ENABLED:
+        raise HTTPException(status_code=404, detail="file API disabled")
+
+
+def _fs_error_response(e: Exception) -> JSONResponse:
+    if isinstance(e, PermissionError):
+        return JSONResponse(status_code=403, content={"error": str(e)})
+    if isinstance(e, (FileNotFoundError, NotADirectoryError)):
+        return JSONResponse(status_code=404, content={"error": str(e)})
+    if isinstance(e, (ValueError, IsADirectoryError)):
+        return JSONResponse(status_code=400, content={"error": str(e)})
+    logger.warning("file op failed: %s", e)
+    return JSONResponse(status_code=500, content={"error": "file operation failed"})
+
+
+class FileWriteBody(BaseModel):
+    path: str = Field(..., max_length=4096)
+    content: str = Field(..., max_length=5_000_000)
+
+
+class FilePathBody(BaseModel):
+    path: str = Field(..., max_length=4096)
+    kind: str = Field("file", max_length=8)
+
+
+class FileRenameBody(BaseModel):
+    src: str = Field(..., max_length=4096)
+    dst: str = Field(..., max_length=4096)
+
+
+@app.get("/api/files/tree", dependencies=[Depends(require_token)])
+async def files_tree(path: str = "", _=Depends(_files_enabled)):
+    try:
+        return file_api.list_dir(path)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.get("/api/files/read", dependencies=[Depends(require_token)])
+async def files_read(path: str, _=Depends(_files_enabled)):
+    try:
+        return file_api.read_file(path)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.post("/api/files/write", dependencies=[Depends(require_token)])
+async def files_write(body: FileWriteBody, _=Depends(_files_enabled)):
+    try:
+        return file_api.write_file(body.path, body.content)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.post("/api/files/create", dependencies=[Depends(require_token)])
+async def files_create(body: FilePathBody, _=Depends(_files_enabled)):
+    try:
+        return file_api.create(body.path, body.kind)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.post("/api/files/rename", dependencies=[Depends(require_token)])
+async def files_rename(body: FileRenameBody, _=Depends(_files_enabled)):
+    try:
+        return file_api.rename(body.src, body.dst)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
+@app.post("/api/files/delete", dependencies=[Depends(require_token)])
+async def files_delete(body: FilePathBody, _=Depends(_files_enabled)):
+    try:
+        return file_api.delete(body.path)
+    except Exception as e:
+        return _fs_error_response(e)
+
+
 @app.get("/health")
 async def health():
     return {"status": "alive", "ghost": "watching"}
@@ -790,6 +877,42 @@ async def _gate_privileged_ws(ws: WebSocket, enabled: bool) -> bool:
         return False
     await ws.accept()
     return True
+
+
+@app.websocket("/files/watch")
+async def files_watch_ws(ws: WebSocket):
+    if not await _gate_privileged_ws(ws, FILES_ENABLED):
+        return
+    from watchfiles import awatch
+    root = Path(WORKSPACE_ROOT).resolve()
+    stop = asyncio.Event()
+
+    async def watcher():
+        try:
+            async for changes in awatch(str(root), stop_event=stop):
+                payload = []
+                for change, path in changes:
+                    try:
+                        rel = str(Path(path).resolve().relative_to(root))
+                    except Exception:
+                        continue
+                    payload.append({"change": change.name, "path": rel})
+                if payload:
+                    await ws.send_json({"type": "fs_change", "changes": payload})
+        except Exception:
+            pass
+
+    task = asyncio.create_task(watcher())
+    try:
+        while True:
+            msg = await ws.receive()
+            if msg.get("type") == "websocket.disconnect":
+                break
+    except WebSocketDisconnect:
+        pass
+    finally:
+        stop.set()
+        task.cancel()
 
 
 @app.websocket("/terminal")
