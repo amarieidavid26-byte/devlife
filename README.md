@@ -14,21 +14,26 @@ ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza ac
 
 ## features
 
-- **biometrice reale** — WHOOP API + chrome bluetooth pentru bpm live. hartbatu tau apare pe ecran
+- **biometrice reale** — WHOOP API (recovery/somn/strain) + Chrome Web Bluetooth pentru bpm live. heart rate-ul tau apare pe ecran cu badge `● LIVE`
+- **IDE real in joc** — editorul Monaco (acelasi din VS Code) editeaza **fisiere reale** de pe PC: file tree, taburi, deschide/salveaza (Cmd/Ctrl+S). detalii in `docs/local-ide.md`
+- **terminal real** — un shell adevarat (zsh) in joc via xterm.js + PTY pe backend; ruleaza orice comanda, inclusiv TUI-uri (vim, htop)
+- **completari AI inline** — sugestii ghost-text in stil Cursor, generate de Claude Haiku, acceptate cu Tab
+- **inteligenta de limbaj (LSP)** — diagnostice, autocomplete si hover reale prin pyright / typescript-language-server
 - **fatigue firewall** — detecteaza comenzile periculoase si le blocheaza cand starea ta e FATIGUED
 - **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback
-- **desk code runner** — editorul ruleaza Python (Pyodide) si JavaScript (Web Worker) direct in browser; runtime errors sunt trimise inapoi la ghost, care propune fix prin acelasi flow apply-fix. detalii in `docs/desk-code-runner.md`
+- **desk code runner** — butonul Run executa Python (Pyodide) si JavaScript (Web Worker) in sandbox; runtime errors merg la ghost prin flow-ul apply-fix. detalii in `docs/desk-code-runner.md`
 - **sleep mode** — dai jos wearable-ul si camera se intuneca automat
 - **fallback offline** — merge complet si fara WHOOP, cu biometrice simulate
 
 ## tech stack
 
 - frontend: vanilla JS + PixiJS (camera izometrica procedurala, fara sprite-uri)
-- backend: Python + FastAPI + WebSockets
-- AI: Claude API (Anthropic) — analiza cod + ghost brain
+- editor: Monaco (bundled ESM) + xterm.js (terminal) + provideri inline AI / LSP
+- backend: Python + FastAPI + WebSockets; PTY (stdlib `pty`), file API, LSP bridge
+- AI: Claude API (Anthropic) — ghost brain (Sonnet) + completari inline (Haiku)
 - biometrice: WHOOP API + Chrome Web Bluetooth
 - persistenta: SQLite
-- deploy: Railway
+- deploy: Railway (functiile locale privilegiate — terminal/fisiere/LSP — sunt OFF in prod)
 
 ## arhitectura
 
@@ -70,6 +75,24 @@ Ca să vezi datele tale reale (recovery, somn, strain) și heart rate live:
 **Heart rate live** (BLE): pe telefon, în WHOOP app → **Device Settings → Broadcast Heart Rate = ON**, apoi apasă **Pair** în joc. Necesită **Chrome sau Edge** (Web Bluetooth nu există în Safari/Firefox).
 
 **De reținut, ca să fim corecți:** doar HR-ul prin BLE e live (badge `● LIVE`). Recovery / HRV / strain / somn sunt **sumarul de dimineață** de la WHOOP (calculat o dată pe zi, badge `WHOOP`), nu în timp real. "Stress" e **derivat** din deviația HRV față de baseline-ul tău de 14 zile — WHOOP nu expune un câmp de stress în API.
+
+## IDE local, terminal & LSP
+
+Editorul si terminalul din joc lucreaza cu **fisiere reale** de pe masina ta, fiindca
+backend-ul ruleaza local. Totul e limitat la un singur director (`WORKSPACE_ROOT`).
+
+- **Workspace**: implicit `./workspace`. Pointeaza-l catre un proiect real cu
+  `WORKSPACE_ROOT=/cale/catre/proiect` in `.env`.
+- **Inteligenta de limbaj (optional)**: instaleaza serverele LSP local —
+  `pip install pyright` (Python) si `npm i -g typescript-language-server typescript`
+  (JS/TS). Daca lipsesc, editorul merge fara diagnostice/autocomplete LSP.
+- **Browser**: Chrome/Edge (Web Bluetooth pentru WHOOP BLE; restul merge si in altele).
+- **Securitate**: backend-ul asculta doar pe `127.0.0.1`, fiecare endpoint privilegiat
+  (terminal/fisiere/LSP/inline) cere un token de sesiune + verifica Origin, iar accesul
+  la fisiere e blocat in afara `WORKSPACE_ROOT`. Pe deploy hostat aceste functii sunt
+  dezactivate (`TERMINAL_ENABLED`/`FILES_ENABLED`/`LSP_ENABLED`/`INLINE_AI_ENABLED=false`).
+
+Detalii de arhitectura: `docs/local-ide.md`.
 
 ## resurse externe
 
