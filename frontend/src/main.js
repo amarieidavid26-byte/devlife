@@ -1,5 +1,4 @@
 import * as PIXI from 'pixi.js';
-import { Howl } from 'howler';
 import { i18n } from './i18n/index.js';
 import { GhostSocket } from './network/WebSocket.js';
 import { Room } from './room/Room.js';
@@ -203,6 +202,10 @@ async function startGame(enableDemo = false) {
 
     activeApp = null;
 
+    // wire each app's in-app close button to the FULL game-state reset, so closing via
+    // the ✕ never leaves the game locked (pointer-events off / activeApp dangling).
+    Object.values(apps).forEach(a => { a.onClose = () => closeAllApps(); });
+
     function openApp(name) {
         closeAllApps();
         const app = apps[name];
@@ -228,29 +231,20 @@ async function startGame(enableDemo = false) {
         demoHotbar.show();
     }
 
-    // ambient music
-    // Drop ambient.mp3/ogg in /public to enable speaker toggle
-    let ambientSound = new Howl({
-        src: ['/devlife.mp3'],
-        loop: true,
-        volume: 0.35,
-        html5: true,
-        onloaderror: () => {
-            ambientSound = null;
-            console.log('[main] No ambient audio file found - speaker will be silent');
-        },
-    });
+    // ambient music — procedural pad synthesized in SoundManager (no audio file needed,
+    // so it can't silently break when an asset is missing).
     let musicPlaying = false;
 
     function toggleMusic() {
-        if (!ambientSound) return;
+        soundManager.resume(); // the speaker click is the user gesture that unlocks audio
         if (musicPlaying) {
-            ambientSound.pause();
+            soundManager.stopMusic();
             musicPlaying = false;
         } else {
-            ambientSound.play();
+            soundManager.startMusic();
             musicPlaying = true;
         }
+        try { localStorage.setItem('devlife_music', musicPlaying ? '1' : '0'); } catch (_) {}
     }
 
     // furniture interactions

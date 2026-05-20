@@ -48,6 +48,7 @@ export class CodeEditorApp {
         this._tabBar = null;
         this._watchWs = null;
         this._watchTimer = null;
+        this._contentListener = null;
         // runner state
         this._runBtn = null;
         this._stopBtn = null;
@@ -126,7 +127,8 @@ export class CodeEditorApp {
         closeBtn.textContent = '✕ close';
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#fff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
-        closeBtn.addEventListener('click', () => this.close());
+        // route through main.js so the game state (pointer-events, activeApp, HUD) is restored
+        closeBtn.addEventListener('click', () => (this.onClose ? this.onClose() : this.close()));
         rightGroup.appendChild(closeBtn);
 
         topBar.appendChild(rightGroup);
@@ -193,8 +195,8 @@ export class CodeEditorApp {
             inlineSuggest: { enabled: true },
         });
 
-        this.editor.onDidChangeModelContent(() => {
-            if (!this.activePath) return;
+        this._contentListener = this.editor.onDidChangeModelContent(() => {
+            if (!this.isOpen || !this.activePath) return;
             this.dirty.add(this.activePath);
             this._renderTabs();
             const position = this.editor.getPosition();
@@ -575,18 +577,20 @@ export class CodeEditorApp {
 
     close() {
         if (!this.isOpen) return;
-        if (this._jsRunner) { this._jsRunner.stop(); this._jsRunner = null; }
+        this.isOpen = false; // set first — prevents re-entrant work during disposal
+        if (this._contentListener) { try { this._contentListener.dispose(); } catch (_) {} this._contentListener = null; }
+        if (this._jsRunner) { try { this._jsRunner.stop(); } catch (_) {} this._jsRunner = null; }
         if (this._watchWs) { try { this._watchWs.close(); } catch (_) {} this._watchWs = null; }
-        if (this.lsp) { this.lsp.dispose(); this.lsp = null; }
+        if (this.lsp) { try { this.lsp.dispose(); } catch (_) {} this.lsp = null; }
         clearTimeout(this._watchTimer);
+        if (this.editor) { try { this.editor.setModel(null); } catch (_) {} } // detach before disposing models
         for (const { model } of this.models.values()) { try { model.dispose(); } catch (_) {} }
         this.models.clear();
         this.tabs = [];
         this.dirty.clear();
         this.activePath = null;
-        if (this.editor) { this.editor.dispose(); this.editor = null; }
-        if (this.overlay) { this.overlay.remove(); this.overlay = null; }
-        this.isOpen = false;
+        if (this.editor) { try { this.editor.dispose(); } catch (_) {} this.editor = null; }
+        if (this.overlay) { try { this.overlay.remove(); } catch (_) {} this.overlay = null; }
         this._isRunning = false;
     }
 }
