@@ -288,7 +288,7 @@ export class DashboardOverlay {
         </div>
 
         <div class="state-section">
-            <div class="state-name" id="dov-state" style="color:var(--dov-state-color,#6A5E4C)">CONNECTING</div>
+            <div class="state-name" id="dov-state" style="color:var(--dov-state-color,#6A5E4C)">—</div>
             <div class="state-lbl">Cognitive State</div>
         </div>
 

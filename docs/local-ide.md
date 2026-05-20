@@ -13,8 +13,19 @@ modelul code-server / VS Code Server. Nu e nevoie de Electron.
 | Editor | Monaco (bundled ESM) — `apps/monaco/monacoSetup.js`, `apps/CodeEditor.js` | — |
 | Fisiere | file tree + taburi (`apps/ide/FileTree.js`), client `network/files.js` | `file_api.py`, rute `/api/files/*`, watch `/files/watch` (watchfiles) |
 | Terminal | xterm.js (`apps/Terminal.js`) | `terminal_pty.py` (stdlib `pty`), WS `/terminal` |
-| Inline AI | provider Monaco (`apps/ide/inlineCompletions.js`) | `inline_completer.py` (Claude Haiku, streaming), WS `/inline` |
+| Inline AI | provider Monaco (`apps/ide/inlineCompletions.js`) | `inline_completer.py` (Claude Haiku, streaming, **state-aware**), WS `/inline` |
 | LSP | client JSON-RPC (`apps/ide/languageClient.js`) | `lsp_bridge.py` (pyright/tsserver), WS `/lsp/{language}` |
+| Full VS Code | iframe overlay în `apps/CodeEditor.js` | `code_server.py` + `POST /api/codeserver/start` (code-server, local-only) |
+| Demo offline | `network/offlineBiometrics.js` | — (client-side; oglindește presetele mock) |
+
+**Biometric Cursor:** completările inline primesc starea cognitivă live (`bio.current_state` +
+`estimated_stress`) și se calibrează — prudente/safety-first în FATIGUED/STRESSED, minimale în
+DEEP_FOCUS. Asta e diferențiatorul față de Cursor: editorul îți cunoaște corpul.
+
+**Open in full VS Code:** butonul lansează `code-server --auth none --bind-addr 127.0.0.1:<port>
+<WORKSPACE_ROOT>` și îl afișează într-un iframe. E un escape-hatch „power" — ghost-ul NU vede ce
+scrii acolo (e iframe opac); magia biometric-Cursor stă în editorul Monaco implicit. Necesită
+`CODE_SERVER_ENABLED=true` + code-server instalat; degradează grațios (hint de instalare) altfel.
 
 ## Flux de date
 
@@ -42,8 +53,11 @@ In plus, `resolve_in_workspace()` rezolva orice cale si garanteaza ca ramane sub
 `WORKSPACE_ROOT` (inclusiv impotriva symlink-urilor), iar OAuth-ul WHOOP foloseste un
 `state` CSRF de unica folosinta.
 
-**Pe deploy hostat** (Railway) toate aceste functii trebuie OPRITE prin flag-uri:
-`TERMINAL_ENABLED` / `FILES_ENABLED` / `LSP_ENABLED` / `INLINE_AI_ENABLED = false`.
+**Pe deploy hostat** (Railway) toate aceste functii trebuie OPRITE — dar acum sunt OFF
+**by default** (fail-safe), deci e suficient sa NU setezi flag-urile in env:
+`TERMINAL_ENABLED` / `FILES_ENABLED` / `LSP_ENABLED` / `INLINE_AI_ENABLED` / `CODE_SERVER_ENABLED`.
+`ALLOWED_ORIGINS` pe Railway = exact originea Vercel, **fara slash final** (`https://x.vercel.app`,
+nu `…/`) — altfel CORS + verificarea Origin pe WebSocket resping frontend-ul.
 
 ## Limitari oneste
 
