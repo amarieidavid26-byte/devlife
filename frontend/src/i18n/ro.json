@@ -78,6 +78,8 @@
   "runner.interrupted": "Întrerupt de utilizator",
   "runner.worker_error": "Eroare worker",
   "runner.pyodide_unavailable": "Pyodide nu este disponibil: {msg}\nRulează ./scripts/setup-pyodide.sh",
+  "runner.discard_changes": "„{name}\" are modificări nesalvate. Renunți la ele?",
+  "runner.placeholder_empty": "Deschide sau creează un fișier din panou pentru a începe.",
 
   "ble.connected": "WHOOP conectat",
   "ble.connected_body": "Pulsul în timp real se vede în HUD",
@@ -255,6 +257,8 @@
   "editor.placeholder_open_tree": "Deschide un fișier din arbore.",
   "editor.cannot_open": "Nu se poate deschide {path}: {msg}",
   "editor.save_failed": "Salvare eșuată: {msg}",
+  "editor.saving": "Se salvează…",
+  "editor.saved": "✓ Salvat",
   "editor.starting": "se pornește…",
   "editor.codeserver_unavailable": "code-server nu este disponibil.",
   "editor.backend_unreachable_vscode": "Backend-ul nu a putut fi accesat pentru a porni VS Code.",
