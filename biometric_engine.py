@@ -46,7 +46,11 @@ class BiometricEngine:
 
     # the `offline` scope is required for WHOOP to issue a refresh token; without it
     # the connection silently dies after the first access token expires (~1h).
-    SCOPES = "offline read:recovery read:cycles read:sleep read:workout read:body_measurement read:profile"
+    # must match exactly the scopes enabled on the WHOOP dev app, or auth fails with
+    # invalid_scope. `offline` is required for a refresh token (not shown in the dashboard
+    # scope list). read:workout / read:body_measurement were removed — the app doesn't grant
+    # them and we don't use them.
+    SCOPES = "offline read:recovery read:cycles read:sleep read:profile"
 
     # oauth flow
     def get_auth_url(self, redirect_uri, state):
@@ -172,36 +176,76 @@ class BiometricEngine:
                     logger.warning("sleep API failed: %s -- skipping", e)
                     self._sleep_error_logged = True
 
-            recovery_records = recovery_data.get("records", [])
-            recovery_scored = (len(recovery_records) > 0 and recovery_records[0].get("score_state") == "SCORED")
-            recovery_score = recovery_records[0].get("score", {}) if recovery_scored else {}
-            cycle_records = cycle_data.get("records", [])
-            cycle_scored = (len(cycle_records) > 0 and cycle_records[0].get("score_state") == "SCORED")
-            cycle_score = cycle_records[0].get("score", {}) if cycle_scored else {}
+            # WHOOP wraps each metric in records[0].score, but ONLY when score_state is
+            # "SCORED". First thing in the morning it can be PENDING_SCORE/UNSCORABLE, and a
+            # new member shows CALIBRATING. We start from the last-known reading and overwrite a
+            # section only when it's freshly scored, so a not-yet-scored morning keeps the
+            # previous real numbers instead of silently inventing plausible fakes.
+            def _scored(payload):
+                recs = payload.get("records", []) if payload else []
+                if recs and recs[0].get("score_state") == "SCORED":
+                    return recs[0].get("score", {}), recs[0].get("score_state")
+                return None, (recs[0].get("score_state") if recs else "NO_DATA")
 
-            sleep_scored = False
-            sleep_score = {}
-            if sleep_data:
-                sleep_records = sleep_data.get("records", [])
-                sleep_scored = (len(sleep_records) > 0 and sleep_records[0].get("score_state") == "SCORED")
-                sleep_score = sleep_records[0].get("score", {}) if sleep_scored else {}
+            data = dict(self.current_data) if self.current_data else {}
 
-            self.current_data = {
-                "recovery": recovery_score.get("recovery_score", 50),
-                "strain": cycle_score.get("strain", 8.0),
-                "sleepPerformance": recovery_score.get("sleep_performance_percentage", 75) / 100 if recovery_scored else 0.75,
-                "heartRate": recovery_score.get("resting_heart_rate", 65),
-                "hrv": recovery_score.get("hrv_rmssd_milli", 50),
-                "spo2": recovery_score.get("spo2_percentage", 97.0),
-                "skinTemp": recovery_score.get("skin_temp_celsius", 33.5),
-            }
-            hrv_value = self.current_data.get("hrv")
+            rec_score, rec_state = _scored(recovery_data)
+            if rec_score:
+                data["recovery"] = rec_score.get("recovery_score")
+                data["hrv"] = rec_score.get("hrv_rmssd_milli")            # WHOOP returns ms despite the name
+                data["restingHeartRate"] = rec_score.get("resting_heart_rate")
+                data["heartRate"] = rec_score.get("resting_heart_rate")   # resting HR; live BLE overrides in the loop
+                data["spo2"] = rec_score.get("spo2_percentage")
+                data["skinTemp"] = rec_score.get("skin_temp_celsius")
+            else:
+                logger.info("recovery not SCORED (state=%s) -- keeping last known", rec_state)
+
+            cyc_score, cyc_state = _scored(cycle_data)
+            if cyc_score:
+                data["strain"] = cyc_score.get("strain")
+            else:
+                logger.info("cycle not SCORED (state=%s) -- keeping last known", cyc_state)
+
+            # sleep_performance_percentage + stage durations live in the SLEEP object, NOT recovery
+            slp_score, slp_state = _scored(sleep_data)
+            if slp_score:
+                stages = slp_score.get("stage_summary", {})
+                in_bed = stages.get("total_in_bed_time_milli", 0)
+                awake = stages.get("total_awake_time_milli", 0)
+                asleep = max(0, in_bed - awake)
+                rem = stages.get("total_rem_sleep_time_milli", 0)
+                deep = stages.get("total_slow_wave_sleep_time_milli", 0)
+                perf = slp_score.get("sleep_performance_percentage")
+                if perf is not None:
+                    data["sleepPerformance"] = perf / 100.0
+                    data["sleepScore"] = round(perf)
+                data["sleepEfficiency"] = slp_score.get("sleep_efficiency_percentage")
+                data["sleepConsistency"] = slp_score.get("sleep_consistency_percentage")
+                data["respiratoryRate"] = slp_score.get("respiratory_rate")
+                data["sleepHours"] = round(asleep / 3_600_000.0, 2)
+                data["sleepRemPct"] = round(rem / asleep * 100, 1) if asleep else 0.0
+                data["sleepDeepPct"] = round(deep / asleep * 100, 1) if asleep else 0.0
+            elif slp_state != "NO_DATA":
+                logger.info("sleep not SCORED (state=%s) -- keeping last known", slp_state)
+
+            # neutral fallbacks ONLY on a true cold start (nothing ever scored) so the classifier
+            # and UI have numbers to work with; once real data lands these never apply again.
+            data.setdefault("recovery", 50)
+            data.setdefault("strain", 8.0)
+            data.setdefault("hrv", 50)
+            data.setdefault("heartRate", 60)
+
+            self.current_data = data
+            hrv_value = data.get("hrv")
             if hrv_value:
                 self.update_baseline(hrv_value)
 
-            src = "whoop+sleep" if sleep_scored else "whoop"
-            logger.info("WHOOP data: rec=%s strain=%s hr=%s hrv=%s", self.current_data["recovery"], self.current_data["strain"], self.current_data["heartRate"], self.current_data["hrv"])
-            return self.current_data
+            logger.info(
+                "WHOOP data: rec=%s strain=%s rhr=%s hrv=%sms sleep=%s%%",
+                data.get("recovery"), data.get("strain"), data.get("restingHeartRate"),
+                data.get("hrv"), round((data.get("sleepPerformance") or 0) * 100),
+            )
+            return data
         except Exception as e:
             logger.error("WHOOP API error: %s", e)
             return None

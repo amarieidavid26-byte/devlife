@@ -122,17 +122,8 @@ class AppState:
     last_stress_peak: object = None
     recovery_velocity: object = None
     baseline_hr: float = 68.0
-    sim_hr: float = 67.0
 
 app_state = AppState()
-
-_SIM_HR_RANGES = {
-    "RELAXED":    (62, 72),
-    "DEEP_FOCUS": (65, 78),
-    "STRESSED":   (85, 100),
-    "FATIGUED":   (55, 65),
-    "WIRED":      (80, 95),
-}
 
 
 async def broadcast(message: dict):
@@ -175,6 +166,16 @@ def build_biometric_msg(data, state):
         "estimated_stress": round(data.get("estimated_stress", 0), 2),
         "spo2": round(data.get("spo2", 0), 1),
         "skinTemp": round(data.get("skinTemp", 0), 1),
+        # real resting HR (distinct from the live BLE pulse) + real sleep breakdown; null when
+        # WHOOP hasn't scored them yet so the UI can honestly show "--" instead of a fake number.
+        "restingHeartRate": round(data["restingHeartRate"]) if data.get("restingHeartRate") else None,
+        "sleepHours": data.get("sleepHours"),
+        "sleepScore": data.get("sleepScore"),
+        "sleepEfficiency": round(data["sleepEfficiency"]) if data.get("sleepEfficiency") is not None else None,
+        "sleepConsistency": round(data["sleepConsistency"]) if data.get("sleepConsistency") is not None else None,
+        "sleepRemPct": data.get("sleepRemPct"),
+        "sleepDeepPct": data.get("sleepDeepPct"),
+        "respiratoryRate": round(data["respiratoryRate"], 1) if data.get("respiratoryRate") is not None else None,
         "recovery_velocity": round(app_state.recovery_velocity, 1) if app_state.recovery_velocity is not None else None,
         "baseline_hr": round(app_state.baseline_hr),
         "hr_trend": hr_trend,
@@ -204,14 +205,6 @@ def on_state_change(old_state, new_state):
 
 
 bio.on_state_change(on_state_change)
-
-
-def _simulate_hr(state):
-    lo, hi = _SIM_HR_RANGES.get(state, (62, 72))
-    mid = (lo + hi) / 2
-    app_state.sim_hr += (mid - app_state.sim_hr) * 0.15 + random.uniform(-3, 3)
-    app_state.sim_hr = max(lo, min(hi, app_state.sim_hr))
-    return round(app_state.sim_hr)
 
 
 def _update_baseline(new_avg):
@@ -280,9 +273,8 @@ def biometric_loop():
             ble_fresh = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
             if ble_fresh:
                 data["heartRate"] = bio.live_heart_rate
-            elif is_whoop:
-                pre_state = bio.classify(data)
-                data["heartRate"] = _simulate_hr(pre_state)
+            # no BLE strap connected: keep WHOOP's real resting HR (set in fetch_data). We do
+            # NOT synthesize a fake live pulse — real-time HR only comes from the Bluetooth path.
             state = bio.classify(data)
 
             hr = data.get("heartRate", 0)
