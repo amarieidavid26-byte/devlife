@@ -191,6 +191,7 @@ export class LspManager {
     }
 
     async onModelOpen(model) {
+        if (!getFeatures().lsp) return;
         const c = this._connFor(model.getLanguageId());
         if (!c) return;
         await c.whenReady();
@@ -198,6 +199,7 @@ export class LspManager {
     }
 
     onModelChange(model) {
+        if (!getFeatures().lsp) return;
         const c = this.conns.get(mapLang(model.getLanguageId()));
         if (c && c.ready) c.didChange(model);
     }
