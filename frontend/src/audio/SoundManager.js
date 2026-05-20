@@ -9,7 +9,79 @@ export class SoundManager {
     this._currentState = null;
     this._ambientNodes = null; // { oscillators, gains, lfo, lfoGain, output }
     this._crossfadeDuration = 2;
+    this._music = null; // procedural background music pad (speaker toggle)
   }
+
+  // background music — a warm procedural chord pad (no audio file needed)
+
+  startMusic() {
+    try {
+      this._ensureContext();
+      if (!this._ctx || this._music) return;
+      const ctx = this._ctx;
+
+      const out = ctx.createGain();
+      out.gain.value = 0;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 950;
+      filter.connect(out);
+      out.connect(this._masterGain);
+
+      // slow tremolo for gentle movement
+      const lfo = ctx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.08;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 0.05;
+      lfo.connect(lfoGain);
+      lfoGain.connect(out.gain);
+      lfo.start();
+
+      // warm A-major-ish pad: A2, E3, A3, C#4
+      const freqs = [110, 164.81, 220, 277.18];
+      const oscs = [];
+      for (const f of freqs) {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        osc.detune.value = Math.random() * 8 - 4; // slight detune = warmth
+        const g = ctx.createGain();
+        g.gain.value = 0.05;
+        osc.connect(g);
+        g.connect(filter);
+        osc.start();
+        oscs.push(osc);
+      }
+
+      const now = ctx.currentTime;
+      out.gain.setValueAtTime(0, now);
+      out.gain.linearRampToValueAtTime(0.18, now + 1.5);
+      this._music = { oscs, lfo, lfoGain, filter, out };
+    } catch { /* graceful fail */ }
+  }
+
+  stopMusic() {
+    if (!this._music || !this._ctx) return;
+    const ctx = this._ctx;
+    const m = this._music;
+    this._music = null;
+    const now = ctx.currentTime;
+    try {
+      m.out.gain.cancelScheduledValues(now);
+      m.out.gain.setValueAtTime(m.out.gain.value, now);
+      m.out.gain.linearRampToValueAtTime(0, now + 1);
+    } catch { /* ignore */ }
+    setTimeout(() => {
+      try {
+        for (const o of m.oscs) { o.stop(); o.disconnect(); }
+        m.lfo.stop(); m.lfo.disconnect();
+        m.lfoGain.disconnect(); m.filter.disconnect(); m.out.disconnect();
+      } catch { /* already gone */ }
+    }, 1200);
+  }
+
+  isMusicPlaying() { return !!this._music; }
 
   // AudioContext lazy init
 

@@ -56,7 +56,8 @@ export class TerminalApp {
         });
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#fff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#9aa'; });
-        closeBtn.addEventListener('click', () => this.close());
+        // route through main.js so the game state is restored (avoids the post-close lockout)
+        closeBtn.addEventListener('click', () => (this.onClose ? this.onClose() : this.close()));
         topBar.appendChild(title);
         topBar.appendChild(closeBtn);
         this.overlay.appendChild(topBar);
