@@ -1,3 +1,4 @@
+import { ensureInfoPanel, infoBtn } from './InfoPanel.js';
 
 const STATE_COLORS = {
     DEEP_FOCUS: '#9B6AFF',
@@ -48,6 +49,7 @@ export class HUD {
         this._cqi = null;
 
         this._injectStyles();
+        ensureInfoPanel(); // shared 💡 science panel (also used by the Dashboard)
         this._el = this._createEl();
         document.body.appendChild(this._el);
 
@@ -332,18 +334,18 @@ export class HUD {
                 <span>${statusBadge}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span>${recDot} Rec: <strong>${recFmt}</strong></span>
+                <span>${recDot} Rec: <strong>${recFmt}</strong>${infoBtn('recovery')}</span>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:2px">
-                <span>Strain: <strong>${strainFmt}</strong></span>
-                <span>HRV: <strong style="font-family:monospace">${hrvFmt}</strong></span>
+                <span>Strain: <strong>${strainFmt}</strong>${infoBtn('strain')}</span>
+                <span>HRV: <strong style="font-family:monospace">${hrvFmt}</strong>${infoBtn('hrv')}</span>
             </div>
             ${summaryNote}
             <div style="margin:6px 0 4px">
-                State: <strong style="color:${stateColor};font-family:'Fredoka',sans-serif;font-weight:600">${stateLabel}</strong>${this._cqi != null ? ` · <span style="font-size:11px;color:${this._cqi >= 80 ? '#6AD89A' : this._cqi >= 50 ? '#FFB84A' : '#FF7A6A'}">CQI: ${Math.round(this._cqi)}%</span>` : ''}
+                State: <strong style="color:${stateColor};font-family:'Fredoka',sans-serif;font-weight:600">${stateLabel}</strong>${infoBtn('state')}${this._cqi != null ? ` · <span style="font-size:11px;color:${this._cqi >= 80 ? '#6AD89A' : this._cqi >= 50 ? '#FFB84A' : '#FF7A6A'}">CQI: ${Math.round(this._cqi)}%</span>${infoBtn('cqi')}` : ''}
             </div>
             <div style="font-size:11px;color:#B8A88C;margin-bottom:4px" title="derived from your HRV deviation vs 14-day baseline — not a WHOOP-reported value">
-                Stress ${stress.toFixed(1)}/3.0
+                Stress ${stress.toFixed(1)}/3.0${infoBtn('stress')}
             </div>
             <div style="background:rgba(255,228,181,0.08);border-radius:4px;height:6px;overflow:hidden">
                 <div style="
