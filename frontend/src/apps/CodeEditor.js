@@ -1,6 +1,7 @@
 import { i18n } from '../i18n/index.js';
 import { JsRunner } from './runners/JsRunner.js';
 import { PythonRunner } from './runners/PythonRunner.js';
+import { CppRunner } from './runners/CppRunner.js';
 import { initMonaco } from './monaco/monacoSetup.js';
 import { FileTree } from './ide/FileTree.js';
 import { registerInlineCompletions } from './ide/inlineCompletions.js';
@@ -13,7 +14,7 @@ import { CONFIG } from '../config.js';
 // something to open on first run.
 const WELCOME_FILES = {
     'welcome.py': `# Welcome to the DevLife IDE — these are REAL files on your machine.
-# Edit, save with Cmd/Ctrl+S, run with the Run button, or open a terminal.
+# Edit, save with Cmd/Ctrl+S, run with Cmd/Ctrl+Enter (or the Run button).
 # The ghost watches as you code and can Apply Fixes to runtime errors.
 
 def calculate_total(items):
@@ -25,9 +26,23 @@ def calculate_total(items):
 # Try running: print(calculate_total(None))
 # The ghost will detect the TypeError and offer a fix.
 `,
+    'welcome.cpp': `// C++ runs in-browser via JSCPP — supports iostream, basic STL, classes.
+// Cmd/Ctrl+Enter to run, Cmd/Ctrl+S to save. Standard input goes in the stdin tab.
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    vector<int> nums = {3, 1, 4, 1, 5, 9, 2, 6};
+    int sum = 0;
+    for (int n : nums) sum += n;
+    cout << "sum = " << sum << endl;
+    return 0;
+}
+`,
 };
 
-const RUNNABLE = new Set(['python', 'javascript']);
+const RUNNABLE = new Set(['python', 'javascript', 'cpp', 'c']);
 
 export class CodeEditorApp {
     constructor(socket) {
@@ -129,9 +144,10 @@ export class CodeEditorApp {
         rightGroup.appendChild(stopBtn);
 
         const saveBtn = document.createElement('button');
-        saveBtn.style.cssText = "height:24px;padding:0 10px;background:rgba(255,255,255,0.08);color:#ddd;border:none;border-radius:3px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;";
+        saveBtn.style.cssText = "height:24px;padding:0 10px;background:rgba(255,255,255,0.08);color:#ddd;border:none;border-radius:3px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:background 0.18s ease, color 0.18s ease;";
         saveBtn.textContent = i18n.t('editor.save');
         saveBtn.addEventListener('click', () => this.saveActive());
+        this._saveBtn = saveBtn;
         rightGroup.appendChild(saveBtn);
 
         // "Open in full VS Code" (code-server) — power editing; local-only, feature-flagged
@@ -230,6 +246,9 @@ export class CodeEditorApp {
         });
 
         this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => this.saveActive());
+        this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+            if (this._canRunCurrentLang() && !this._isRunning) this.runCode();
+        });
         this.editor.focus();
     }
 
@@ -279,6 +298,7 @@ export class CodeEditorApp {
         this.activePath = path;
         this.currentLang = entry.language;
         this.editor.setModel(entry.model);
+        if (this._placeholderEl) { this._placeholderEl.remove(); this._placeholderEl = null; }
         this._renderTabs();
         this._setRunButtonVisibility(this.currentLang);
         setTimeout(() => this.editor && this.editor.focus(), 0);
@@ -308,6 +328,10 @@ export class CodeEditorApp {
     }
 
     _closeTab(path) {
+        if (this.dirty.has(path)) {
+            const name = path.split('/').pop();
+            if (!window.confirm(i18n.t('runner.discard_changes', { name }))) return;
+        }
         const entry = this.models.get(path);
         if (entry) { try { entry.model.dispose(); } catch (_) {} }
         this.models.delete(path);
@@ -326,18 +350,49 @@ export class CodeEditorApp {
         if (!this.activePath || !this.editor) return;
         const entry = this.models.get(this.activePath);
         if (entry && entry.scratch) return; // in-memory demo buffer, nothing to persist
+        const btn = this._saveBtn;
+        const originalText = btn ? btn.textContent : null;
+        const originalBg = btn ? btn.style.background : null;
+        if (btn) { btn.textContent = i18n.t('editor.saving'); btn.disabled = true; }
         try {
             await writeFile(this.activePath, this.editor.getValue());
             this.dirty.delete(this.activePath);
             this._renderTabs();
+            if (btn) {
+                btn.textContent = i18n.t('editor.saved');
+                btn.style.background = 'rgba(106, 216, 154, 0.22)';
+                btn.style.color = '#6AD89A';
+                clearTimeout(this._saveFlashTimer);
+                this._saveFlashTimer = setTimeout(() => {
+                    if (!this._saveBtn) return;
+                    this._saveBtn.textContent = originalText;
+                    this._saveBtn.style.background = originalBg;
+                    this._saveBtn.style.color = '#ddd';
+                    this._saveBtn.disabled = false;
+                }, 900);
+            }
         } catch (e) {
+            if (btn) {
+                btn.textContent = originalText;
+                btn.style.background = originalBg;
+                btn.disabled = false;
+            }
             this._showToastLikeError(i18n.t('editor.save_failed', { msg: e.message }));
         }
     }
 
     _showPlaceholder(text) {
-        // shown when no file/model is active
+        // shown when no file/model is active — a centred message over the empty editor
         if (this.editor) this.editor.setModel(null);
+        if (!this.overlay) return;
+        if (this._placeholderEl) this._placeholderEl.remove();
+        const el = document.createElement('div');
+        el.style.cssText = `position:absolute;inset:40px 0 180px 220px;display:flex;align-items:center;
+            justify-content:center;color:#666;font-family:'Nunito',sans-serif;font-size:13px;
+            pointer-events:none;z-index:5;text-align:center;padding:0 24px;`;
+        el.textContent = text || '';
+        this.overlay.appendChild(el);
+        this._placeholderEl = el;
     }
 
     _showToastLikeError(msg) {
@@ -494,6 +549,8 @@ export class CodeEditorApp {
             result = await this._jsRunner.run(code, stdin);
         } else if (this.currentLang === 'python') {
             result = await PythonRunner.get().run(code, stdin);
+        } else if (this.currentLang === 'cpp' || this.currentLang === 'c') {
+            result = await CppRunner.get().run(code, stdin);
         } else {
             result = { stdout: '', stderr: i18n.t('editor.unsupported_language', { lang: this.currentLang }), exit: 1, ms: 0 };
         }
@@ -504,6 +561,7 @@ export class CodeEditorApp {
         if (!this._isRunning) return;
         if (this.currentLang === 'javascript' && this._jsRunner) this._jsRunner.stop();
         else if (this.currentLang === 'python') PythonRunner.get().stop();
+        else if (this.currentLang === 'cpp' || this.currentLang === 'c') CppRunner.get().stop();
     }
 
     _writeRunningPlaceholder() {
@@ -656,6 +714,8 @@ export class CodeEditorApp {
         if (this._watchWs) { try { this._watchWs.close(); } catch (_) {} this._watchWs = null; }
         if (this.lsp) { try { this.lsp.dispose(); } catch (_) {} this.lsp = null; }
         clearTimeout(this._watchTimer);
+        clearTimeout(this._saveFlashTimer);
+        if (this._placeholderEl) { try { this._placeholderEl.remove(); } catch (_) {} this._placeholderEl = null; }
         if (this.editor) { try { this.editor.setModel(null); } catch (_) {} } // detach before disposing models
         for (const { model } of this.models.values()) { try { model.dispose(); } catch (_) {} }
         this.models.clear();
