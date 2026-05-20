@@ -21,11 +21,16 @@ CAPTURE_WIDTH = 1280             # save api tokens cause we still broke
 JPEG_QUALITY = 60                # national geographic quality
 HASH_THRESHOLD = 5
 
-# ghost iq 
+# ghost iq
 INTERVENTION_COOLDOWN = 30
 VISION_MODEL = "claude-sonnet-4-20250514"
-VISION_MAX_TOKENS = 500          # same reason as line 15 
+VISION_MAX_TOKENS = 500          # same reason as line 15
 GHOST_MAX_TOKENS_DEFAULT = 100
+
+# inline code completions (Cursor-style ghost text) — fast model, short output
+INLINE_MODEL = "claude-haiku-4-5"
+INLINE_MAX_TOKENS = 128
+INLINE_TIMEOUT = 8.0
 
 # stress detection settings 
 HRV_BASELINE_WINDOW = 14
