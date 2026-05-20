@@ -28,8 +28,8 @@ deschide http://localhost:5173 in Chrome.
 ## capturile
 
 ### 01 — main menu (pentru §1.1)
-- **ce arata**: meniul principal cu intro cinematic ROG branding, butoane START / DEMO / SETTINGS
-- **cum**: la pornirea aplicatiei, primul ecran. Asteapta 1-2s pentru animatia ROG.
+- **ce arata**: meniul principal cu intro cinematic animat, butoane START / DEMO / SETTINGS
+- **cum**: la pornirea aplicatiei, primul ecran. Asteapta 1-2s pentru animatia de intro.
 - **focus**: brand, paleta calda, font Fredoka
 
 ### 02 — camera izometrica RELAXED (pentru §1.1, §3.10)

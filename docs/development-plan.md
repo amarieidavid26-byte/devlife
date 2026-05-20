@@ -82,13 +82,13 @@ Decizii de design fundamentale:
 | **T14** | Hardening pre-predare: timeout Claude (15s), bounds WS payload, OWASP API Top 10 mapping | echipa | `v1.1-hardening` |
 
 In paralel, contributiile lui David (frontend, vizual, scene, BLE):
-- Cinematice ROG (intro main menu + chapter transitions + outro credits) — `v0.3-cinematics`
+- Cinematice (intro main menu + chapter transitions + outro credits) — `v0.3-cinematics`
 - Camera izometrica procedurala, palette Animal Crossing
 - Town scenes: Cafe (sistem brewing), Cowork (NPCs animate), Park (meditatie)
 - WHOOP BLE live: hartbeat real-time via Chrome Web Bluetooth
 - Dashboard CQI (Cognitive Quality Index), autonomic balance, ECG live, sleep data
 - 14 risky command patterns expanded
-- Visual polish: ghost trail + aura, vignette, ROG theme branding
+- Visual polish: ghost trail + aura, vignette, theme branding
 
 ## faza 3: dependinte intre task-uri
 

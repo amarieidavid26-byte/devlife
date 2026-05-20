@@ -4,12 +4,12 @@
 
 | metric | valoare |
 |--------|---------|
-| total teste | 37 |
-| pass | 37 |
+| total teste | 43 |
+| pass | 43 |
 | fail | 0 |
 | skip | 0 |
-| durata totală | ~2.5s |
-| ultima rulare | 2026-05-19 |
+| durata totală | ~1.1s |
+| ultima rulare | 2026-05-20 |
 
 ## acoperire pe modul
 
@@ -24,7 +24,7 @@
 | `biometric_engine.py` | 38% | logica `classify()` 100%; OAuth/HTTP calls nu se testează fără credențiale reale |
 | `content_analyzer.py` | 25% | regex risky detection 100%; restul depinde de Claude API |
 | `ghost_brain.py` | 19% | `should_intervene()` testat indirect; `generate_response()` necesită Claude live |
-| **total** | **48%** | acceptabil pentru un proiect cu integrări externe (WHOOP, Claude, BLE) |
+| **total** | **51%** | acceptabil pentru un proiect cu integrări externe (WHOOP, Claude, BLE) |
 
 ## structura tehnică a testelor
 
@@ -34,7 +34,8 @@
 | `tests/test_biometric_classifier.py` | 10 | toate 5 stările cognitive, callback on_state_change, personality modifiers, default RELAXED când lipsesc date |
 | `tests/test_fallback.py` | 8 | fallback responses pentru fiecare stare, mock biometrics seed determinist, endpoint /health, /api/biometric/mock, /api/history |
 | `tests/test_server_smoke.py` | 6 | WHOOP callback happy path + error, port env var, AppState dataclass, get_analyzer factory |
-| `tests/test_ws_flow.py` | 5 | WebSocket connect + first biometric_update, mock_state, invalid JSON ignored, content_update accepted, feedback accepted |
+| `tests/test_ws_flow.py` | 8 | WebSocket connect + first biometric_update, mock_state, invalid JSON ignored, content_update accepted, feedback accepted, heart_rate accepted/out-of-range/wrong-type |
+| `tests/test_run_error_routing.py` | 3 | rutare run_error prin ghost loop, truncare payload oversize, integrare runtime-error → interventie |
 
 ## cum se rulează
 

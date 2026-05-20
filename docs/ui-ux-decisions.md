@@ -40,7 +40,7 @@ Hotbar 1-5 pentru schimbare manuala stare permite demonstrare rapida. Cand WHOOP
 | element | culoare | rationale |
 |---------|---------|-----------|
 | fundal scena | `#1a1a2e` (deep blue-purple) | reduce eye strain pentru sesiuni lungi |
-| ROG accent | `#e94560` (rosu cald) | brand-ul ROG Challenge (origine proiect) |
+| accent principal | `#e94560` (rosu cald) | culoare de brand DevLife, folosita pentru alerte si accente |
 | Ghost RELAXED | albastru-violet pal | calm, neutru |
 | Ghost DEEP_FOCUS | verde subtil | focus, productivitate |
 | Ghost STRESSED | portocaliu | atentie, dar nu panica |
