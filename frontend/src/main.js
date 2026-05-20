@@ -453,6 +453,10 @@ async function startGame(enableDemo = false) {
 
     // keyboard
     document.addEventListener('keydown', (e) => {
+        // a focused real terminal/editor needs every key (digits, Escape for vim, Tab…) —
+        // don't let game shortcuts steal them. The app provides its own close button.
+        if (activeApp && activeApp.capturesKeyboard) return;
+
         // 1-5: change mock biometric state (disabled when WHOOP BLE is streaming live data)
         if (e.key >= '1' && e.key <= '5') {
             e.preventDefault();
