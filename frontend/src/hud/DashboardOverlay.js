@@ -1,3 +1,5 @@
+import { ensureInfoPanel, infoBtn } from './InfoPanel.js';
+
 const STATE_COLORS = {
     DEEP_FOCUS: '#9B6AFF',
     STRESSED:   '#FF7A6A',
@@ -289,12 +291,12 @@ export class DashboardOverlay {
 
         <div class="state-section">
             <div class="state-name" id="dov-state" style="color:var(--dov-state-color,#6A5E4C)">—</div>
-            <div class="state-lbl">Cognitive State</div>
+            <div class="state-lbl">Cognitive State${infoBtn('state')}</div>
         </div>
 
         <div class="stress-section">
             <div class="stress-header">
-                <span class="lbl">Stress Level</span>
+                <span class="lbl">Stress Level${infoBtn('stress')}</span>
                 <span class="val" id="dov-stress-val">0.0 / 3.0</span>
             </div>
             <div class="stress-track">
@@ -303,7 +305,7 @@ export class DashboardOverlay {
         </div>
 
         <div class="cqi-section">
-            <div class="sec-hdr" style="font-family:'Fredoka',sans-serif;font-size:12px">Code Quality Index</div>
+            <div class="sec-hdr" style="font-family:'Fredoka',sans-serif;font-size:12px">Code Quality Index${infoBtn('cqi')}</div>
             <div class="cqi-row">
                 <div class="cqi-track"><div class="cqi-fill" id="dov-cqi-bar" style="width:0%;background:#6AD89A"></div></div>
                 <span class="cqi-val" id="dov-cqi-val" style="color:#6AD89A">CQI: --%</span>
@@ -312,7 +314,7 @@ export class DashboardOverlay {
         </div>
 
         <div class="ans-section">
-            <div class="sec-hdr">Autonomic Balance</div>
+            <div class="sec-hdr">Autonomic Balance${infoBtn('autonomic')}</div>
             <div class="ans-bars">
                 <div class="ans-bar-group">
                     <div class="ans-bar" id="dov-ans-sns" style="background:#FF7A6A;height:2px"></div>
@@ -353,7 +355,7 @@ export class DashboardOverlay {
             </div>
 
             <div class="gauge-box">
-                <div class="sec-hdr">Cognitive Load</div>
+                <div class="sec-hdr">Cognitive Load${infoBtn('cognitive_load')}</div>
                 <div style="position:relative;width:120px;height:120px">
                     <svg width="120" height="120" viewBox="0 0 120 120">
                         <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,228,181,0.06)" stroke-width="7"/>
@@ -435,6 +437,9 @@ export class DashboardOverlay {
             ansPns:       this._el.querySelector('#dov-ans-pns'),
             ansStatus:    this._el.querySelector('#dov-ans-status'),
         };
+
+        // shared 💡 science panel (also used by the in-game HUD) handles all the wiring
+        ensureInfoPanel();
 
         this._ecgCtx   = this._$.ecgCanvas.getContext('2d');
         this._sparkCtx = this._$.sparkCanvas.getContext('2d');
