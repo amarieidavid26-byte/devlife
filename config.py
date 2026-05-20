@@ -34,12 +34,27 @@ STRESS_MEDIUM_THRESHOLD = 1.0
 STRESS_FIREWALL_THRESHOLD = 2.0
 
 # server settings
-HOST = "0.0.0.0"
+# default to loopback so the privileged local endpoints (terminal/files/lsp) are not
+# reachable from the LAN. The Procfile overrides with --host 0.0.0.0 for hosted deploys,
+# where these endpoints MUST be feature-flagged off (see *_ENABLED below).
+HOST = os.getenv("HOST", "127.0.0.1")
 PORT = 8000
 WHOOP_REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI", "http://localhost:8000/api/whoop/callback")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
 DB_PATH = os.getenv("DB_PATH", "./devlife.db")
 DEMO_OFFLINE = os.getenv("DEMO_OFFLINE", "false").lower() == "true"
+
+# local IDE settings — workspace root bounds every file op, the terminal cwd, and the LSP root.
+# Set WORKSPACE_ROOT to point the in-game IDE at a real project directory.
+WORKSPACE_ROOT = os.path.abspath(os.getenv("WORKSPACE_ROOT", "./workspace"))
+os.makedirs(WORKSPACE_ROOT, exist_ok=True)
+
+# privileged-feature flags — keep ALL of these OFF on any hosted/non-local deploy.
+# They expose a real shell, real filesystem writes, and LSP subprocesses on the host.
+TERMINAL_ENABLED = os.getenv("TERMINAL_ENABLED", "true").lower() == "true"
+FILES_ENABLED = os.getenv("FILES_ENABLED", "true").lower() == "true"
+LSP_ENABLED = os.getenv("LSP_ENABLED", "true").lower() == "true"
+INLINE_AI_ENABLED = os.getenv("INLINE_AI_ENABLED", "true").lower() == "true"
 
 # mode settings 
 USE_MOCK_BIOMETRICS = True       # false when we are using real WHOOP metrics not this BS

@@ -23,7 +23,10 @@ from config import (
     HOST, PORT as _CONFIG_PORT,
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH,
     WHOOP_REDIRECT_URI, ALLOWED_ORIGINS, DEMO_OFFLINE,
+    WORKSPACE_ROOT, TERMINAL_ENABLED, FILES_ENABLED, LSP_ENABLED, INLINE_AI_ENABLED,
 )
+
+import security
 
 logger = logging.getLogger(__name__)
 
@@ -469,6 +472,22 @@ app.add_middleware(
 app.mount("/public", StaticFiles(directory="public"), name="public")
 
 
+@app.get("/api/session")
+async def get_session():
+    """Per-process token for the privileged local endpoints. CORS keeps this response
+    unreadable cross-origin, so a malicious site can never obtain the token."""
+    return {
+        "token": security.SESSION_TOKEN,
+        "features": {
+            "terminal": TERMINAL_ENABLED,
+            "files": FILES_ENABLED,
+            "lsp": LSP_ENABLED,
+            "inline_ai": INLINE_AI_ENABLED,
+        },
+        "workspace_root": WORKSPACE_ROOT,
+    }
+
+
 @app.get("/health")
 async def health():
     return {"status": "alive", "ghost": "watching"}
@@ -604,6 +623,9 @@ async def whoop_callback(code: str = None, error: str = None):
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
+    if not security.check_origin(ws):
+        await ws.close(code=1008)
+        return
     await ws.accept()
     app_state.connected_clients.append(ws)
     logger.info("ws client connected (%d total)", len(app_state.connected_clients))
