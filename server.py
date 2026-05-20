@@ -27,6 +27,7 @@ from config import (
 )
 
 import security
+import terminal_pty
 
 logger = logging.getLogger(__name__)
 
@@ -773,6 +774,83 @@ async def websocket_endpoint(ws: WebSocket):
         if ws in app_state.connected_clients:
             app_state.connected_clients.remove(ws)
         logger.info("ws client offline (%d total)", len(app_state.connected_clients))
+
+
+async def _gate_privileged_ws(ws: WebSocket, enabled: bool) -> bool:
+    """Origin + feature-flag + session-token gate for the privileged local WS endpoints.
+    Returns True if accepted (and the socket is already accept()-ed), False if rejected."""
+    if not enabled:
+        await ws.close(code=1008)
+        return False
+    if not security.check_origin(ws):
+        await ws.close(code=1008)
+        return False
+    if not security.verify_token(ws.query_params.get("token")):
+        await ws.close(code=1008)
+        return False
+    await ws.accept()
+    return True
+
+
+@app.websocket("/terminal")
+async def terminal_ws(ws: WebSocket):
+    if not await _gate_privileged_ws(ws, TERMINAL_ENABLED):
+        return
+
+    loop = asyncio.get_running_loop()
+    out_queue: asyncio.Queue = asyncio.Queue()
+    session = terminal_pty.PtySession(cwd=WORKSPACE_ROOT)
+    try:
+        session.spawn()
+    except Exception as e:
+        logger.error("pty spawn failed: %s", e)
+        await ws.close(code=1011)
+        return
+    logger.info("terminal session started (pid %s)", session.pid)
+
+    # add_reader runs in the loop thread, so put_nowait is safe; a single sender task
+    # drains the queue in order to preserve byte ordering on the socket.
+    session.attach_reader(loop, lambda data: out_queue.put_nowait(data))
+
+    async def pump_output():
+        while True:
+            data = await out_queue.get()
+            if data is None:  # EOF — child exited
+                break
+            try:
+                await ws.send_bytes(data)
+            except Exception:
+                break
+        try:
+            await ws.close()
+        except Exception:
+            pass
+
+    sender = asyncio.create_task(pump_output())
+    try:
+        while True:
+            msg = await ws.receive()
+            if msg.get("type") == "websocket.disconnect":
+                break
+            if msg.get("bytes") is not None:
+                session.write(msg["bytes"])  # keystrokes
+            elif msg.get("text") is not None:
+                text = msg["text"]
+                try:
+                    ctrl = json.loads(text)
+                except (json.JSONDecodeError, TypeError):
+                    session.write(text.encode())
+                    continue
+                if isinstance(ctrl, dict) and ctrl.get("type") == "resize":
+                    session.resize(int(ctrl.get("rows", 24)), int(ctrl.get("cols", 80)))
+                else:
+                    session.write(text.encode())
+    except WebSocketDisconnect:
+        pass
+    finally:
+        sender.cancel()
+        session.close()
+        logger.info("terminal session closed")
 
 
 if __name__ == "__main__":
