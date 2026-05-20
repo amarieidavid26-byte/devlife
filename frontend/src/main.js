@@ -409,6 +409,9 @@ async function startGame(enableDemo = false) {
         ghost.setStateTint(data.state);
         furniture.setMonitorState(data.state);
         soundManager.setState(data.state);
+        if (apps && apps.desk_computer && apps.desk_computer.isOpen) {
+            apps.desk_computer.setBiometricState(data.state); // biometric Cursor indicator
+        }
 
         // CQI - weighted composite of recovery, HRV, and inverse stress
         const recovery = data.recovery || 50;

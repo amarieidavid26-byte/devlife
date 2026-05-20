@@ -29,14 +29,35 @@ SYSTEM = (
 )
 
 
+def _state_guidance(state, stress):
+    """The 'biometric' in biometric Cursor: tune completions to the developer's cognitive
+    state so suggestions get safer when they're tired/stressed and quieter when in flow."""
+    if state in ("FATIGUED", "STRESSED"):
+        return (
+            f"\n\nThe developer is currently {state} (elevated stress ~{stress:.1f}/3). "
+            "Be conservative and safety-first: prefer small, correct, low-risk completions; "
+            "add guards and null/error checks; AVOID destructive operations, sweeping "
+            "refactors, and risky shell/filesystem/database calls."
+        )
+    if state == "DEEP_FOCUS":
+        return ("\n\nThe developer is in deep focus — keep completions minimal and precise: "
+                "finish only the current line or expression, no extra scaffolding.")
+    if state == "WIRED":
+        return ("\n\nThe developer is wired/over-aroused — keep completions short and direct; "
+                "avoid over-engineering.")
+    return ""  # RELAXED / default
+
+
 class InlineCompleter:
     def __init__(self, api_key=None):
         key = api_key or CLAUDE_API_KEY
         self.enabled = bool(key)
         self.client = anthropic.AsyncAnthropic(api_key=key, timeout=INLINE_TIMEOUT) if self.enabled else None
 
-    async def stream(self, prefix: str, suffix: str, language: str, path: str = ""):
-        """Yield completion text chunks. No-op (yields nothing) if no API key."""
+    async def stream(self, prefix: str, suffix: str, language: str, path: str = "",
+                     state: str = "RELAXED", estimated_stress: float = 0.0):
+        """Yield completion text chunks, tuned to the developer's cognitive state.
+        No-op (yields nothing) if no API key."""
         if not self.enabled:
             return
         prefix = prefix[-6000:]
@@ -50,7 +71,7 @@ class InlineCompleter:
             async with self.client.messages.stream(
                 model=INLINE_MODEL,
                 max_tokens=INLINE_MAX_TOKENS,
-                system=SYSTEM,
+                system=SYSTEM + _state_guidance(state, estimated_stress),
                 messages=[{"role": "user", "content": user}],
                 stop_sequences=["<prefix>", "</prefix>", "<suffix>"],
             ) as stream:
