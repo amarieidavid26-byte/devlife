@@ -36,8 +36,11 @@ def get_biometric_insight(data):
 
 
 class GhostBrain:
+    # 15s timeout on every Claude call so a hung API does not freeze the ghost loop
+    CLAUDE_TIMEOUT_SECONDS = 15.0
+
     def __init__(self, api_key):
-        self.client = anthropic.Anthropic(api_key = api_key)
+        self.client = anthropic.Anthropic(api_key=api_key, timeout=self.CLAUDE_TIMEOUT_SECONDS)
         self.last_intervention_time = 0
         self.cooldown = 30
         self.context_history = []
