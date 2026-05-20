@@ -882,11 +882,12 @@ async def _gate_privileged_ws(ws: WebSocket, enabled: bool) -> bool:
     return True
 
 
-async def _run_inline(ws: WebSocket, req_id, prefix, suffix, language, path):
+async def _run_inline(ws: WebSocket, req_id, prefix, suffix, language, path, state, stress):
     try:
-        async for delta in inline_completer.stream(prefix, suffix, language, path):
+        async for delta in inline_completer.stream(prefix, suffix, language, path,
+                                                   state=state, estimated_stress=stress):
             await ws.send_json({"id": req_id, "delta": delta})
-        await ws.send_json({"id": req_id, "done": True})
+        await ws.send_json({"id": req_id, "done": True, "state": state})
     except asyncio.CancelledError:
         pass  # superseded by a newer keystroke
     except Exception as e:
@@ -938,6 +939,8 @@ async def inline_ws(ws: WebSocket):
                 (req.get("suffix") or "")[:2000],
                 req.get("language") or "plaintext",
                 req.get("path") or "",
+                bio.current_state,          # biometric Cursor: tune completions to live state
+                bio.estimated_stress,
             ))
     except WebSocketDisconnect:
         pass

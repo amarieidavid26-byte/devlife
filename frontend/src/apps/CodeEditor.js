@@ -46,6 +46,8 @@ export class CodeEditorApp {
         this.fileTree = null;
         this.lsp = null;
         this._tabBar = null;
+        this._stateBadge = null;
+        this._bioState = null;
         this._watchWs = null;
         this._watchTimer = null;
         this._contentListener = null;
@@ -91,6 +93,15 @@ export class CodeEditorApp {
 
         const rightGroup = document.createElement('div');
         rightGroup.style.cssText = 'display:flex;align-items:center;gap:10px;flex-shrink:0;';
+
+        // biometric Cursor: shows the cognitive state that inline AI completions are tuned to
+        const stateBadge = document.createElement('span');
+        stateBadge.title = 'Inline AI completions are tuned to your cognitive state';
+        stateBadge.style.cssText = "font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;color:#9a9a9a;letter-spacing:0.3px;";
+        stateBadge.textContent = '🧠 —';
+        this._stateBadge = stateBadge;
+        rightGroup.appendChild(stateBadge);
+        if (this._bioState) this.setBiometricState(this._bioState);
 
         const reviewOnly = document.createElement('span');
         reviewOnly.style.cssText = 'color:#777;font-family:"Nunito",sans-serif;font-size:11px;display:none;';
@@ -320,6 +331,15 @@ export class CodeEditorApp {
 
     _showToastLikeError(msg) {
         console.warn('[ide]', msg);
+    }
+
+    // fed from main.js biometric updates — surfaces the state inline AI is tuned to
+    setBiometricState(state) {
+        this._bioState = state;
+        if (!this._stateBadge) return;
+        const colors = { RELAXED: '#6AD89A', DEEP_FOCUS: '#7FB0FF', STRESSED: '#FF7A6A', FATIGUED: '#C9A227', WIRED: '#FFB84A' };
+        this._stateBadge.textContent = '🧠 ' + state;
+        this._stateBadge.style.color = colors[state] || '#9a9a9a';
     }
 
     _connectWatch() {

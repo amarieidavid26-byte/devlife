@@ -1,5 +1,6 @@
 // Lazy-loading workspace file tree. Clicking a file calls onOpenFile(relPath).
-import { listDir } from '../../network/files.js';
+// Right-click a row (or use the header buttons) to create/rename/delete files & folders.
+import { listDir, createPath, renamePath, deletePath } from '../../network/files.js';
 
 export class FileTree {
     constructor(onOpenFile) {
@@ -14,13 +15,84 @@ export class FileTree {
     async mount() {
         this.el.innerHTML = '';
         const header = document.createElement('div');
-        header.textContent = 'WORKSPACE';
-        header.style.cssText = 'color:#7a7a7a;font-size:10px;letter-spacing:1px;padding:4px 12px 8px;';
+        header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 8px 8px 12px;';
+        const label = document.createElement('span');
+        label.textContent = 'WORKSPACE';
+        label.style.cssText = 'color:#7a7a7a;font-size:10px;letter-spacing:1px;';
+        header.appendChild(label);
+
+        const tools = document.createElement('div');
+        tools.style.cssText = 'display:flex;gap:6px;';
+        const mkBtn = (txt, title, fn) => {
+            const b = document.createElement('button');
+            b.textContent = txt;
+            b.title = title;
+            b.style.cssText = 'background:transparent;border:none;color:#9a9a9a;cursor:pointer;font-size:13px;padding:0 2px;';
+            b.addEventListener('mouseenter', () => { b.style.color = '#fff'; });
+            b.addEventListener('mouseleave', () => { b.style.color = '#9a9a9a'; });
+            b.addEventListener('click', (e) => { e.stopPropagation(); fn(); });
+            return b;
+        };
+        tools.appendChild(mkBtn('🗋', 'New file', () => this._createAt('', 'file')));
+        tools.appendChild(mkBtn('🗀', 'New folder', () => this._createAt('', 'dir')));
+        tools.appendChild(mkBtn('⟳', 'Refresh', () => this.refresh()));
+        header.appendChild(tools);
         this.el.appendChild(header);
+
         const body = document.createElement('div');
         this._body = body;
         this.el.appendChild(body);
         await this._renderInto(body, '', 0);
+    }
+
+    async _createAt(parentRel, kind) {
+        const name = (window.prompt(kind === 'dir' ? 'New folder name:' : 'New file name:') || '').trim();
+        if (!name) return;
+        const rel = parentRel ? `${parentRel}/${name}` : name;
+        try { await createPath(rel, kind); this.refresh(); if (kind === 'file') this.onOpenFile(rel); }
+        catch (e) { window.alert('Create failed: ' + e.message); }
+    }
+
+    async _rename(entry) {
+        const next = (window.prompt('Rename to:', entry.name) || '').trim();
+        if (!next || next === entry.name) return;
+        const parent = entry.path.includes('/') ? entry.path.slice(0, entry.path.lastIndexOf('/')) : '';
+        const dst = parent ? `${parent}/${next}` : next;
+        try { await renamePath(entry.path, dst); this.refresh(); }
+        catch (e) { window.alert('Rename failed: ' + e.message); }
+    }
+
+    async _delete(entry) {
+        if (!window.confirm(`Delete ${entry.type === 'dir' ? 'folder' : 'file'} "${entry.name}"?`)) return;
+        try { await deletePath(entry.path); this.refresh(); }
+        catch (e) { window.alert('Delete failed: ' + e.message); }
+    }
+
+    _contextMenu(ev, entry) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        document.querySelectorAll('.ft-ctx').forEach(m => m.remove());
+        const menu = document.createElement('div');
+        menu.className = 'ft-ctx';
+        menu.style.cssText = `position:fixed;left:${ev.clientX}px;top:${ev.clientY}px;z-index:2000;background:#222;border:1px solid #3a3a3a;border-radius:4px;padding:4px 0;min-width:140px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,0.4);`;
+        const item = (txt, fn) => {
+            const i = document.createElement('div');
+            i.textContent = txt;
+            i.style.cssText = 'padding:5px 14px;color:#cfcfcf;cursor:pointer;';
+            i.addEventListener('mouseenter', () => { i.style.background = 'rgba(255,255,255,0.08)'; });
+            i.addEventListener('mouseleave', () => { i.style.background = 'transparent'; });
+            i.addEventListener('click', () => { menu.remove(); fn(); });
+            menu.appendChild(i);
+        };
+        if (entry.type === 'dir') {
+            item('New file', () => this._createAt(entry.path, 'file'));
+            item('New folder', () => this._createAt(entry.path, 'dir'));
+        }
+        item('Rename', () => this._rename(entry));
+        item('Delete', () => this._delete(entry));
+        document.body.appendChild(menu);
+        const close = () => { menu.remove(); document.removeEventListener('click', close); };
+        setTimeout(() => document.addEventListener('click', close), 0);
     }
 
     refresh() {
@@ -39,6 +111,7 @@ export class FileTree {
             row.textContent = `${icon} ${entry.name}`;
             row.addEventListener('mouseenter', () => { if (row !== this._activeRow) row.style.background = 'rgba(255,255,255,0.06)'; });
             row.addEventListener('mouseleave', () => { if (row !== this._activeRow) row.style.background = 'transparent'; });
+            row.addEventListener('contextmenu', (e) => this._contextMenu(e, entry));
 
             if (entry.type === 'dir') {
                 const childWrap = document.createElement('div');
