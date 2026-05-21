@@ -136,14 +136,23 @@ class BiometricEngine:
         if self.hrv_history:
             self.hrv_baseline = sum(self.hrv_history) / len(self.hrv_history)
 
-    def fetch_data(self):
+    def fetch_data(self, _retry=True):
         if not self.access_token:
-            return None
+            # in-memory token was cleared (e.g. after a 401) but we may still hold a refresh
+            # token — recover the session instead of silently falling back to mock forever
+            if not (self.refresh_token and self.refresh_access_token()):
+                return None
+            logger.info("recovered session from saved refresh token")
         self._check_token()
         headers = {"Authorization": f"Bearer {self.access_token}"}
         try:
             recovery_resp = httpx.get(f"{self.API_BASE}/recovery", headers=headers, params={"limit": 1})
             if recovery_resp.status_code == 401:
+                # access token expired between proactive checks: try the refresh token once
+                # before giving up, so a valid offline session self-heals instead of dropping to mock
+                if _retry and self.refresh_access_token():
+                    logger.info("got 401 -- refreshed token, retrying fetch")
+                    return self.fetch_data(_retry=False)
                 logger.warning("token expired -- need to re-authenticate")
                 self.access_token = None
                 return None
@@ -154,6 +163,9 @@ class BiometricEngine:
 
             cycle_resp = httpx.get(f"{self.API_BASE}/cycle", headers=headers, params={"limit": 1})
             if cycle_resp.status_code == 401:
+                if _retry and self.refresh_access_token():
+                    logger.info("got 401 -- refreshed token, retrying fetch")
+                    return self.fetch_data(_retry=False)
                 logger.warning("token expired -- need to re-authenticate")
                 self.access_token = None
                 return None
