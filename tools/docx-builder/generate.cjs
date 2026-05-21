@@ -50,14 +50,12 @@ function pRich(runs, opts = {}) {
 }
 
 function h1(text) {
-  // H1: bara colorata jos + page break inainte pentru aerare
+  // H1: doar text mare + page break inainte; bara colorata sub titlu eliminata
+  // pentru un look mai sobru, potrivit unei documentatii predate juriului
   return new Paragraph({
     heading: HeadingLevel.HEADING_1,
     pageBreakBefore: true,
     spacing: { before: 0, after: 320 },
-    border: {
-      bottom: { style: BorderStyle.SINGLE, size: 18, color: COLOR_ACCENT, space: 4 },
-    },
     children: [new TextRun({ text, size: HEADING1_SIZE, bold: true, font: FONT, color: COLOR_PRIMARY })],
   });
 }
