@@ -485,5 +485,16 @@
   "cowork.msg_sam": "Sam entered flow state 47 minutes ago. Optimal HRV. I haven't said a word — that's how you know it's going well.",
   "cowork.msg_mia": "Mia's been here since 6am. Her sleep score was 42% last night. I've been dimming her screen gradually — she hasn't noticed yet.",
   "cowork.panel_empty": "That desk is free. In the future, other players could sit here and you'd see their real biometrics. Imagine that.",
-  "cowork.panel_whiteboard": "Sprint board says: 'Ship DevLife by March 22.' Sounds familiar."
+  "cowork.panel_whiteboard": "Sprint board says: 'Ship DevLife by March 22.' Sounds familiar.",
+
+  "spotify.section": "SPOTIFY",
+  "spotify.connect": "Connect Spotify",
+  "spotify.disconnect": "Disconnect Spotify",
+  "spotify.connected_as": "Connected as {name}",
+  "spotify.not_connected": "Not connected — speaker plays the procedural pad",
+  "spotify.playing": "Spotify playing — {name}",
+  "spotify.paused": "Spotify paused",
+  "spotify.no_context": "No recent playback. Open Spotify on your phone, start any track, then click the speaker again.",
+  "spotify.device_not_ready": "Spotify device not ready yet — try again in a moment.",
+  "spotify.playback_failed": "Spotify playback failed."
 }

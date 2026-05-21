@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+    // read the project-root .env so VITE_* vars live next to the backend ones
+    envDir: '..',
     server: {
         proxy: {
             '/ws': {

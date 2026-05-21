@@ -485,5 +485,16 @@
   "cowork.msg_sam": "Sam a intrat în flow acum 47 de minute. HRV optim. N-am spus niciun cuvânt — așa știi că merge bine.",
   "cowork.msg_mia": "Mia e aici de la 6 dimineața. Scorul ei de somn a fost 42% azi-noapte. I-am atenuat treptat ecranul — încă nu a observat.",
   "cowork.panel_empty": "Biroul acela e liber. În viitor, alți jucători ar putea sta aici și le-ai vedea datele biometrice reale. Imaginează-ți.",
-  "cowork.panel_whiteboard": "Tabla de sprint spune: «Livrează DevLife până pe 22 martie». Sună cunoscut."
+  "cowork.panel_whiteboard": "Tabla de sprint spune: «Livrează DevLife până pe 22 martie». Sună cunoscut.",
+
+  "spotify.section": "SPOTIFY",
+  "spotify.connect": "Conectează Spotify",
+  "spotify.disconnect": "Deconectează Spotify",
+  "spotify.connected_as": "Conectat ca {name}",
+  "spotify.not_connected": "Neconectat — boxa redă pad-ul procedural",
+  "spotify.playing": "Spotify redă — {name}",
+  "spotify.paused": "Spotify pe pauză",
+  "spotify.no_context": "Nimic recent. Deschide Spotify pe telefon, pornește o melodie, apoi reapasă boxa.",
+  "spotify.device_not_ready": "Device-ul Spotify nu e gata — încearcă din nou imediat.",
+  "spotify.playback_failed": "Redarea Spotify a eșuat."
 }
