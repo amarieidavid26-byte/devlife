@@ -1,13 +1,15 @@
-const MESSAGES = [
-  'Loading the neighborhood...',
-  'Ghost is following...',
-  'Compiling the outdoors...',
-  'npm install fresh-air...',
-  'Parsing sunlight...',
-  'git checkout town-branch...',
-  'Initializing grass.js...',
-  'Warming up the coffee machine...',
-  'Deploying to localhost:outside...',
+import { i18n } from '../i18n/index.js';
+
+const MESSAGE_KEYS = [
+  'transition.loading_neighborhood',
+  'transition.ghost_following',
+  'transition.compiling_outdoors',
+  'transition.npm_fresh_air',
+  'transition.parsing_sunlight',
+  'transition.git_checkout',
+  'transition.init_grass',
+  'transition.warming_coffee',
+  'transition.deploy_outside',
 ];
 
 export class TransitionOverlay {
@@ -82,7 +84,7 @@ export class TransitionOverlay {
   show(duration = 1000) {
     clearTimeout(this._hideTimer);
 
-    this._msg.textContent = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
+    this._msg.textContent = i18n.t(MESSAGE_KEYS[Math.floor(Math.random() * MESSAGE_KEYS.length)]);
     this._el.style.visibility = 'visible';
     this._el.style.pointerEvents = 'all';
 

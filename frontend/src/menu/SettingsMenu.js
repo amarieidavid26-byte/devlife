@@ -1,12 +1,12 @@
 import { i18n } from '../i18n/index.js';
 
 const KEYBINDS = [
-  ['WASD', 'Move'],
-  ['E', 'Interact'],
-  ['T', 'Toggle Room/Town'],
-  ['1-5', 'Switch State (Demo)'],
-  ['TAB', 'Ghost Vision'],
-  ['ESC', 'Close App'],
+  ['WASD', 'settings.kb_move'],
+  ['E', 'settings.kb_interact'],
+  ['T', 'settings.kb_toggle_town'],
+  ['1-5', 'settings.kb_switch_state'],
+  ['TAB', 'settings.kb_ghost_vision'],
+  ['ESC', 'settings.kb_close_app'],
 ];
 
 export class SettingsMenu {
@@ -116,13 +116,10 @@ export class SettingsMenu {
       };
       style();
       btn.addEventListener('click', () => {
-        i18n.setLang(lang);
-        langRow.querySelectorAll('button').forEach(b => {
-          const isActive = b.dataset.lang === i18n.getLang();
-          b.style.background = isActive ? 'rgba(0,200,100,0.15)' : 'rgba(255,255,255,0.05)';
-          b.style.color = isActive ? '#00c864' : '#666';
-          b.style.borderColor = isActive ? '#00c864' : 'rgba(255,255,255,0.1)';
-        });
+        if (lang === i18n.getLang()) return;
+        i18n.setLang(lang); // persists to localStorage
+        // reload so every surface (menus, world labels, app windows) re-renders in the new language
+        location.reload();
       });
       langRow.appendChild(btn);
     }
@@ -131,7 +128,7 @@ export class SettingsMenu {
     // controls section
     panel.appendChild(this._sectionLabel(i18n.t('settings.controls')));
 
-    for (const [key, desc] of KEYBINDS) {
+    for (const [key, descKey] of KEYBINDS) {
       const row = this._row();
       const k = this._label(key);
       k.style.color = '#00c864';
@@ -139,7 +136,7 @@ export class SettingsMenu {
       const sep = this._label('\u2014');
       sep.style.margin = '0 10px';
       sep.style.color = '#555';
-      const d = this._label(desc);
+      const d = this._label(i18n.t(descKey));
       d.style.color = '#888';
       row.appendChild(k);
       row.appendChild(sep);
@@ -151,9 +148,9 @@ export class SettingsMenu {
     panel.appendChild(this._sectionLabel(i18n.t('settings.about')));
 
     const aboutLines = [
-      'DevLife v0.1',
+      i18n.t('settings.about_version'),
       i18n.t('menu.subtitle'),
-      'by David Amariei',
+      i18n.t('settings.about_author'),
     ];
     for (const line of aboutLines) {
       const p = document.createElement('div');

@@ -1,111 +1,60 @@
 // Shared "what is this?" science panel, used by BOTH the in-game HUD and the full Dashboard.
-// One copy of the explainer content + one panel DOM + one document-level click listener, so a
-// 💡 button (class "devlife-info-btn", data-info=KEY) works no matter how often a host
-// re-renders its markup (the HUD rebuilds its innerHTML on every biometric update).
+// One copy of the panel DOM + one document-level click listener, so a 💡 button
+// (class "devlife-info-btn", data-info=KEY) works no matter how often a host re-renders.
 //
-// Content is kept in sync with the real algorithm in biometric_engine.classify() and
-// DashboardOverlay.update(). Sources are peer-reviewed (PubMed). See docs/dashboard-science.md.
+// The explainer TEXT lives in i18n (keys info.<metric>.title/subtitle/what/how/science) so it
+// follows the ro/en toggle; only the academic citations stay in English (real paper titles).
+// Kept in sync with biometric_engine.classify() and DashboardOverlay.update().
+
+import { i18n } from '../i18n/index.js';
 
 const PUBMED = id => `https://pubmed.ncbi.nlm.nih.gov/${id}/`;
 
+// Per-metric citations (paper titles stay in English on purpose). The plain-language text is
+// resolved from i18n at open time via the metric key.
 export const INFO = {
-    stress: {
-        title: 'Stress Level',
-        subtitle: 'Scale 0.0 – 3.0 · derived from HRV',
-        what: 'A live estimate of how much strain your nervous system is under. It rises when your heart-rate variability (HRV) drops below your own normal range — a well-established physiological fingerprint of stress.',
-        how: 'ratio = current HRV (RMSSD) ÷ your 14-reading baseline\n\nratio ≥ 0.85  → 0.5   (calm)\nratio < 0.85  → 1.2\nratio < 0.75  → 1.8\nratio < 0.60  → 2.5   (high)\n\nWith a live Bluetooth heart rate, an elevated HR raises the score too.',
-        science: 'HRV — the tiny beat-to-beat changes in heart rhythm — is a validated, non-invasive window into the autonomic nervous system. A meta-analysis of 37 studies found psychological stress is reliably linked to <strong>reduced HRV</strong>, especially vagally-mediated components like RMSSD. We compare against your <strong>personal baseline</strong> rather than fixed cut-offs because healthy HRV varies widely between individuals.',
-        cites: [
-            { text: 'Kim et al. (2018). Stress and Heart Rate Variability: A Meta-Analysis and Review. Psychiatry Investig.', pmid: '29486547' },
-            { text: 'Shaffer & Ginsberg (2017). An Overview of Heart Rate Variability Metrics and Norms. Front Public Health.', pmid: '29034226' },
-        ],
-    },
-    cognitive_load: {
-        title: 'Cognitive Load',
-        subtitle: 'Index 0 – 100% · mental workload',
-        what: 'How much mental effort your body is carrying right now — the physiological "cost" of concentration. Sustained high load is when mistakes start to creep in.',
-        how: 'cognitiveLoad % = (stress ÷ 3) × 100\n\nAutonomic arousal (the stress index) is used as a proxy for mental workload.',
-        science: 'Mental workload measurably suppresses HRV: as a task gets harder, time-domain HRV falls in a <strong>graded, dose-dependent</strong> way. This works because the same prefrontal circuits that sustain focus also regulate the heart (the "neurovisceral integration" model), so cardiac signals track executive demand. HRV is used in the field to gauge operator workload — e.g. surgeons under pressure.',
-        cites: [
-            { text: 'Task difficulty influences heart rate variability (2026). Scientific Reports.', pmid: '41820547' },
-            { text: 'HRV reveals graded task-difficulty effects via time-domain analysis (2025). J Physiological Anthropology.', pmid: '41286973' },
-            { text: 'Low HRV, emotional dysregulation & prefrontal function — an integrative view (2021). J Personalized Medicine.', pmid: '34575648' },
-            { text: "HRV in assessing surgeons' stress — systematic review & meta-analysis (2026). Healthcare.", pmid: '41753997' },
-        ],
-    },
-    autonomic: {
-        title: 'Autonomic Balance',
-        subtitle: 'SNS vs PNS · sympathovagal balance',
-        what: 'Your autonomic nervous system has two opposing branches. The <strong>sympathetic</strong> branch (SNS) is "fight-or-flight" — it speeds you up. The <strong>parasympathetic</strong> branch (PNS) is "rest-and-digest" — it calms you down. The bars show which one is winning right now.',
-        how: 'PNS bar = min(HRV ÷ 80ms, 1)     ← vagal / recovery tone\nSNS bar = min(stress ÷ 3, 1)       ← arousal / activation\n\nSNS clearly > PNS → "Fight-or-flight dominant"\nPNS clearly > SNS → "Rest-and-digest dominant"\nelse              → "Balanced"',
-        science: 'RMSSD-based HRV is a recognised marker of <strong>parasympathetic (vagal)</strong> activity, so higher HRV means stronger rest-and-digest tone. Stress shifts this balance toward <strong>sympathetic dominance</strong> and away from vagal control. The brain and heart continuously negotiate this balance via the brain–heart axis.',
-        cites: [
-            { text: 'Shaffer & Ginsberg (2017). HRV Metrics and Norms (RMSSD ⇒ vagal tone). Front Public Health.', pmid: '29034226' },
-            { text: 'Kim et al. (2018). Stress and Heart Rate Variability: A Meta-Analysis. Psychiatry Investig.', pmid: '29486547' },
-            { text: 'Brain–Heart Interactions and Optimizing Psychotherapy (2025). Appl Psychophysiol Biofeedback.', pmid: '39969644' },
-        ],
-    },
-    state: {
-        title: 'Cognitive State',
-        subtitle: '5 states · Yerkes–Dodson inverted-U',
-        what: 'DevLife sorts each moment into one of five states — RELAXED, DEEP_FOCUS, WIRED, STRESSED, FATIGUED — using the <strong>inverted-U law</strong>: performance peaks at <em>moderate</em> arousal and falls off when you are under-aroused (tired, bored) or over-aroused (stressed, wired).',
-        how: 'Inputs: WHOOP recovery, day strain, the HRV stress index, and live HR if paired.\n\nlow recovery / poor sleep       → FATIGUED\nhigh stress / very high strain  → STRESSED\nhigh strain + low recovery      → WIRED\nmoderate-arousal "sweet spot"   → DEEP_FOCUS\notherwise                       → RELAXED',
-        science: 'The Yerkes–Dodson law (1908) — peak performance at intermediate arousal — has been <strong>re-validated with modern neuroscience</strong>. A cortical disinhibitory circuit was shown to produce peak performance at mid-level arousal, and norepinephrine-driven arousal produces inverted-U brain-network dynamics. Because lower HRV maps to weaker prefrontal control, the high-arousal states are when error rates climb.',
-        cites: [
-            { text: 'A disinhibitory circuit mechanism for peak performance at mid-level arousal (2024). PNAS.', pmid: '38277436' },
-            { text: 'Norepinephrine-mediated arousal drives inverted-U connectivity dynamics (2025). Nature Communications.', pmid: '41390822' },
-            { text: 'Low HRV & prefrontal dysfunction — an integrative view (2021). J Personalized Medicine.', pmid: '34575648' },
-        ],
-    },
-    cqi: {
-        title: 'Code Quality Index (CQI)',
-        subtitle: 'Index 0 – 100% · "fitness to ship"',
-        what: 'A single readout of how well-suited your current physiology is for high-quality coding — blending how recovered, how calm, and how regulated you are.',
-        how: 'CQI % = ( recovery/100        × 0.40\n        + min(HRV/80, 1)     × 0.35\n        + (1 − stress/3)     × 0.25 ) × 100',
-        science: 'CQI is DevLife\'s own composite — not a clinical score — but each ingredient is independently validated: recovery/sleep readiness, vagally-mediated HRV as a marker of self-regulation capacity, and the HRV-based stress index. The rationale is the neurovisceral link: better autonomic regulation supports the prefrontal control that careful programming depends on.',
-        cites: [
-            { text: 'Shaffer & Ginsberg (2017). HRV Metrics and Norms. Front Public Health.', pmid: '29034226' },
-            { text: 'Kim et al. (2018). Stress and HRV: A Meta-Analysis. Psychiatry Investig.', pmid: '29486547' },
-        ],
-    },
-    recovery: {
-        title: 'Recovery',
-        subtitle: '0 – 100% · WHOOP daily readiness',
-        what: 'How ready your body is to perform today, scored each morning by WHOOP from your overnight physiology. Higher = better recovered.',
-        how: 'Reported directly by WHOOP (recovery_score) — primarily driven by your\novernight HRV, resting heart rate, sleep and respiratory rate.',
-        science: 'Recovery readiness is built on the same autonomic markers as the rest of the dashboard: overnight vagally-mediated HRV and resting heart rate. Higher HRV / lower resting HR indicate stronger parasympathetic recovery.',
-        cites: [
-            { text: 'Shaffer & Ginsberg (2017). HRV Metrics and Norms. Front Public Health.', pmid: '29034226' },
-            { text: 'Kim et al. (2018). Stress and HRV: A Meta-Analysis. Psychiatry Investig.', pmid: '29486547' },
-        ],
-    },
-    hrv: {
-        title: 'HRV (heart-rate variability)',
-        subtitle: 'RMSSD, milliseconds · WHOOP',
-        what: 'The tiny beat-to-beat variation in your heart rhythm. Counter-intuitively, MORE variability is healthier — it signals a flexible, well-recovered nervous system. It is the raw signal most of this dashboard is built on.',
-        how: 'Reported by WHOOP as hrv_rmssd_milli (RMSSD, in ms). DevLife keeps a rolling\n14-reading baseline and reads stress from how far current HRV sits below it.',
-        science: 'RMSSD is the standard short-term, time-domain HRV metric and reflects <strong>parasympathetic (vagal)</strong> activity. Reduced HRV is reliably linked to stress and to weaker prefrontal/executive control.',
-        cites: [
-            { text: 'Shaffer & Ginsberg (2017). An Overview of HRV Metrics and Norms. Front Public Health.', pmid: '29034226' },
-            { text: 'Kim et al. (2018). Stress and HRV: A Meta-Analysis. Psychiatry Investig.', pmid: '29486547' },
-        ],
-    },
-    strain: {
-        title: 'Day Strain',
-        subtitle: '0 – 21 · cardiovascular load',
-        what: 'How much cardiovascular load you have accumulated today, on WHOOP\'s 0–21 scale. It rises with exertion and elevated heart rate over the day.',
-        how: 'Reported directly by WHOOP (cycle strain), a logarithmic 0–21 scale derived\nfrom time spent in heart-rate zones across the day.',
-        science: 'Strain summarises cardiovascular exertion; combined with recovery it drives the inverted-U state model — high strain on low recovery pushes you toward the over-aroused WIRED/STRESSED states where error rates rise.',
-        cites: [
-            { text: 'A disinhibitory circuit mechanism for peak performance at mid-level arousal (2024). PNAS.', pmid: '38277436' },
-            { text: 'Shaffer & Ginsberg (2017). HRV Metrics and Norms. Front Public Health.', pmid: '29034226' },
-        ],
-    },
+    stress: { cites: [
+        { text: 'Kim et al. (2018). Stress and Heart Rate Variability: A Meta-Analysis and Review. Psychiatry Investig.', pmid: '29486547' },
+        { text: 'Shaffer & Ginsberg (2017). An Overview of Heart Rate Variability Metrics and Norms. Front Public Health.', pmid: '29034226' },
+    ] },
+    cognitive_load: { cites: [
+        { text: 'Task difficulty influences heart rate variability (2026). Scientific Reports.', pmid: '41820547' },
+        { text: 'HRV reveals graded task-difficulty effects via time-domain analysis (2025). J Physiological Anthropology.', pmid: '41286973' },
+        { text: 'Low HRV, emotional dysregulation & prefrontal function — an integrative view (2021). J Personalized Medicine.', pmid: '34575648' },
+        { text: "HRV in assessing surgeons' stress — systematic review & meta-analysis (2026). Healthcare.", pmid: '41753997' },
+    ] },
+    autonomic: { cites: [
+        { text: 'Shaffer & Ginsberg (2017). HRV Metrics and Norms (RMSSD ⇒ vagal tone). Front Public Health.', pmid: '29034226' },
+        { text: 'Kim et al. (2018). Stress and Heart Rate Variability: A Meta-Analysis. Psychiatry Investig.', pmid: '29486547' },
+        { text: 'Brain–Heart Interactions and Optimizing Psychotherapy (2025). Appl Psychophysiol Biofeedback.', pmid: '39969644' },
+    ] },
+    state: { cites: [
+        { text: 'A disinhibitory circuit mechanism for peak performance at mid-level arousal (2024). PNAS.', pmid: '38277436' },
+        { text: 'Norepinephrine-mediated arousal drives inverted-U connectivity dynamics (2025). Nature Communications.', pmid: '41390822' },
+        { text: 'Low HRV & prefrontal dysfunction — an integrative view (2021). J Personalized Medicine.', pmid: '34575648' },
+    ] },
+    cqi: { cites: [
+        { text: 'Shaffer & Ginsberg (2017). HRV Metrics and Norms. Front Public Health.', pmid: '29034226' },
+        { text: 'Kim et al. (2018). Stress and HRV: A Meta-Analysis. Psychiatry Investig.', pmid: '29486547' },
+    ] },
+    recovery: { cites: [
+        { text: 'Shaffer & Ginsberg (2017). HRV Metrics and Norms. Front Public Health.', pmid: '29034226' },
+        { text: 'Kim et al. (2018). Stress and HRV: A Meta-Analysis. Psychiatry Investig.', pmid: '29486547' },
+    ] },
+    hrv: { cites: [
+        { text: 'Shaffer & Ginsberg (2017). An Overview of HRV Metrics and Norms. Front Public Health.', pmid: '29034226' },
+        { text: 'Kim et al. (2018). Stress and HRV: A Meta-Analysis. Psychiatry Investig.', pmid: '29486547' },
+    ] },
+    strain: { cites: [
+        { text: 'A disinhibitory circuit mechanism for peak performance at mid-level arousal (2024). PNAS.', pmid: '38277436' },
+        { text: 'Shaffer & Ginsberg (2017). HRV Metrics and Norms. Front Public Health.', pmid: '29034226' },
+    ] },
 };
 
 // HTML for a 💡 button. Drop it next to any term; clicks are caught by the shared listener.
+// The tooltip resolves at render time, so it follows the current language.
 export function infoBtn(key) {
-    return `<span class="devlife-info-btn" data-info="${key}" role="button" tabindex="0" title="What is this? Science &amp; sources">&#128161;</span>`;
+    return `<span class="devlife-info-btn" data-info="${key}" role="button" tabindex="0" title="${i18n.t('info.btn_tooltip')}">&#128161;</span>`;
 }
 
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
@@ -114,17 +63,19 @@ export function openInfo(key) {
     ensureInfoPanel();
     const info = INFO[key];
     if (!info) return;
-    document.getElementById('dl-info-title').textContent = info.title;
-    document.getElementById('dl-info-subtitle').textContent = info.subtitle;
+    document.getElementById('dl-info-title').textContent = i18n.t(`info.${key}.title`);
+    document.getElementById('dl-info-subtitle').textContent = i18n.t(`info.${key}.subtitle`);
     const cites = info.cites.map(c =>
         `<li>${escapeHtml(c.text)} <a href="${PUBMED(c.pmid)}" target="_blank" rel="noopener">PMID ${c.pmid}</a></li>`
     ).join('');
-    // info.what / info.science are author-trusted HTML; info.how (a formula) is escaped
+    // the what/science values are author-trusted HTML; the how (formula) is escaped
     document.getElementById('dl-info-body').innerHTML =
-        `<div class="dl-info-h">What it means</div><p>${info.what}</p>` +
-        `<div class="dl-info-h">How DevLife computes it</div><div class="dl-formula">${escapeHtml(info.how)}</div>` +
-        `<div class="dl-info-h">The science</div><p>${info.science}</p>` +
+        `<div class="dl-info-h">${escapeHtml(i18n.t('info.section_what'))}</div><p>${i18n.t(`info.${key}.what`)}</p>` +
+        `<div class="dl-info-h">${escapeHtml(i18n.t('info.section_how'))}</div><div class="dl-formula">${escapeHtml(i18n.t(`info.${key}.how`))}</div>` +
+        `<div class="dl-info-h">${escapeHtml(i18n.t('info.section_science'))}</div><p>${i18n.t(`info.${key}.science`)}</p>` +
         `<ol class="dl-cites">${cites}</ol>`;
+    document.getElementById('dl-info-disc').textContent = i18n.t('info.disclaimer');
+    document.getElementById('dl-info-close').setAttribute('aria-label', i18n.t('info.close_aria'));
     document.getElementById('dl-info-backdrop').classList.add('open');
 }
 
@@ -148,7 +99,7 @@ export function ensureInfoPanel() {
             <div id="dl-info-title"></div>
             <div id="dl-info-subtitle"></div>
             <div id="dl-info-body"></div>
-            <div class="dl-info-disc">DevLife estimates wellness &amp; arousal signals for productivity insight &mdash; it is not a medical device and does not provide diagnosis.</div>
+            <div class="dl-info-disc" id="dl-info-disc"></div>
         </div>`;
     document.body.appendChild(wrap);
 

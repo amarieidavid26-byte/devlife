@@ -1,3 +1,5 @@
+import { i18n } from '../i18n/index.js';
+
 const STATE_COLORS = {
     DEEP_FOCUS: '#9B6AFF',
     STRESSED:   '#FF7A6A',
@@ -199,7 +201,7 @@ export class BeneathView {
         ctx.shadowBlur  = 10;
         ctx.globalAlpha = 0.65;
         ctx.textAlign   = 'center';
-        ctx.fillText(this._data.state, px, py - 90);
+        ctx.fillText(i18n.t('state.' + this._data.state), px, py - 90);
         ctx.restore();
 
         ctx.save();
@@ -209,7 +211,7 @@ export class BeneathView {
         ctx.shadowBlur  = 24;
         ctx.globalAlpha = 0.85 + Math.sin(t * 1.6) * 0.1;
         ctx.textAlign   = 'center';
-        ctx.fillText('👁  BENEATH THE SURFACE', W / 2, 52);
+        ctx.fillText(i18n.t('beneath.title'), W / 2, 52);
         ctx.restore();
 
         ctx.save();
@@ -217,13 +219,13 @@ export class BeneathView {
         ctx.fillStyle   = '#B8A88C';
         ctx.globalAlpha = 0.5;
         ctx.textAlign   = 'center';
-        ctx.fillText('what ghost sees -- press TAB to hide', W / 2, 72);
+        ctx.fillText(i18n.t('beneath.subtitle'), W / 2, 72);
         ctx.restore();
 
         const stats = [
-            { label: 'HEART RATE', value: `${Math.round(bpm)}`,        unit: 'bpm' },
-            { label: 'HRV',        value: `${Math.round(hrv)}`,         unit: 'ms'  },
-            { label: 'RECOVERY',   value: `${Math.round(recovery)}`,    unit: '%'   },
+            { label: i18n.t('beneath.heart_rate'), value: `${Math.round(bpm)}`,        unit: 'bpm' },
+            { label: i18n.t('beneath.hrv'),        value: `${Math.round(hrv)}`,         unit: 'ms'  },
+            { label: i18n.t('beneath.recovery'),   value: `${Math.round(recovery)}`,    unit: '%'   },
         ];
 
         const blockW = 180;

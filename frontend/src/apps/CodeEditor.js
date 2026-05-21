@@ -97,9 +97,9 @@ export class CodeEditorApp {
 
         // biometric Cursor: shows the cognitive state that inline AI completions are tuned to
         const stateBadge = document.createElement('span');
-        stateBadge.title = 'Inline AI completions are tuned to your cognitive state';
+        stateBadge.title = i18n.t('editor.state_badge_tooltip');
         stateBadge.style.cssText = "font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;color:#9a9a9a;letter-spacing:0.3px;";
-        stateBadge.textContent = '🧠 —';
+        stateBadge.textContent = i18n.t('editor.state_badge_empty');
         this._stateBadge = stateBadge;
         rightGroup.appendChild(stateBadge);
         if (this._bioState) this.setBiometricState(this._bioState);
@@ -130,7 +130,7 @@ export class CodeEditorApp {
 
         const saveBtn = document.createElement('button');
         saveBtn.style.cssText = "height:24px;padding:0 10px;background:rgba(255,255,255,0.08);color:#ddd;border:none;border-radius:3px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;";
-        saveBtn.textContent = '⌘S Save';
+        saveBtn.textContent = i18n.t('editor.save');
         saveBtn.addEventListener('click', () => this.saveActive());
         rightGroup.appendChild(saveBtn);
 
@@ -138,15 +138,15 @@ export class CodeEditorApp {
         if (getFeatures().code_server) {
             const vscodeBtn = document.createElement('button');
             vscodeBtn.style.cssText = "height:24px;padding:0 10px;background:#0e639c;color:#fff;border:none;border-radius:3px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;";
-            vscodeBtn.textContent = '⧉ Open in VS Code';
-            vscodeBtn.title = 'Open the full VS Code (code-server) on this workspace';
+            vscodeBtn.textContent = i18n.t('editor.open_vscode');
+            vscodeBtn.title = i18n.t('editor.open_vscode_tooltip');
             vscodeBtn.addEventListener('click', () => this.openVsCode(vscodeBtn));
             rightGroup.appendChild(vscodeBtn);
         }
 
         const closeBtn = document.createElement('button');
         closeBtn.style.cssText = 'background:transparent;color:#888;font-size:13px;border:none;cursor:pointer;padding:4px 8px;';
-        closeBtn.textContent = '✕ close';
+        closeBtn.textContent = i18n.t('editor.close');
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#fff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
         // route through main.js so the game state (pointer-events, activeApp, HUD) is restored
@@ -246,9 +246,9 @@ export class CodeEditorApp {
             await this.fileTree.mount();
             const first = (await listDir('')).entries.find(e => e.type === 'file');
             if (first) this.openFile(first.path);
-            else this._showPlaceholder('Open or create a file to start.');
+            else this._showPlaceholder(i18n.t('editor.placeholder_open_create'));
         } catch (e) {
-            this._showPlaceholder('Could not reach the workspace.');
+            this._showPlaceholder(i18n.t('editor.workspace_unreachable'));
         }
     }
 
@@ -262,7 +262,7 @@ export class CodeEditorApp {
         if (this.models.has(path)) { this._switchTo(path); return; }
         let data;
         try { data = await readFile(path); }
-        catch (e) { this._showToastLikeError(`Cannot open ${path}: ${e.message}`); return; }
+        catch (e) { this._showToastLikeError(i18n.t('editor.cannot_open', { path, msg: e.message })); return; }
 
         const uri = this._absUri(path);
         let model = this._monaco.editor.getModel(uri);
@@ -317,7 +317,7 @@ export class CodeEditorApp {
             this.activePath = null;
             const next = this.tabs[this.tabs.length - 1];
             if (next) this._switchTo(next);
-            else { this.editor.setModel(null); this._showPlaceholder('Open a file from the tree.'); }
+            else { this.editor.setModel(null); this._showPlaceholder(i18n.t('editor.placeholder_open_tree')); }
         }
         this._renderTabs();
     }
@@ -331,7 +331,7 @@ export class CodeEditorApp {
             this.dirty.delete(this.activePath);
             this._renderTabs();
         } catch (e) {
-            this._showToastLikeError(`Save failed: ${e.message}`);
+            this._showToastLikeError(i18n.t('editor.save_failed', { msg: e.message }));
         }
     }
 
@@ -346,17 +346,17 @@ export class CodeEditorApp {
 
     async openVsCode(btn) {
         const label = btn ? btn.textContent : null;
-        if (btn) { btn.textContent = 'starting…'; btn.disabled = true; }
+        if (btn) { btn.textContent = i18n.t('editor.starting'); btn.disabled = true; }
         try {
             const r = await fetch(CONFIG.BACKEND_URL + '/api/codeserver/start', { method: 'POST', headers: authHeaders() });
             const data = await r.json().catch(() => ({}));
             if (!r.ok || !data.url) {
-                window.alert(data.hint || data.error || 'code-server is not available.');
+                window.alert(data.hint || data.error || i18n.t('editor.codeserver_unavailable'));
                 return;
             }
             this._showVsCodeOverlay(data.url);
         } catch (_) {
-            window.alert('Could not reach the backend to start VS Code.');
+            window.alert(i18n.t('editor.backend_unreachable_vscode'));
         } finally {
             if (btn) { btn.textContent = label; btn.disabled = false; }
         }
@@ -368,10 +368,10 @@ export class CodeEditorApp {
         const bar = document.createElement('div');
         bar.style.cssText = 'height:32px;background:#252526;border-bottom:1px solid #3c3c3c;display:flex;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0;';
         const title = document.createElement('span');
-        title.textContent = 'VS Code (code-server) — ghost is not watching here';
+        title.textContent = i18n.t('editor.vscode_overlay_title');
         title.style.cssText = 'color:#9a9a9a;font-size:12px;';
         const back = document.createElement('button');
-        back.textContent = '← Back to DevLife editor';
+        back.textContent = i18n.t('editor.back_to_editor');
         back.style.cssText = "background:transparent;border:none;color:#9a9a9a;cursor:pointer;font-size:12px;font-family:'Nunito',sans-serif;";
         back.addEventListener('mouseenter', () => { back.style.color = '#fff'; });
         back.addEventListener('mouseleave', () => { back.style.color = '#9a9a9a'; });
@@ -391,7 +391,7 @@ export class CodeEditorApp {
         this._bioState = state;
         if (!this._stateBadge) return;
         const colors = { RELAXED: '#6AD89A', DEEP_FOCUS: '#7FB0FF', STRESSED: '#FF7A6A', FATIGUED: '#C9A227', WIRED: '#FFB84A' };
-        this._stateBadge.textContent = '🧠 ' + state;
+        this._stateBadge.textContent = '🧠 ' + (state ? i18n.t('state.' + state) : '—');
         this._stateBadge.style.color = colors[state] || '#9a9a9a';
     }
 
@@ -495,7 +495,7 @@ export class CodeEditorApp {
         } else if (this.currentLang === 'python') {
             result = await PythonRunner.get().run(code, stdin);
         } else {
-            result = { stdout: '', stderr: `Unsupported language: ${this.currentLang}`, exit: 1, ms: 0 };
+            result = { stdout: '', stderr: i18n.t('editor.unsupported_language', { lang: this.currentLang }), exit: 1, ms: 0 };
         }
         this.displayRunResult(result);
     }

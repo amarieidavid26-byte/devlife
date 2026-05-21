@@ -1,30 +1,31 @@
 import * as PIXI from 'pixi.js';
+import { i18n } from '../i18n/index.js';
 
-// Ambient dialogue lines, grouped by proximity
-const LINES = {
+// Ambient dialogue line keys, grouped by proximity (resolved at selection time)
+const LINE_KEYS = {
     HOME: [
-        "Home sweet home. Your recovery score lives in there.",
-        "Should we go back inside? I miss the monitors.",
+        'townd.home_1',
+        'townd.home_2',
     ],
     CAFE: [
-        "I can smell the coffee from here... wait, can ghosts smell?",
-        "A coffee break would boost your recovery by 12%. Probably.",
+        'townd.cafe_1',
+        'townd.cafe_2',
     ],
     COWORK: [
-        "Other developers in there. They don't have ghost assistants though.",
-        "Want to cowork? I promise I won't read their screens.",
+        'townd.cowork_1',
+        'townd.cowork_2',
     ],
     PARK: [
-        "Fresh air is good for HRV. That's science.",
-        "Nature walk detected. Stress levels dropping.",
-        "Touch grass, as they say.",
+        'townd.park_1',
+        'townd.park_2',
+        'townd.park_3',
     ],
     GENERAL: [
-        "Nice night for a walk.",
-        "Your heart rate is steady. Keep moving.",
-        "I like it out here. Less screen glare.",
-        "Did you know walking improves code quality by 23%? I made that up.",
-        "The stars are procedurally generated, just like me.",
+        'townd.general_1',
+        'townd.general_2',
+        'townd.general_3',
+        'townd.general_4',
+        'townd.general_5',
     ],
 };
 
@@ -225,10 +226,10 @@ export class TownDialogue {
 
         const playerPos = this._getPlayerPos();
         const nearbyBuilding = this._findNearbyBuilding(playerPos);
-        const pool = nearbyBuilding ? LINES[nearbyBuilding] : LINES.GENERAL;
-        const line = pool[Math.floor(Math.random() * pool.length)];
+        const pool = nearbyBuilding ? LINE_KEYS[nearbyBuilding] : LINE_KEYS.GENERAL;
+        const key = pool[Math.floor(Math.random() * pool.length)];
 
-        this.say(line);
+        this.say(i18n.t(key));
     }
 
     _findNearbyBuilding(playerPos) {

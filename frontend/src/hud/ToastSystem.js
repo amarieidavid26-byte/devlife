@@ -1,3 +1,5 @@
+import { i18n } from '../i18n/index.js';
+
 export class ToastSystem {
   static TYPES = {
     achievement: { color: '#FFB84A', icon: '\u2B50' },
@@ -8,13 +10,13 @@ export class ToastSystem {
   };
 
   static ACHIEVEMENTS = {
-    first_flow:       { title: 'First Flow State',      msg: 'You entered DEEP_FOCUS for the first time' },
-    night_owl:        { title: 'Night Owl',              msg: 'Coding past midnight' },
-    coffee_addict:    { title: 'Coffee Addict',          msg: 'Third coffee today...' },
-    ghost_whisperer:  { title: 'Ghost Whisperer',        msg: 'Had 10 conversations with Ghost' },
-    firewall_blocked: { title: 'Saved by the Ghost',     msg: 'Fatigue Firewall blocked a dangerous command' },
-    marathon:         { title: 'Marathon Coder',          msg: '4 hours straight in one session' },
-    healthy_break:    { title: 'Healthy Break',           msg: 'Took a break when Ghost suggested it' },
+    first_flow:       { titleKey: 'toast.ach.first_flow_title',       msgKey: 'toast.ach.first_flow_body' },
+    night_owl:        { titleKey: 'toast.ach.night_owl_title',        msgKey: 'toast.ach.night_owl_body' },
+    coffee_addict:    { titleKey: 'toast.ach.coffee_addict_title',    msgKey: 'toast.ach.coffee_addict_body' },
+    ghost_whisperer:  { titleKey: 'toast.ach.ghost_whisperer_title',  msgKey: 'toast.ach.ghost_whisperer_body' },
+    firewall_blocked: { titleKey: 'toast.ach.firewall_blocked_title', msgKey: 'toast.ach.firewall_blocked_body' },
+    marathon:         { titleKey: 'toast.ach.marathon_title',         msgKey: 'toast.ach.marathon_body' },
+    healthy_break:    { titleKey: 'toast.ach.healthy_break_title',     msgKey: 'toast.ach.healthy_break_body' },
   };
 
   constructor() {
@@ -117,7 +119,7 @@ export class ToastSystem {
     const ach = ToastSystem.ACHIEVEMENTS[id];
     if (!ach) return;
     this._unlocked.add(id);
-    this.show('achievement', ach.title, ach.msg, 4000);
+    this.show('achievement', i18n.t(ach.titleKey), i18n.t(ach.msgKey), 4000);
   }
 
   // ---- internal ----

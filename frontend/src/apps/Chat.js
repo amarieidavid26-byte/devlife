@@ -1,28 +1,38 @@
+import { i18n } from '../i18n/index.js';
 
+// Message text is stored as i18n keys and resolved at runtime (open/reply time)
+// so the active language is always honoured.
 const STARTER_MESSAGES = {
     Team: [
-        { sender: 'David', text: 'Backend deployed, Ghost is alive \u{1F916}', time: '10:30 AM', isMe: false },
-        { sender: 'Matei', text: 'Room rendering looks great! Testing furniture now', time: '10:32 AM', isMe: false },
-        { sender: 'David', text: 'Nice! WebSocket is ready on port 8000', time: '10:33 AM', isMe: false }
+        { sender: 'David', key: 'chat.starter.team_1', time: '10:30 AM', isMe: false },
+        { sender: 'Matei', key: 'chat.starter.team_2', time: '10:32 AM', isMe: false },
+        { sender: 'David', key: 'chat.starter.team_3', time: '10:33 AM', isMe: false }
     ],
     David: [
-        { sender: 'David', text: 'Hey, server is running. WebSocket at ws://localhost:8000/ws', time: '9:00 AM', isMe: false },
-        { sender: 'David', text: 'Mock states 1-5 work. Try pressing the number keys', time: '9:15 AM', isMe: false }
+        { sender: 'David', key: 'chat.starter.david_1', time: '9:00 AM', isMe: false },
+        { sender: 'David', key: 'chat.starter.david_2', time: '9:15 AM', isMe: false }
     ],
     Matei: [
-        { sender: 'Matei', text: 'Working on the isometric room, looking sick \u{1F3A8}', time: '11:00 AM', isMe: false }
+        { sender: 'Matei', key: 'chat.starter.matei_1', time: '11:00 AM', isMe: false }
     ],
     Manager: [
-        { sender: 'Manager', text: 'How is the WHOOP integration going? Remember the demo is everything.', time: '8:00 AM', isMe: false }
+        { sender: 'Manager', key: 'chat.starter.manager_1', time: '8:00 AM', isMe: false }
     ]
 };
 
 const AUTO_REPLIES = {
-    Team: ['Got it, working on it now \u{1F44D}', 'Standup at 3pm don\'t forget', 'PR looks good, merging', 'Anyone else getting a 500 on the API?', 'Nice fix! Ship it \u{1F680}'],
-    David: ['Backend is running, try reconnecting', 'Check the WebSocket \u2014 I pushed a fix', 'Ghost brain is working, test with mock state 2', 'Let me know when you\'re ready to integrate'],
-    Matei: ['Room rendering is done \u{1F3A8}', 'Working on Ghost sprite now', 'The atmosphere transitions look sick', 'Can you test the furniture interactions?'],
-    Manager: ['How\'s the biometric integration going?', 'Remember to handle edge cases', 'The demo flow looks great, practice the timing', 'Ship it, don\'t gold-plate it']
+    Team: ['chat.reply.team_1', 'chat.reply.team_2', 'chat.reply.team_3', 'chat.reply.team_4', 'chat.reply.team_5'],
+    David: ['chat.reply.david_1', 'chat.reply.david_2', 'chat.reply.david_3', 'chat.reply.david_4'],
+    Matei: ['chat.reply.matei_1', 'chat.reply.matei_2', 'chat.reply.matei_3', 'chat.reply.matei_4'],
+    Manager: ['chat.reply.manager_1', 'chat.reply.manager_2', 'chat.reply.manager_3', 'chat.reply.manager_4']
 };
+
+// Contacts are internal keys; Manager/Team get translated display labels, proper names stay.
+function contactLabel(contact) {
+    if (contact === 'Manager') return i18n.t('chat.contact_manager');
+    if (contact === 'Team') return i18n.t('chat.contact_team');
+    return contact;
+}
 
 function formatTime(date) {
     // 12hr format cause military time is weird
@@ -51,7 +61,12 @@ export class ChatApp {
         this.onNewMessage = null;
 
         this.contacts.forEach(c => {
-            this.messages[c] = (STARTER_MESSAGES[c] || []).map(m => ({ ...m }));
+            this.messages[c] = (STARTER_MESSAGES[c] || []).map(m => ({
+                sender: m.sender,
+                text: i18n.t(m.key),
+                time: m.time,
+                isMe: m.isMe,
+            }));
             this.unread[c] = 0;
         });
     }
@@ -102,7 +117,7 @@ export class ChatApp {
         sidebarHeader.style.fontWeight = '600';
         sidebarHeader.style.color = '#fff';
         sidebarHeader.style.borderBottom = '1px solid #2d2d2d';
-        sidebarHeader.textContent = 'Messages';
+        sidebarHeader.textContent = i18n.t('chat.messages');
         sidebar.appendChild(sidebarHeader);
 
         this.contactListEl = document.createElement('div');
@@ -143,7 +158,7 @@ export class ChatApp {
             nameEl.style.color = '#fff';
             nameEl.style.fontSize = '14px';
             nameEl.style.fontWeight = '500';
-            nameEl.textContent = name;
+            nameEl.textContent = contactLabel(name);
 
             const preview = document.createElement('div');
             Object.assign(preview.style, {
@@ -208,12 +223,12 @@ export class ChatApp {
         this.headerNameEl.style.fontWeight = '600';
         this.headerNameEl.style.color = '#fff';
         this.headerNameEl.style.fontSize = '15px';
-        this.headerNameEl.textContent = this.currentContact;
+        this.headerNameEl.textContent = contactLabel(this.currentContact);
         const onlineEl = document.createElement('span');
         onlineEl.style.color = '#00C864';
         onlineEl.style.fontSize = '12px';
         onlineEl.style.marginLeft = '8px';
-        onlineEl.textContent = 'Online';
+        onlineEl.textContent = i18n.t('chat.online');
         headerLeft.appendChild(this.headerNameEl);
         headerLeft.appendChild(onlineEl);
 
@@ -226,7 +241,7 @@ export class ChatApp {
             cursor: 'pointer',
             padding: '4px 8px'
         });
-        closeBtn.textContent = 'ESC to close';
+        closeBtn.textContent = i18n.t('chat.close');
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
         closeBtn.addEventListener('click', () => this.close());
@@ -258,7 +273,7 @@ export class ChatApp {
 
         this.inputEl = document.createElement('input');
         this.inputEl.type = 'text';
-        this.inputEl.placeholder = 'Type a message...';
+        this.inputEl.placeholder = i18n.t('chat.input_placeholder');
         Object.assign(this.inputEl.style, {
             flex: '1',
             background: '#2d2d2d',
@@ -311,7 +326,7 @@ export class ChatApp {
 
     switchContact(name) {
         this.currentContact = name;
-        this.headerNameEl.textContent = name;
+        this.headerNameEl.textContent = contactLabel(name);
         this.unread[name] = 0;
         this._updateBadge(name);
         this.renderMessages();
@@ -330,7 +345,7 @@ export class ChatApp {
     sendMessage(text) {
         if (text.trim() === '') return;
         this.messages[this.currentContact].push({
-            sender: 'You',
+            sender: i18n.t('chat.you'),
             text: text,
             time: formatTime(new Date()),
             isMe: true
@@ -348,10 +363,10 @@ export class ChatApp {
     addAutoReply(contact) {
         this._hideTyping();
         const replies = AUTO_REPLIES[contact] || AUTO_REPLIES['Team'];
-        const reply = replies[Math.floor(Math.random() * replies.length)];
+        const replyKey = replies[Math.floor(Math.random() * replies.length)];
         this.messages[contact].push({
             sender: contact,
-            text: reply,
+            text: i18n.t(replyKey),
             time: formatTime(new Date()),
             isMe: false
         });
@@ -405,7 +420,7 @@ export class ChatApp {
 
         const senderEl = document.createElement('div');
         Object.assign(senderEl.style, { color: '#888', fontSize: '11px', marginBottom: '2px', marginLeft: '4px' });
-        senderEl.textContent = this.currentContact;
+        senderEl.textContent = contactLabel(this.currentContact);
 
         const bubble = document.createElement('div');
         Object.assign(bubble.style, {
@@ -470,7 +485,7 @@ export class ChatApp {
             if (!msg.isMe) {
                 const senderEl = document.createElement('div');
                 Object.assign(senderEl.style, { color: '#888', fontSize: '11px', marginBottom: '2px', marginLeft: '4px' });
-                senderEl.textContent = msg.sender;
+                senderEl.textContent = contactLabel(msg.sender);
                 wrapper.appendChild(senderEl);
             }
 

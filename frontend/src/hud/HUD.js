@@ -1,4 +1,5 @@
 import { ensureInfoPanel, infoBtn } from './InfoPanel.js';
+import { i18n } from '../i18n/index.js';
 
 const STATE_COLORS = {
     DEEP_FOCUS: '#9B6AFF',
@@ -53,6 +54,7 @@ export class HUD {
         this._el = this._createEl();
         document.body.appendChild(this._el);
 
+        i18n.onChange(() => this._render()); // live language switch
         this._render();
         this._startEcgLoop();
     }
@@ -279,13 +281,13 @@ export class HUD {
         if (!s) return '';
         const score = s.score || 0;
         let icon, label, color;
-        if (score > 80) { icon = '\u{1F634}'; label = 'Well rested'; color = '#6AD89A'; }
-        else if (score >= 50) { icon = '\u{1F610}'; label = 'Fair sleep'; color = '#FFB84A'; }
-        else { icon = '\u{1F635}'; label = 'Sleep deprived'; color = '#FF7A6A'; }
+        if (score > 80) { icon = '\u{1F634}'; label = i18n.t('hud.sleep_well_rested'); color = '#6AD89A'; }
+        else if (score >= 50) { icon = '\u{1F610}'; label = i18n.t('hud.sleep_fair'); color = '#FFB84A'; }
+        else { icon = '\u{1F635}'; label = i18n.t('hud.sleep_deprived'); color = '#FF7A6A'; }
         return `
             <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,228,181,0.08)">
                 <div style="font-size:10px;color:#B8A88C;margin-bottom:2px">
-                    Last Night: ${s.hours.toFixed(1)}h · ${s.efficiency}% eff
+                    ${i18n.t('hud.last_night', { hours: s.hours.toFixed(1), eff: s.efficiency })}
                 </div>
                 <div style="font-size:10px;color:${color}">
                     ${icon} ${label}
@@ -298,7 +300,7 @@ export class HUD {
     _render() {
         const d          = this._data;
         const stateColor = this._sleepMode ? '#4444aa' : (STATE_COLORS[d.state] || '#888888');
-        const stateLabel = this._sleepMode ? '😴 SLEEP MODE' : d.state;
+        const stateLabel = this._sleepMode ? i18n.t('hud.sleep_mode') : (STATE_COLORS[d.state] ? i18n.t('state.' + d.state) : d.state);
 
         const rec    = parseFloat(d.recovery);
         const recDot = isNaN(rec) ? '⚫' : rec >= 66 ? '🟢' : rec >= 33 ? '🟡' : '🔴';
@@ -315,37 +317,37 @@ export class HUD {
         // data-source honesty: live BLE heart rate vs WHOOP morning summary vs demo mock
         const src = d.source || 'mock';
         const srcBadge = src === 'ble'
-            ? '<span class="live-dot" style="color:#6AD89A;font-size:10px;letter-spacing:0.05em" title="live heart rate over Bluetooth">● LIVE</span>'
+            ? `<span class="live-dot" style="color:#6AD89A;font-size:10px;letter-spacing:0.05em" title="${i18n.t('hud.tip_live')}">${i18n.t('hud.badge_live')}</span>`
             : src === 'whoop'
-            ? '<span style="color:#7FB0FF;font-size:10px;letter-spacing:0.05em" title="from your WHOOP account">WHOOP</span>'
-            : '<span style="color:#C9A227;font-size:10px;letter-spacing:0.05em" title="simulated demo data">DEMO</span>';
+            ? `<span style="color:#7FB0FF;font-size:10px;letter-spacing:0.05em" title="${i18n.t('hud.tip_whoop')}">${i18n.t('hud.badge_whoop')}</span>`
+            : `<span style="color:#C9A227;font-size:10px;letter-spacing:0.05em" title="${i18n.t('hud.tip_demo')}">${i18n.t('hud.badge_demo')}</span>`;
         const statusBadge = !this._connected
-            ? '<span style="color:#444;font-size:10px;letter-spacing:0.05em">● OFFLINE</span>'
+            ? `<span style="color:#444;font-size:10px;letter-spacing:0.05em">${i18n.t('hud.badge_offline')}</span>`
             : srcBadge;
         // when not live over BLE, the heart rate shown is the resting HR from the summary
-        const hrSuffix = src === 'whoop' ? ' <span style="font-size:9px;color:#8a7a5c">resting</span>' : '';
+        const hrSuffix = src === 'whoop' ? ` <span style="font-size:9px;color:#8a7a5c">${i18n.t('hud.resting')}</span>` : '';
         const summaryNote = src === 'whoop'
-            ? '<div style="font-size:9px;color:#8a7a5c;margin-bottom:4px;font-style:italic">recovery · HRV · strain — today’s morning summary</div>'
+            ? `<div style="font-size:9px;color:#8a7a5c;margin-bottom:4px;font-style:italic">${i18n.t('hud.morning_summary_note')}</div>`
             : '';
 
         this._textEl.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span class="hr-pulse" style="display:inline-block">❤️ <strong style="font-family:monospace">${bpmFmt}</strong> bpm${hrSuffix}</span>
+                <span class="hr-pulse" style="display:inline-block">❤️ <strong style="font-family:monospace">${bpmFmt}</strong> ${i18n.t('hud.bpm_unit')}${hrSuffix}</span>
                 <span>${statusBadge}</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span>${recDot} Rec: <strong>${recFmt}</strong>${infoBtn('recovery')}</span>
+                <span>${recDot} ${i18n.t('hud.rec_short')} <strong>${recFmt}</strong>${infoBtn('recovery')}</span>
             </div>
             <div style="display:flex;justify-content:space-between;margin-bottom:2px">
-                <span>Strain: <strong>${strainFmt}</strong>${infoBtn('strain')}</span>
-                <span>HRV: <strong style="font-family:monospace">${hrvFmt}</strong>${infoBtn('hrv')}</span>
+                <span>${i18n.t('hud.strain_label')} <strong>${strainFmt}</strong>${infoBtn('strain')}</span>
+                <span>${i18n.t('hud.hrv_label')} <strong style="font-family:monospace">${hrvFmt}</strong>${infoBtn('hrv')}</span>
             </div>
             ${summaryNote}
             <div style="margin:6px 0 4px">
-                State: <strong style="color:${stateColor};font-family:'Fredoka',sans-serif;font-weight:600">${stateLabel}</strong>${infoBtn('state')}${this._cqi != null ? ` · <span style="font-size:11px;color:${this._cqi >= 80 ? '#6AD89A' : this._cqi >= 50 ? '#FFB84A' : '#FF7A6A'}">CQI: ${Math.round(this._cqi)}%</span>${infoBtn('cqi')}` : ''}
+                ${i18n.t('hud.state_label')} <strong style="color:${stateColor};font-family:'Fredoka',sans-serif;font-weight:600">${stateLabel}</strong>${infoBtn('state')}${this._cqi != null ? ` · <span style="font-size:11px;color:${this._cqi >= 80 ? '#6AD89A' : this._cqi >= 50 ? '#FFB84A' : '#FF7A6A'}">${i18n.t('hud.cqi_label')} ${Math.round(this._cqi)}%</span>${infoBtn('cqi')}` : ''}
             </div>
-            <div style="font-size:11px;color:#B8A88C;margin-bottom:4px" title="derived from your HRV deviation vs 14-day baseline — not a WHOOP-reported value">
-                Stress ${stress.toFixed(1)}/3.0${infoBtn('stress')}
+            <div style="font-size:11px;color:#B8A88C;margin-bottom:4px" title="${i18n.t('hud.tip_stress')}">
+                ${i18n.t('hud.stress_line', { n: stress.toFixed(1) })}${infoBtn('stress')}
             </div>
             <div style="background:rgba(255,228,181,0.08);border-radius:4px;height:6px;overflow:hidden">
                 <div style="

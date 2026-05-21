@@ -162,7 +162,7 @@ async function startGame(enableDemo = false) {
     demoHotbar = new DemoHotbar();
     demoHotbar.setClickHandler((key) => {
         if (!demoHotbar.manualEnabled) {
-            toastSystem.show('warning', '\uD83D\uDD12 Live Mode', 'WHOOP is streaming real data. Manual override disabled.', 3000);
+            toastSystem.show('warning', '\uD83D\uDD12 ' + i18n.t('toast.live_mode_locked_title'), i18n.t('toast.live_mode_locked'), 3000);
             return;
         }
         applyMockState(key);
@@ -273,21 +273,21 @@ async function startGame(enableDemo = false) {
             coffeeCount++;
             let message, priority, buttons;
             if (coffeeCount < 3) {
-                message = "Good idea - coffee fuels great code. Don't forget to hydrate too! ☕";
+                message = i18n.t('ghost.coffee_1');
                 priority = 'low';
-                buttons = ['Thanks!'];
-                toastSystem.show('info', '☕ Caffeine Boost', 'HR +5bpm, Alertness +15%, Recovery -3%', 4000);
+                buttons = [i18n.t('ghost.btn_thanks')];
+                toastSystem.show('info', '☕ ' + i18n.t('toast.caffeine_boost'), i18n.t('toast.caffeine_boost_body'), 4000);
             } else if (coffeeCount === 3) {
-                message = "That's coffee #3... maybe slow down a bit? Your heart rate doesn't need the help. ☕⚠️";
+                message = i18n.t('ghost.coffee_3');
                 priority = 'warning';
-                buttons = ['I\'m fine', 'You\'re right'];
+                buttons = [i18n.t('ghost.btn_im_fine'), i18n.t('ghost.btn_youre_right')];
                 toastSystem.triggerAchievement('coffee_addict');
-                toastSystem.show('warning', '☕ Overcaffeinated', 'HR +12bpm, Anxiety +20%, Ghost is judging you', 4000);
+                toastSystem.show('warning', '☕ ' + i18n.t('toast.overcaffeinated'), i18n.t('toast.overcaffeinated_body'), 4000);
             } else {
-                message = `Coffee #${coffeeCount}. I'm genuinely worried now. Hydrate. Please. 💀`;
+                message = i18n.t('ghost.coffee_many', { n: coffeeCount });
                 priority = 'warning';
-                buttons = ['Ok ok...', 'One more won\'t hurt'];
-                toastSystem.show('warning', '☕ Overcaffeinated', 'HR +12bpm, Anxiety +20%, Ghost is judging you', 4000);
+                buttons = [i18n.t('ghost.btn_ok_ok'), i18n.t('ghost.btn_one_more')];
+                toastSystem.show('warning', '☕ ' + i18n.t('toast.overcaffeinated'), i18n.t('toast.overcaffeinated_body'), 4000);
             }
             ghost.showSpeechBubble({
                 message,
@@ -299,18 +299,18 @@ async function startGame(enableDemo = false) {
             return;
         }
         if (name === 'whiteboard') {
-            toastSystem.show('info', '📋 Sprint Board', 'Tasks remaining: Ship DevLife, Sleep (optional)', 4000);
+            toastSystem.show('info', '📋 ' + i18n.t('toast.sprint_board'), i18n.t('toast.sprint_board_body'), 4000);
         }
         if (name === 'desk_terminal') {
-            toastSystem.show('ghost', '💻 Terminal', 'Ghost is watching your commands...', 3000);
+            toastSystem.show('ghost', '💻 ' + i18n.t('toast.terminal_title'), i18n.t('toast.terminal_body'), 3000);
         }
         if (name === 'speaker') {
             toggleMusic();
             ghost.showSpeechBubble({
-                message: musicPlaying ? "Music on. Let the flow state begin. 🎵" : "Music off.",
+                message: musicPlaying ? i18n.t('ghost.music_on') : i18n.t('ghost.music_off'),
                 priority: 'low',
                 state: ghost._state,
-                buttons: ['Nice'],
+                buttons: [i18n.t('ghost.btn_nice')],
                 biometric: {},
             });
             return;
@@ -353,7 +353,7 @@ async function startGame(enableDemo = false) {
             });
             const json = await res.json();
             if (!res.ok || !json.valid) {
-                toastSystem.show('warning', i18n.t('toast.fix_rejected'), json.reason || 'validare esuata', 4000);
+                toastSystem.show('warning', i18n.t('toast.fix_rejected'), json.reason || i18n.t('apply_fix.validation_failed'), 4000);
                 return;
             }
             patchHash = json.patch_hash;
@@ -436,7 +436,7 @@ async function startGame(enableDemo = false) {
             if (_lastRecVel !== data.recovery_velocity) {
                 _lastRecVel = data.recovery_velocity;
                 const mins = (data.recovery_velocity / 60).toFixed(1);
-                toastSystem.show('info', '💓 Recovery Complete', `HR returned to baseline in ${mins} minutes`, 4000);
+                toastSystem.show('info', '💓 ' + i18n.t('toast.recovery_complete'), i18n.t('toast.recovery_complete_body', { mins }), 4000);
             }
         } else {
             _lastRecVel = null;
@@ -449,7 +449,7 @@ async function startGame(enableDemo = false) {
         ghost.setStateTint(data.to);
         furniture.setMonitorState(data.to);
         soundManager.setState(data.to);
-        toastSystem.show('state', 'State: ' + data.to, 'Biometric state shifted to ' + data.to);
+        toastSystem.show('state', i18n.t('toast.state_prefix') + i18n.t('state.' + data.to), i18n.t('toast.state_change_body', { state: i18n.t('state.' + data.to) }));
         if (data.to === 'DEEP_FOCUS') {
             toastSystem.triggerAchievement('first_flow');
         }
@@ -479,7 +479,7 @@ async function startGame(enableDemo = false) {
         if (e.key >= '1' && e.key <= '5') {
             e.preventDefault();
             if (!demoHotbar.manualEnabled) {
-                toastSystem.show('warning', '\uD83D\uDD12 Live Mode', 'WHOOP is streaming real data. Manual override disabled.', 3000);
+                toastSystem.show('warning', '\uD83D\uDD12 ' + i18n.t('toast.live_mode_locked_title'), i18n.t('toast.live_mode_locked'), 3000);
                 return;
             }
             applyMockState(parseInt(e.key));
@@ -651,7 +651,7 @@ async function startGame(enableDemo = false) {
 
     const cafeScene = new CafeScene(pixiApp);
     cafeScene.onGhostSay = (msg) => ghost.showSpeechBubble?.({
-        message: msg, priority: 'low', state: ghost._state, buttons: ['Nice'], biometric: {},
+        message: msg, priority: 'low', state: ghost._state, buttons: [i18n.t('ghost.btn_nice')], biometric: {},
     }) || console.log('[ghost]', msg);
     cafeScene.onExit = () => {
         town.setSpawnPoint(16, 7);
@@ -661,7 +661,7 @@ async function startGame(enableDemo = false) {
 
     const coworkScene = new CoworkScene(pixiApp);
     coworkScene.onGhostSay = (msg) => ghost.showSpeechBubble?.({
-        message: msg, priority: 'low', state: ghost._state, buttons: ['Nice'], biometric: {},
+        message: msg, priority: 'low', state: ghost._state, buttons: [i18n.t('ghost.btn_nice')], biometric: {},
     }) || console.log('[ghost]', msg);
     coworkScene.onExit = () => {
         town.setSpawnPoint(7, 16);
