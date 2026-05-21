@@ -142,7 +142,7 @@ function quote(text, attribution) {
   return new Paragraph({
     spacing: { before: 200, after: 200, line: 320 },
     border: {
-      left: { style: BorderStyle.SINGLE, size: 24, color: COLOR_ACCENT, space: 16 },
+      left: { style: BorderStyle.SINGLE, size: 24, color: COLOR_SECONDARY, space: 16 },
     },
     indent: { left: 200 },
     children: [
@@ -205,10 +205,10 @@ const children = [];
 // ====== COPERTĂ ======
 // Bara colorata sus + titlu mare + linie subtila + subtitlu
 children.push(
-  // Bara colorata accent sus
+  // Bara colorata navy sus — accent vizual sobru pentru coperta
   new Paragraph({
     spacing: { before: 0, after: 0 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 48, color: COLOR_ACCENT, space: 0 } },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 48, color: COLOR_PRIMARY, space: 0 } },
     children: [new TextRun({ text: "", size: 2 })],
   }),
   new Paragraph({ spacing: { before: 2400 }, children: [new TextRun("")] }),
@@ -218,11 +218,11 @@ children.push(
     spacing: { after: 200 },
     children: [new TextRun({ text: "DevLife", bold: true, size: 120, font: FONT, color: COLOR_PRIMARY })],
   }),
-  // Linie despartitoare
+  // Linie despartitoare — subtila, gri
   new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 100, after: 300 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: COLOR_ACCENT, space: 4 } },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: COLOR_MUTED, space: 4 } },
     indent: { left: 3000, right: 3000 },
     children: [new TextRun({ text: "", size: 2 })],
   }),
@@ -799,7 +799,7 @@ const doc = new Document({
             }),
             new Paragraph({
               spacing: { before: 0, after: 0 },
-              border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: COLOR_ACCENT, space: 1 } },
+              border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: COLOR_MUTED, space: 1 } },
               children: [new TextRun({ text: "", size: 2 })],
             }),
           ],
@@ -811,7 +811,7 @@ const doc = new Document({
           children: [
             new Paragraph({
               spacing: { before: 0, after: 80 },
-              border: { top: { style: BorderStyle.SINGLE, size: 6, color: COLOR_ACCENT, space: 1 } },
+              border: { top: { style: BorderStyle.SINGLE, size: 4, color: COLOR_MUTED, space: 1 } },
               children: [new TextRun({ text: "", size: 2 })],
             }),
             new Paragraph({
