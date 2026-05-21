@@ -26,19 +26,35 @@ def calculate_total(items):
 # Try running: print(calculate_total(None))
 # The ghost will detect the TypeError and offer a fix.
 `,
-    'welcome.cpp': `// C++ runs in-browser via JSCPP — supports iostream, basic STL, classes.
-// Cmd/Ctrl+Enter to run, Cmd/Ctrl+S to save. Standard input goes in the stdin tab.
+    'welcome.cpp': `// C++ runs in-browser via JSCPP, a pure-JS C++ interpreter.
+// Supported headers: <iostream>, <cmath>, <cstdio>, <cstdlib>, <cstring>, <ctime>, <iomanip>, <cctype>
+// NOT supported: <vector>, <string>, <map>, <algorithm>, full STL — use C arrays + cstring instead.
+//
+// Cmd/Ctrl+Enter to run, Cmd/Ctrl+S to save. stdin goes in the bottom-left tab.
 #include <iostream>
-#include <vector>
 using namespace std;
 
 int main() {
-    vector<int> nums = {3, 1, 4, 1, 5, 9, 2, 6};
+    int nums[] = {3, 1, 4, 1, 5, 9, 2, 6};
+    int n = sizeof(nums) / sizeof(nums[0]);
     int sum = 0;
-    for (int n : nums) sum += n;
+    for (int i = 0; i < n; i++) sum += nums[i];
     cout << "sum = " << sum << endl;
+
+    // try a runtime error to see the ghost react:
+    // int* p = 0;  *p = 1;
     return 0;
 }
+`,
+    'welcome.js': `// JavaScript runs in a Web Worker. console.log -> stdout, console.error -> stderr.
+// Cmd/Ctrl+Enter to run, Cmd/Ctrl+S to save. Top-level await is supported.
+
+const nums = [3, 1, 4, 1, 5, 9, 2, 6];
+const sum = nums.reduce((a, b) => a + b, 0);
+console.log('sum =', sum);
+
+// uncomment to see how the ghost reacts to a runtime error:
+// null.foo;
 `,
 };
 
