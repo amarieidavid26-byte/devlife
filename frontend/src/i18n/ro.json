@@ -22,6 +22,9 @@
   "settings.kb_close_app": "Închidere aplicație",
   "settings.about_version": "DevLife v0.1",
   "settings.about_author": "de David Amariei",
+  "settings.about_built_by": "REALIZAT DE",
+  "settings.about_role_david": "Backend · WHOOP · Demo",
+  "settings.about_role_matei": "Frontend · Securitate · Teste",
 
   "state.RELAXED": "Relaxat",
   "state.DEEP_FOCUS": "Concentrat",

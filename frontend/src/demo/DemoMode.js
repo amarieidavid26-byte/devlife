@@ -36,7 +36,7 @@ const CHAPTER_DESC_KEYS = {
 const OUTRO_LINES = [
   { text: 'DevLife', font: 'Fredoka', size: 32, color: '#6AD89A' },
   { key: 'demo.outro_2', font: 'Nunito', size: 16, color: '#F5F0E8' },
-  { text: 'Built by David Amariei', font: 'Nunito', size: 14, color: '#B8A88C' },
+  { text: 'Built by David Amariei & Matei Vultur', font: 'Nunito', size: 14, color: '#B8A88C' },
 ];
 
 // script definition

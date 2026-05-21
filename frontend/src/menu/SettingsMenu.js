@@ -29,21 +29,29 @@ export class SettingsMenu {
     // panel
     const panel = document.createElement('div');
     panel.style.cssText = `
-        max-width:480px; width:90%; max-height:85vh; overflow-y:auto;
-        background:rgba(15,15,30,0.95);
-        border:1px solid rgba(255,255,255,0.08); border-radius:8px;
-        padding:32px; box-sizing:border-box;
+        max-width:520px; width:90%; max-height:88vh; overflow-y:auto;
+        background:linear-gradient(180deg, rgba(20,20,38,0.97) 0%, rgba(12,12,24,0.97) 100%);
+        border:1px solid rgba(255,255,255,0.08); border-radius:12px;
+        padding:32px 36px; box-sizing:border-box;
+        box-shadow:0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
     `;
     root.appendChild(panel);
 
-    // title
-    panel.appendChild(this._heading(i18n.t('settings.title'), {
-      fontSize: '24px',
-      color: '#e0e0e0',
-      letterSpacing: '4px',
-      textAlign: 'center',
-      marginBottom: '28px',
-    }));
+    // title block with accent underline
+    const titleWrap = document.createElement('div');
+    titleWrap.style.cssText = 'text-align:center; margin-bottom:28px;';
+    const titleEl = this._heading(i18n.t('settings.title'), {
+      fontSize: '26px',
+      color: '#f0f0f0',
+      letterSpacing: '6px',
+      fontWeight: '600',
+      textShadow: '0 0 24px rgba(0,200,100,0.18)',
+    });
+    titleWrap.appendChild(titleEl);
+    const accent = document.createElement('div');
+    accent.style.cssText = 'width:40px; height:2px; background:#00c864; margin:10px auto 0; border-radius:2px; box-shadow:0 0 12px rgba(0,200,100,0.6);';
+    titleWrap.appendChild(accent);
+    panel.appendChild(titleWrap);
 
     // audio section
     panel.appendChild(this._sectionLabel(i18n.t('settings.audio')));
@@ -157,26 +165,29 @@ export class SettingsMenu {
       panel.appendChild(row);
     }
 
-    // about section
+    // about section — version, tagline, and an "author cards" row crediting both builders
     panel.appendChild(this._sectionLabel(i18n.t('settings.about')));
 
-    const aboutLines = [
-      i18n.t('settings.about_version'),
-      i18n.t('menu.subtitle'),
-      i18n.t('settings.about_author'),
-    ];
-    for (const line of aboutLines) {
-      const p = document.createElement('div');
-      p.textContent = line;
-      Object.assign(p.style, {
-        fontFamily: "'Courier New', monospace",
-        fontSize: '12px',
-        color: '#555',
-        textAlign: 'center',
-        lineHeight: '1.8',
-      });
-      panel.appendChild(p);
-    }
+    const version = document.createElement('div');
+    version.textContent = i18n.t('settings.about_version');
+    version.style.cssText = "font-family:'Courier New',monospace; font-size:14px; color:#00c864; text-align:center; letter-spacing:2px; margin-bottom:4px;";
+    panel.appendChild(version);
+
+    const tagline = document.createElement('div');
+    tagline.textContent = i18n.t('menu.subtitle');
+    tagline.style.cssText = "font-family:'Nunito',sans-serif; font-size:12px; color:#888; text-align:center; font-style:italic; margin-bottom:18px;";
+    panel.appendChild(tagline);
+
+    const builtByLabel = document.createElement('div');
+    builtByLabel.textContent = i18n.t('settings.about_built_by');
+    builtByLabel.style.cssText = "font-family:'Courier New',monospace; font-size:10px; color:#666; text-align:center; letter-spacing:4px; margin-bottom:12px;";
+    panel.appendChild(builtByLabel);
+
+    const authorsRow = document.createElement('div');
+    authorsRow.style.cssText = 'display:flex; gap:12px; justify-content:center;';
+    authorsRow.appendChild(this._authorCard('David Amariei', 'amarieidavid26-byte', i18n.t('settings.about_role_david')));
+    authorsRow.appendChild(this._authorCard('Matei Vultur',  'mateivul',            i18n.t('settings.about_role_matei')));
+    panel.appendChild(authorsRow);
 
     // close btn
     const closeBtn = document.createElement('button');
@@ -285,12 +296,18 @@ export class SettingsMenu {
 
   _sectionLabel(text) {
     const el = document.createElement('div');
-    el.textContent = text;
     el.style.cssText = `
-        font-family:'Courier New',monospace; font-size:11px; color:#555;
+        font-family:'Courier New',monospace; font-size:11px; color:#7a7a7a;
         letter-spacing:3px; border-bottom:1px solid rgba(255,255,255,0.06);
-        padding-bottom:6px; margin-top:24px; margin-bottom:14px;
+        padding-bottom:6px; margin-top:26px; margin-bottom:14px;
+        display:flex; align-items:center; gap:8px;
     `;
+    const dot = document.createElement('span');
+    dot.style.cssText = 'width:5px; height:5px; border-radius:50%; background:#00c864; box-shadow:0 0 8px rgba(0,200,100,0.6); flex-shrink:0;';
+    el.appendChild(dot);
+    const label = document.createElement('span');
+    label.textContent = text;
+    el.appendChild(label);
     return el;
   }
 
@@ -309,5 +326,44 @@ export class SettingsMenu {
       color: '#aaa',
     });
     return el;
+  }
+
+  // Mini author-credit card: name, @github handle (clickable), and a short role line.
+  _authorCard(name, handle, role) {
+    const card = document.createElement('a');
+    card.href = `https://github.com/${handle}`;
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
+    card.style.cssText = `flex:1; max-width:200px; padding:12px 14px;
+      background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+      border-radius:6px; text-align:center; text-decoration:none;
+      transition:border-color 0.18s, background 0.18s, transform 0.18s;`;
+    card.addEventListener('mouseenter', () => {
+      card.style.borderColor = 'rgba(0,200,100,0.4)';
+      card.style.background  = 'rgba(0,200,100,0.06)';
+      card.style.transform   = 'translateY(-1px)';
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.borderColor = 'rgba(255,255,255,0.06)';
+      card.style.background  = 'rgba(255,255,255,0.03)';
+      card.style.transform   = 'translateY(0)';
+    });
+
+    const nameEl = document.createElement('div');
+    nameEl.textContent = name;
+    nameEl.style.cssText = "font-family:'Nunito',sans-serif; font-size:13px; font-weight:700; color:#e0e0e0; margin-bottom:2px;";
+    card.appendChild(nameEl);
+
+    const handleEl = document.createElement('div');
+    handleEl.textContent = '@' + handle;
+    handleEl.style.cssText = "font-family:'Courier New',monospace; font-size:10px; color:#00c864; margin-bottom:4px;";
+    card.appendChild(handleEl);
+
+    const roleEl = document.createElement('div');
+    roleEl.textContent = role;
+    roleEl.style.cssText = "font-family:'Nunito',sans-serif; font-size:10px; color:#777; line-height:1.4;";
+    card.appendChild(roleEl);
+
+    return card;
   }
 }

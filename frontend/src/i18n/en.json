@@ -22,6 +22,9 @@
   "settings.kb_close_app": "Close App",
   "settings.about_version": "DevLife v0.1",
   "settings.about_author": "by David Amariei",
+  "settings.about_built_by": "BUILT BY",
+  "settings.about_role_david": "Backend · WHOOP · Demo",
+  "settings.about_role_matei": "Frontend · Security · Tests",
 
   "state.RELAXED": "Relaxed",
   "state.DEEP_FOCUS": "Deep Focus",
