@@ -5,6 +5,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { privilegedWsUrl, getFeatures } from '../network/session.js';
+import { i18n } from '../i18n/index.js';
 
 const ENC = new TextEncoder();
 
@@ -46,10 +47,10 @@ export class TerminalApp {
             fontFamily: "'Nunito', system-ui, sans-serif",
         });
         const title = document.createElement('span');
-        title.textContent = 'Terminal — zsh';
+        title.textContent = i18n.t('terminal.title');
         Object.assign(title.style, { color: '#9aa', fontSize: '13px' });
         const closeBtn = document.createElement('button');
-        closeBtn.textContent = '✕  close';
+        closeBtn.textContent = i18n.t('terminal.close');
         Object.assign(closeBtn.style, {
             background: 'transparent', color: '#9aa', fontSize: '13px',
             border: 'none', cursor: 'pointer', padding: '4px 8px',
@@ -68,7 +69,7 @@ export class TerminalApp {
         this.overlay.appendChild(host);
 
         if (!getFeatures().terminal) {
-            host.innerHTML = '<div style="color:#c98;font-family:monospace;padding:20px">Terminal is disabled on this server.</div>';
+            host.innerHTML = `<div style="color:#c98;font-family:monospace;padding:20px">${i18n.t('terminal.disabled')}</div>`;
             return;
         }
 
@@ -110,10 +111,10 @@ export class TerminalApp {
             this.term.write(new Uint8Array(e.data));
         };
         this.ws.onclose = () => {
-            if (this.term) this.term.write('\r\n\x1b[90m[session ended]\x1b[0m\r\n');
+            if (this.term) this.term.write(`\r\n\x1b[90m${i18n.t('terminal.session_ended')}\x1b[0m\r\n`);
         };
         this.ws.onerror = () => {
-            if (this.term) this.term.write('\r\n\x1b[31m[connection error]\x1b[0m\r\n');
+            if (this.term) this.term.write(`\r\n\x1b[31m${i18n.t('terminal.connection_error')}\x1b[0m\r\n`);
         };
     }
 

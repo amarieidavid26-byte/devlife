@@ -1,39 +1,41 @@
+import { i18n } from '../i18n/index.js';
+
 const BOOKMARKS = {
-    'Wikipedia': 'https://en.m.wikipedia.org',
-    'W3Schools': 'https://www.w3schools.com',
-    'Python Docs': 'https://docs.python.org/3/',
-    'Google': 'https://www.google.com'
+    'tile_wikipedia': 'https://en.m.wikipedia.org',
+    'tile_w3': 'https://www.w3schools.com',
+    'tile_python': 'https://docs.python.org/3/',
+    'tile_google': 'https://www.google.com'
 };
 
-const HOME_HTML = `
+const buildHomeHtml = () => `
 <div style="max-width:720px;margin:80px auto;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a2e">
-    <h1 style="font-size:32px;margin-bottom:8px">DevLife Browser</h1>
-    <p style="color:#666;margin-bottom:32px">Search or enter a URL</p>
+    <h1 style="font-size:32px;margin-bottom:8px">${i18n.t('browser.home_title')}</h1>
+    <p style="color:#666;margin-bottom:32px">${i18n.t('browser.home_subtitle')}</p>
     <div style="width:60%;margin:0 auto 40px;position:relative">
         <span style="position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:20px;pointer-events:none">&#128269;</span>
-        <input id="home-search" type="text" placeholder="Search Google or enter URL..."
+        <input id="home-search" type="text" placeholder="${i18n.t('browser.search_placeholder')}"
                style="width:100%;height:48px;background:#2a2a4a;color:#fff;border:none;border-radius:24px;padding:0 20px 0 50px;font-size:18px;outline:none;box-shadow:0 4px 16px rgba(0,0,0,0.15)"/>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:480px;margin:0 auto">
         <div data-url="https://en.m.wikipedia.org" style="background:#f8f0e3;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #e8e0d3;transition:transform 0.15s">
             <div style="font-size:28px;margin-bottom:8px">📚</div>
-            <div style="font-weight:600">Wikipedia</div>
-            <div style="font-size:12px;color:#888;margin-top:4px">The free encyclopedia</div>
+            <div style="font-weight:600">${i18n.t('browser.tile_wikipedia')}</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">${i18n.t('browser.tile_wikipedia_sub')}</div>
         </div>
         <div data-url="https://www.w3schools.com" style="background:#e3f0f8;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #d3e0e8;transition:transform 0.15s">
             <div style="font-size:28px;margin-bottom:8px">📖</div>
-            <div style="font-weight:600">W3Schools</div>
-            <div style="font-size:12px;color:#888;margin-top:4px">Web tutorials</div>
+            <div style="font-weight:600">${i18n.t('browser.tile_w3')}</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">${i18n.t('browser.tile_w3_sub')}</div>
         </div>
         <div data-url="https://docs.python.org/3/" style="background:#e8e3f8;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #d8d3e8;transition:transform 0.15s">
             <div style="font-size:28px;margin-bottom:8px">🐍</div>
-            <div style="font-weight:600">Python Docs</div>
-            <div style="font-size:12px;color:#888;margin-top:4px">Python 3 reference</div>
+            <div style="font-weight:600">${i18n.t('browser.tile_python')}</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">${i18n.t('browser.tile_python_sub')}</div>
         </div>
         <div data-url="https://www.google.com" style="background:#f8e8e3;border-radius:12px;padding:24px;cursor:pointer;border:1px solid #e8d8d3;transition:transform 0.15s">
             <div style="font-size:28px;margin-bottom:8px">🔍</div>
-            <div style="font-weight:600">Google</div>
-            <div style="font-size:12px;color:#888;margin-top:4px">Search the web</div>
+            <div style="font-weight:600">${i18n.t('browser.tile_google')}</div>
+            <div style="font-size:12px;color:#888;margin-top:4px">${i18n.t('browser.tile_google_sub')}</div>
         </div>
     </div>
 </div>
@@ -146,7 +148,7 @@ export class BrowserApp {
         row1.appendChild(this.refreshBtn);
 
         this.addressBar = document.createElement('input');
-        this.addressBar.placeholder = 'Search or enter URL...';
+        this.addressBar.placeholder = i18n.t('browser.address_placeholder');
         Object.assign(this.addressBar.style, {
             flex: '1',
             background: '#3c3c3c',
@@ -186,7 +188,7 @@ export class BrowserApp {
             padding: '4px 8px',
             whiteSpace: 'nowrap'
         });
-        closeBtn.textContent = 'ESC to close';
+        closeBtn.textContent = i18n.t('browser.close');
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
         closeBtn.addEventListener('click', () => this.close());
@@ -204,7 +206,7 @@ export class BrowserApp {
             borderTop: '1px solid #3c3c3c'
         });
 
-        Object.entries(BOOKMARKS).forEach(([name, url]) => {
+        Object.entries(BOOKMARKS).forEach(([tileKey, url]) => {
             const btn = document.createElement('button');
             Object.assign(btn.style, {
                 background: 'transparent',
@@ -215,7 +217,7 @@ export class BrowserApp {
                 borderRadius: '4px',
                 cursor: 'pointer'
             });
-            btn.textContent = name;
+            btn.textContent = i18n.t(`browser.${tileKey}`);
             btn.addEventListener('mouseenter', () => { btn.style.background = '#3c3c3c'; });
             btn.addEventListener('mouseleave', () => { btn.style.background = 'transparent'; });
             btn.addEventListener('click', () => this.navigate(url));
@@ -241,7 +243,7 @@ export class BrowserApp {
             position: 'absolute',
             inset: '0'
         });
-        this.homeDiv.innerHTML = HOME_HTML;
+        this.homeDiv.innerHTML = buildHomeHtml();
         this.homeDiv.querySelector('#home-search').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 let q = e.target.value.trim();
@@ -376,15 +378,15 @@ export class BrowserApp {
         this.blockedDiv.innerHTML = `
             <div>
                 <div style="font-size:48px;margin-bottom:16px">🚫</div>
-                <h2 style="font-size:20px;margin-bottom:8px">This site blocks embedding</h2>
+                <h2 style="font-size:20px;margin-bottom:8px">${i18n.t('browser.blocked_title')}</h2>
                 <p style="color:#666;margin-bottom:24px;font-size:14px">${url.replace(/</g, '&lt;')}</p><!-- security thing idk if needed -->
                 <a href="${url.replace(/"/g, '&quot;')}" target="_blank" rel="noopener noreferrer"
                    style="display:inline-block;background:#0096FF;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px">
-                    Open in new tab
+                    ${i18n.t('browser.open_new_tab')}
                 </a>
                 <div style="margin-top:12px">
                     <button id="browser-go-home" style="background:transparent;border:1px solid #ddd;color:#666;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">
-                        Back to home
+                        ${i18n.t('browser.back_home')}
                     </button>
                 </div>
             </div>

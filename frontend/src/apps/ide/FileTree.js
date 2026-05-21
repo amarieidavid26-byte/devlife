@@ -1,6 +1,7 @@
 // Lazy-loading workspace file tree. Clicking a file calls onOpenFile(relPath).
 // Right-click a row (or use the header buttons) to create/rename/delete files & folders.
 import { listDir, createPath, renamePath, deletePath } from '../../network/files.js';
+import { i18n } from '../../i18n/index.js';
 
 export class FileTree {
     constructor(onOpenFile) {
@@ -17,7 +18,7 @@ export class FileTree {
         const header = document.createElement('div');
         header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 8px 8px 12px;';
         const label = document.createElement('span');
-        label.textContent = 'WORKSPACE';
+        label.textContent = i18n.t('filetree.workspace');
         label.style.cssText = 'color:#7a7a7a;font-size:10px;letter-spacing:1px;';
         header.appendChild(label);
 
@@ -33,9 +34,9 @@ export class FileTree {
             b.addEventListener('click', (e) => { e.stopPropagation(); fn(); });
             return b;
         };
-        tools.appendChild(mkBtn('🗋', 'New file', () => this._createAt('', 'file')));
-        tools.appendChild(mkBtn('🗀', 'New folder', () => this._createAt('', 'dir')));
-        tools.appendChild(mkBtn('⟳', 'Refresh', () => this.refresh()));
+        tools.appendChild(mkBtn('🗋', i18n.t('filetree.new_file'), () => this._createAt('', 'file')));
+        tools.appendChild(mkBtn('🗀', i18n.t('filetree.new_folder'), () => this._createAt('', 'dir')));
+        tools.appendChild(mkBtn('⟳', i18n.t('filetree.refresh'), () => this.refresh()));
         header.appendChild(tools);
         this.el.appendChild(header);
 
@@ -46,26 +47,27 @@ export class FileTree {
     }
 
     async _createAt(parentRel, kind) {
-        const name = (window.prompt(kind === 'dir' ? 'New folder name:' : 'New file name:') || '').trim();
+        const name = (window.prompt(kind === 'dir' ? i18n.t('filetree.prompt_folder_name') : i18n.t('filetree.prompt_file_name')) || '').trim();
         if (!name) return;
         const rel = parentRel ? `${parentRel}/${name}` : name;
         try { await createPath(rel, kind); this.refresh(); if (kind === 'file') this.onOpenFile(rel); }
-        catch (e) { window.alert('Create failed: ' + e.message); }
+        catch (e) { window.alert(i18n.t('filetree.create_failed', { msg: e.message })); }
     }
 
     async _rename(entry) {
-        const next = (window.prompt('Rename to:', entry.name) || '').trim();
+        const next = (window.prompt(i18n.t('filetree.prompt_rename'), entry.name) || '').trim();
         if (!next || next === entry.name) return;
         const parent = entry.path.includes('/') ? entry.path.slice(0, entry.path.lastIndexOf('/')) : '';
         const dst = parent ? `${parent}/${next}` : next;
         try { await renamePath(entry.path, dst); this.refresh(); }
-        catch (e) { window.alert('Rename failed: ' + e.message); }
+        catch (e) { window.alert(i18n.t('filetree.rename_failed', { msg: e.message })); }
     }
 
     async _delete(entry) {
-        if (!window.confirm(`Delete ${entry.type === 'dir' ? 'folder' : 'file'} "${entry.name}"?`)) return;
+        const kind = entry.type === 'dir' ? i18n.t('filetree.kind_folder') : i18n.t('filetree.kind_file');
+        if (!window.confirm(i18n.t('filetree.confirm_delete', { kind, name: entry.name }))) return;
         try { await deletePath(entry.path); this.refresh(); }
-        catch (e) { window.alert('Delete failed: ' + e.message); }
+        catch (e) { window.alert(i18n.t('filetree.delete_failed', { msg: e.message })); }
     }
 
     _contextMenu(ev, entry) {
@@ -85,11 +87,11 @@ export class FileTree {
             menu.appendChild(i);
         };
         if (entry.type === 'dir') {
-            item('New file', () => this._createAt(entry.path, 'file'));
-            item('New folder', () => this._createAt(entry.path, 'dir'));
+            item(i18n.t('filetree.new_file'), () => this._createAt(entry.path, 'file'));
+            item(i18n.t('filetree.new_folder'), () => this._createAt(entry.path, 'dir'));
         }
-        item('Rename', () => this._rename(entry));
-        item('Delete', () => this._delete(entry));
+        item(i18n.t('filetree.rename'), () => this._rename(entry));
+        item(i18n.t('filetree.delete'), () => this._delete(entry));
         document.body.appendChild(menu);
         const close = () => { menu.remove(); document.removeEventListener('click', close); };
         setTimeout(() => document.addEventListener('click', close), 0);

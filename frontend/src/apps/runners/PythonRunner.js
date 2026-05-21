@@ -58,7 +58,7 @@ export class PythonRunner {
         } catch (err) {
             return {
                 stdout: '',
-                stderr: `Pyodide nu este disponibil: ${err.message}\nRuleaza ./scripts/setup-pyodide.sh`,
+                stderr: i18n.t('runner.pyodide_unavailable', { msg: err.message }),
                 exit: 1,
                 ms: 0,
             };
@@ -94,7 +94,7 @@ export class PythonRunner {
                 clearTimeout(this.timeoutId);
                 this._settle({
                     stdout: '',
-                    stderr: e.message || 'Worker error',
+                    stderr: e.message || i18n.t('runner.worker_error'),
                     exit: 1,
                     ms: Math.round(performance.now() - this._startedAt),
                 });

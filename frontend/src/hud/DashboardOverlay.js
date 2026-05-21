@@ -1,4 +1,5 @@
 import { ensureInfoPanel, infoBtn } from './InfoPanel.js';
+import { i18n } from '../i18n/index.js';
 
 const STATE_COLORS = {
     DEEP_FOCUS: '#9B6AFF',
@@ -243,6 +244,20 @@ export class DashboardOverlay {
         this._buildDOM();
         this._startLoops();
         this._startClock();
+        this._localizeStatic();
+        // live language switch: re-localize static labels + re-apply event-driven texts
+        i18n.onChange(() => {
+            this._localizeStatic();
+            this._applyState(this._curState);
+            this.setConnected(this._isConnected);
+        });
+    }
+
+    // set every element carrying data-i18n from the current language (keeps sibling 💡 buttons)
+    _localizeStatic() {
+        this._el.querySelectorAll('[data-i18n]').forEach(el => {
+            el.textContent = i18n.t(el.dataset.i18n);
+        });
     }
 
 
@@ -257,16 +272,16 @@ export class DashboardOverlay {
         <div class="topbar-clock" id="dov-clock">--:--:--</div>
         <div class="topbar-right">
             <span class="session-dot" id="dov-session-dot"></span>
-            <span id="dov-session-label" style="color:#8A7E6A">OFFLINE</span>
+            <span id="dov-session-label" data-i18n="dashboard.offline" style="color:#8A7E6A">OFFLINE</span>
             <span id="dov-session-timer" style="color:#8A7E6A">00:00:00</span>
-            <span class="tab-hint">&nbsp;&middot;&nbsp;TAB to close</span>
+            <span class="tab-hint">&nbsp;&middot;&nbsp;<span data-i18n="dashboard.tab_to_close">TAB to close</span></span>
         </div>
     </div>
 
     <div class="left">
 
         <div class="hr-section">
-            <div class="sec-hdr">Cardiac Output</div>
+            <div class="sec-hdr" data-i18n="dashboard.cardiac_output">Cardiac Output</div>
             <div class="hr-row">
                 <span class="hr-heart" id="dov-heart">&#10084;&#65039;</span>
                 <span class="hr-value" id="dov-hr">--</span>
@@ -277,26 +292,26 @@ export class DashboardOverlay {
         <div class="metrics">
             <div class="metric">
                 <div><span class="val" id="dov-hrv">--</span><span class="unit"> ms</span></div>
-                <div class="lbl">HRV</div>
+                <div class="lbl" data-i18n="dashboard.hrv">HRV</div>
             </div>
             <div class="metric">
                 <div><span class="val" id="dov-rec">--</span><span class="unit"> %</span></div>
-                <div class="lbl">Recovery</div>
+                <div class="lbl" data-i18n="dashboard.recovery">Recovery</div>
             </div>
             <div class="metric">
                 <div><span class="val" id="dov-strain">--</span></div>
-                <div class="lbl">Strain</div>
+                <div class="lbl" data-i18n="dashboard.strain">Strain</div>
             </div>
         </div>
 
         <div class="state-section">
             <div class="state-name" id="dov-state" style="color:var(--dov-state-color,#6A5E4C)">—</div>
-            <div class="state-lbl">Cognitive State${infoBtn('state')}</div>
+            <div class="state-lbl"><span data-i18n="dashboard.cognitive_state">Cognitive State</span>${infoBtn('state')}</div>
         </div>
 
         <div class="stress-section">
             <div class="stress-header">
-                <span class="lbl">Stress Level${infoBtn('stress')}</span>
+                <span class="lbl"><span data-i18n="dashboard.stress_level">Stress Level</span>${infoBtn('stress')}</span>
                 <span class="val" id="dov-stress-val">0.0 / 3.0</span>
             </div>
             <div class="stress-track">
@@ -305,37 +320,37 @@ export class DashboardOverlay {
         </div>
 
         <div class="cqi-section">
-            <div class="sec-hdr" style="font-family:'Fredoka',sans-serif;font-size:12px">Code Quality Index${infoBtn('cqi')}</div>
+            <div class="sec-hdr" style="font-family:'Fredoka',sans-serif;font-size:12px"><span data-i18n="dashboard.cqi_header">Code Quality Index</span>${infoBtn('cqi')}</div>
             <div class="cqi-row">
                 <div class="cqi-track"><div class="cqi-fill" id="dov-cqi-bar" style="width:0%;background:#6AD89A"></div></div>
                 <span class="cqi-val" id="dov-cqi-val" style="color:#6AD89A">CQI: --%</span>
             </div>
-            <div class="cqi-hint" id="dov-cqi-hint">Awaiting biometric data...</div>
+            <div class="cqi-hint" id="dov-cqi-hint" data-i18n="dashboard.cqi_awaiting">Awaiting biometric data...</div>
         </div>
 
         <div class="ans-section">
-            <div class="sec-hdr">Autonomic Balance${infoBtn('autonomic')}</div>
+            <div class="sec-hdr"><span data-i18n="dashboard.autonomic_balance">Autonomic Balance</span>${infoBtn('autonomic')}</div>
             <div class="ans-bars">
                 <div class="ans-bar-group">
                     <div class="ans-bar" id="dov-ans-sns" style="background:#FF7A6A;height:2px"></div>
-                    <span class="ans-bar-lbl">SNS</span>
+                    <span class="ans-bar-lbl" data-i18n="dashboard.sns">SNS</span>
                 </div>
                 <div class="ans-bar-group">
                     <div class="ans-bar" id="dov-ans-pns" style="background:#6AD89A;height:2px"></div>
-                    <span class="ans-bar-lbl">PNS</span>
+                    <span class="ans-bar-lbl" data-i18n="dashboard.pns">PNS</span>
                 </div>
             </div>
-            <div class="ans-status" id="dov-ans-status">Awaiting data...</div>
+            <div class="ans-status" id="dov-ans-status" data-i18n="dashboard.ans_awaiting">Awaiting data...</div>
         </div>
 
         <div class="hrv-section">
-            <div class="sec-hdr">HRV Trend</div>
+            <div class="sec-hdr" data-i18n="dashboard.hrv_trend">HRV Trend</div>
             <canvas class="hrv-spark-canvas" id="dov-hrv-spark"></canvas>
         </div>
 
         <div class="gauges-row">
             <div class="gauge-box">
-                <div class="sec-hdr">Recovery Zones</div>
+                <div class="sec-hdr" data-i18n="dashboard.recovery_zones">Recovery Zones</div>
                 <svg width="140" height="80" viewBox="0 0 140 80">
                     <path d="M15 72 A55 55 0 0 1 125 72" fill="none" stroke="rgba(255,228,181,0.06)" stroke-width="8" stroke-linecap="round"/>
                     <path d="M15 72 A55 55 0 0 1 125 72" fill="none" stroke="url(#dovRecGrad)" stroke-width="3" stroke-linecap="round" opacity="0.12"/>
@@ -351,11 +366,11 @@ export class DashboardOverlay {
                     </linearGradient></defs>
                 </svg>
                 <div class="gauge-val" id="dov-rec-gauge-val">--%</div>
-                <div class="gauge-sub">Recovery</div>
+                <div class="gauge-sub" data-i18n="dashboard.recovery">Recovery</div>
             </div>
 
             <div class="gauge-box">
-                <div class="sec-hdr">Cognitive Load${infoBtn('cognitive_load')}</div>
+                <div class="sec-hdr"><span data-i18n="dashboard.cognitive_load">Cognitive Load</span>${infoBtn('cognitive_load')}</div>
                 <div style="position:relative;width:120px;height:120px">
                     <svg width="120" height="120" viewBox="0 0 120 120">
                         <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,228,181,0.06)" stroke-width="7"/>
@@ -366,7 +381,7 @@ export class DashboardOverlay {
                     </svg>
                     <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
                         <div class="gauge-val" id="dov-cog-val" style="font-size:24px">0%</div>
-                        <div style="font-family:'Nunito',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#B8A88C;margin-top:2px">INDEX</div>
+                        <div data-i18n="dashboard.index" style="font-family:'Nunito',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#B8A88C;margin-top:2px">INDEX</div>
                     </div>
                 </div>
             </div>
@@ -377,19 +392,19 @@ export class DashboardOverlay {
         <div class="threat nominal" id="dov-threat">
             <div class="threat-dot"></div>
             <div>
-                <div class="threat-label">Threat Level</div>
-                <div class="threat-val" id="dov-threat-val">NOMINAL</div>
+                <div class="threat-label" data-i18n="dashboard.threat_level">Threat Level</div>
+                <div class="threat-val" id="dov-threat-val" data-i18n="dashboard.threat_nominal">NOMINAL</div>
             </div>
         </div>
-        <div class="int-count" id="dov-int-count"><strong>0</strong> INTERVENTIONS</div>
-        <div class="log-title">Intervention Log</div>
+        <div class="int-count" id="dov-int-count"><strong>0</strong> <span data-i18n="dashboard.interventions">INTERVENTIONS</span></div>
+        <div class="log-title" data-i18n="dashboard.intervention_log">Intervention Log</div>
         <div class="log-scroll" id="dov-log">
-            <div class="log-empty" id="dov-log-empty">Monitoring...</div>
+            <div class="log-empty" id="dov-log-empty" data-i18n="dashboard.monitoring">Monitoring...</div>
         </div>
     </div>
 
     <div class="bottom" id="dov-ecg-container">
-        <div class="ecg-lbl-left">Lead II &middot; ECG</div>
+        <div class="ecg-lbl-left" data-i18n="dashboard.ecg_lead">Lead II &middot; ECG</div>
         <div class="ecg-lbl-right">
             <span class="ecg-bpm-num" id="dov-ecg-bpm-num">72</span>
             <span class="ecg-bpm-unit">BPM</span>
@@ -564,13 +579,13 @@ export class DashboardOverlay {
             const cqiColor = cqi > 66 ? '#6AD89A' : cqi > 33 ? '#FFB84A' : '#FF7A6A';
             $.cqiBar.style.width = cqi + '%';
             $.cqiBar.style.background = cqiColor;
-            $.cqiVal.textContent = 'CQI: ' + (this._targetCQI > 0 ? cqi + '%' : '--%');
+            $.cqiVal.textContent = i18n.t('hud.cqi_label') + ' ' + (this._targetCQI > 0 ? cqi + '%' : '--%');
             $.cqiVal.style.color = cqiColor;
             if (this._targetCQI > 0) {
-                $.cqiHint.textContent = cqi <= 25 ? '\u26A0\uFE0F High bug risk. Consider stepping away.'
-                    : cqi <= 50 ? '\u26A1 Below baseline. Stick to simple tasks.'
-                    : cqi <= 75 ? '\u2713 Decent. Good for routine work.'
-                    : '\uD83D\uDD25 Peak performance. Ship features now.';
+                $.cqiHint.textContent = cqi <= 25 ? i18n.t('dashboard.cqi_hint_high_risk')
+                    : cqi <= 50 ? i18n.t('dashboard.cqi_hint_below')
+                    : cqi <= 75 ? i18n.t('dashboard.cqi_hint_decent')
+                    : i18n.t('dashboard.cqi_hint_peak');
             }
 
             // ANS Balance
@@ -582,9 +597,9 @@ export class DashboardOverlay {
             $.ansPns.style.height = pnsH + 'px';
             if (this._targetSNS > 0 || this._targetPNS > 0) {
                 const diff = this._displaySNS - this._displayPNS;
-                $.ansStatus.textContent = diff > 0.1 ? 'Fight-or-flight dominant'
-                    : diff < -0.1 ? 'Rest-and-digest dominant'
-                    : 'Balanced autonomic state';
+                $.ansStatus.textContent = diff > 0.1 ? i18n.t('dashboard.ans_fight')
+                    : diff < -0.1 ? i18n.t('dashboard.ans_rest')
+                    : i18n.t('dashboard.ans_balanced');
             }
 
             this._drawSparkline();
@@ -704,7 +719,7 @@ export class DashboardOverlay {
         this._ecgColor = color;
         const $ = this._$;
 
-        $.state.textContent = s;
+        $.state.textContent = i18n.t('state.' + s);
         $.state.style.color = color;
         $.state.style.textShadow = `0 0 24px ${color}, 0 0 48px ${this._hexToRgba(color, 0.3)}`;
         $.topbarAccent.style.color = color;
@@ -725,7 +740,7 @@ export class DashboardOverlay {
         if (this._curState === 'STRESSED' || this._displayStress > 2)                       level = 'critical';
         else if (this._curState === 'FATIGUED' || this._curState === 'WIRED' || this._displayStress > 1) level = 'elevated';
         this._$.threat.className   = 'threat ' + level;
-        this._$.threatVal.textContent = level.toUpperCase();
+        this._$.threatVal.textContent = i18n.t('dashboard.threat_' + level);
     }
 
 
@@ -774,7 +789,7 @@ export class DashboardOverlay {
         this._interventions.unshift(msg);
         if (this._interventions.length > 8) this._interventions.pop();
         this._intTotalCount++;
-        $.intCount.innerHTML = `<strong>${this._intTotalCount}</strong> INTERVENTION${this._intTotalCount !== 1 ? 'S' : ''}`;
+        $.intCount.innerHTML = `<strong>${this._intTotalCount}</strong> ${i18n.t('dashboard.interventions')}`;
 
         $.log.innerHTML = '';
         this._interventions.forEach(m => {
@@ -788,7 +803,7 @@ export class DashboardOverlay {
                 `<div class="log-meta">` +
                     `<span class="log-icon">${icon}</span>` +
                     `<span class="log-time">${m._time || ''}</span>` +
-                    `<span class="log-state" style="background:${stateColor}">${m.state || ''}</span>` +
+                    `<span class="log-state" style="background:${stateColor}">${m.state ? i18n.t('state.' + m.state) : ''}</span>` +
                     `<span class="log-badge" style="background:${prioColor}">${m.priority || 'low'}</span>` +
                 `</div>` +
                 `<div class="log-msg">${this._escapeHtml(m.message || '')}</div>`;
@@ -804,11 +819,11 @@ export class DashboardOverlay {
         if (connected) {
             this._sessionStart = this._sessionStart || Date.now();
             $.sessionDot.classList.add('on');
-            $.sessionLabel.textContent = 'SESSION ACTIVE';
+            $.sessionLabel.textContent = i18n.t('dashboard.session_active');
             $.sessionLabel.style.color = '#6AD89A';
         } else {
             $.sessionDot.classList.remove('on');
-            $.sessionLabel.textContent = 'OFFLINE';
+            $.sessionLabel.textContent = i18n.t('dashboard.offline');
             $.sessionLabel.style.color = '#8A7E6A';
         }
     }

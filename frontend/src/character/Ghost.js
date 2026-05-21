@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { i18n } from '../i18n/index.js';
 
 const STATE_COLORS = {
     DEEP_FOCUS: 0x9B6AFF,
@@ -473,7 +474,7 @@ export class Ghost {
         const recovery = data.biometric?.recovery ?? '--';
         const recDot = recovery >= 66 ? '🟢' : recovery >= 33 ? '🟡' : '🔴';
 
-        const buttons = (data.buttons || ['Not Now']).map(label => `
+        const buttons = (data.buttons || [i18n.t('ghost.btn_not_now')]).map(label => `
             <button class="ghost-btn" data-label="${label}">${label}</button>
         `).join('');
 
@@ -582,8 +583,8 @@ export class Ghost {
                 ` : ''}
             </style>
             <div class="ghost-bubble-header">
-                <div class="ghost-bubble-title">👻 GHOST</div>
-                <div class="ghost-bubble-bio">❤️ ${bpm} bpm<br>${recDot} Rec: ${recovery}%</div>
+                <div class="ghost-bubble-title">${i18n.t('ghost.header_title')}</div>
+                <div class="ghost-bubble-bio">${i18n.t('ghost.bio_bpm', { bpm })}<br>${recDot} ${i18n.t('ghost.bio_rec', { rec: recovery })}</div>
             </div>
             <div class="ghost-bubble-body" id="ghost-msg"></div>
             <div class="ghost-bubble-footer">${buttons}${trailingBtn}</div>
@@ -732,7 +733,7 @@ export class Ghost {
             this._sprite.alpha = 0.5;
             this._shadow.alpha = 0.05;
             this.showSpeechBubble({
-                message: "Shhh... resting. Recovery in progress. \uD83C\uDF19",
+                message: i18n.t('ghost.sleep_resting'),
                 priority: 'low',
                 state: 'FATIGUED',
                 buttons: [],
@@ -740,7 +741,7 @@ export class Ghost {
             });
             this._sleepFollowUp = setTimeout(() => {
                 this.showSpeechBubble({
-                    message: "Sleep is the best performance optimizer. Rest well. \uD83D\uDCA4",
+                    message: i18n.t('ghost.sleep_followup'),
                     priority: 'low',
                     state: 'FATIGUED',
                     buttons: [],
@@ -752,10 +753,10 @@ export class Ghost {
             this._sprite.alpha = 1.0;
             this._shadow.alpha = 0.18;
             this.showSpeechBubble({
-                message: "Welcome back! Ready to code? \u2600\uFE0F",
+                message: i18n.t('ghost.welcome_back'),
                 priority: 'low',
                 state: 'RELAXED',
-                buttons: ['Let\'s go!'],
+                buttons: [i18n.t('ghost.btn_lets_go')],
                 biometric: {},
             });
         }

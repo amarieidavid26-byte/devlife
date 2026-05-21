@@ -3,6 +3,7 @@ import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
 import { TownPlayer } from './TownPlayer.js';
 import { TownGhost } from './TownGhost.js';
 import { TownDialogue } from './TownDialogue.js';
+import { i18n } from '../i18n/index.js';
 
 const GRID_SIZE = 20;
 const GAME_ZOOM = 1.5;
@@ -159,7 +160,7 @@ export class Town {
             () => ({ x: this._ghost._container.x, y: this._ghost._container.y })
         );
         setTimeout(() => {
-            if (this._dialogue) this._dialogue.say("Fresh air! Let's explore the neighborhood.", 4000);
+            if (this._dialogue) this._dialogue.say(i18n.t('town.intro'), 4000);
         }, 2000);
 
         // [E] prompt -- floats above nearby interactable door
@@ -583,7 +584,9 @@ export class Town {
 
         // ---- Label ----
         const labelPos = this._gridToScreen(startX + w / 2, startY + h / 2);
-        const text = new PIXI.Text(label, {
+        const labelKeys = { HOME: 'town.label_home', CAFE: 'town.label_cafe', COWORK: 'town.label_cowork' };
+        const labelText = labelKeys[label] ? i18n.t(labelKeys[label]) : label;
+        const text = new PIXI.Text(labelText, {
             fontFamily: "'Fredoka', sans-serif",
             fontSize: 16,
             fill: COL.labelFill,
@@ -1064,7 +1067,7 @@ export class Town {
         sign.endFill();
         this._detailContainer.addChild(sign);
         // Sign text
-        const signText = new PIXI.Text('PARK', {
+        const signText = new PIXI.Text(i18n.t('town.label_park'), {
             fontFamily: "'Fredoka', sans-serif",
             fontSize: 10,
             fill: COL.labelFill,
@@ -1248,8 +1251,8 @@ export class Town {
     _treeInteract() {
         if (!this._dialogue) return;
         const quotes = [
-            "Fun fact: looking at trees reduces cortisol levels. Even procedurally generated ones.",
-            "These trees grow based on the town's collective developer health. Someday.",
+            i18n.t('town.tree_1'),
+            i18n.t('town.tree_2'),
         ];
         this._dialogue.say(quotes[this._treeQuoteIndex % quotes.length], 4000);
         this._treeQuoteIndex++;
@@ -1330,16 +1333,16 @@ export class Town {
                 }
                 #med-close:hover { background: rgba(106, 216, 154, 0.3); }
             </style>
-            <div id="med-title">Breathe</div>
+            <div id="med-title">${i18n.t('town.med_title')}</div>
             <div id="med-circle-wrap">
                 <div id="med-circle">
-                    <span id="med-phase">Inhale...</span>
+                    <span id="med-phase">${i18n.t('town.med_inhale')}</span>
                 </div>
             </div>
             <div id="med-quote"></div>
-            <div id="med-hr">Simulated HR: 75 bpm</div>
+            <div id="med-hr">${i18n.t('town.med_hr_initial')}</div>
             <div id="med-complete"></div>
-            <button id="med-close">Return to park</button>
+            <button id="med-close">${i18n.t('town.med_close')}</button>
         `;
         document.body.appendChild(overlay);
         this._meditationOverlay = overlay;
@@ -1350,9 +1353,9 @@ export class Town {
         // Breathing phase text cycle (10s per full cycle: 4s inhale, 2s hold, 4s exhale)
         const phaseEl = overlay.querySelector('#med-phase');
         const quotes = [
-            "Your HRV improves 15% with just 5 minutes of breathing exercises.",
-            "Box breathing: the cheapest performance hack in tech.",
-            "Even your ghost needs a break sometimes.",
+            i18n.t('town.med_quote_1'),
+            i18n.t('town.med_quote_2'),
+            i18n.t('town.med_quote_3'),
         ];
         const quoteEl = overlay.querySelector('#med-quote');
         const hrEl = overlay.querySelector('#med-hr');
@@ -1368,9 +1371,9 @@ export class Town {
             if (!this._meditationActive) return;
             const elapsed = Date.now() - startTime;
             const t = (elapsed % 10000) / 10000;
-            if (t < 0.4) phaseEl.textContent = 'Inhale...';
-            else if (t < 0.6) phaseEl.textContent = 'Hold...';
-            else phaseEl.textContent = 'Exhale...';
+            if (t < 0.4) phaseEl.textContent = i18n.t('town.med_inhale');
+            else if (t < 0.6) phaseEl.textContent = i18n.t('town.med_hold');
+            else phaseEl.textContent = i18n.t('town.med_exhale');
         }, 200);
 
         // Cycle counter -- every 10 seconds = 1 breath cycle
@@ -1379,10 +1382,10 @@ export class Town {
             cycle++;
             quoteEl.textContent = quotes[cycle % quotes.length];
             hr = Math.max(62, hr - Math.floor(Math.random() * 3 + 3));
-            hrEl.textContent = `Simulated HR: 75 -> ${hr} bpm`;
+            hrEl.textContent = i18n.t('town.med_hr', { hr });
 
             if (cycle >= 3) {
-                completeEl.textContent = 'Session complete. Stress reduced by 24%.';
+                completeEl.textContent = i18n.t('town.med_complete');
                 completeEl.style.opacity = '1';
             }
         }, 10000);
@@ -1408,8 +1411,8 @@ export class Town {
     _showBuildingMessage(building) {
         if (!this._dialogue) return;
         const messages = {
-            cafe: "The cafe is closed for now. But I can smell the coffee from here!",
-            cowork: "The coworking space is under construction. Coming soon!",
+            cafe: i18n.t('town.cafe_closed'),
+            cowork: i18n.t('town.cowork_construction'),
         };
         if (messages[building]) this._dialogue.say(messages[building], 3000);
     }

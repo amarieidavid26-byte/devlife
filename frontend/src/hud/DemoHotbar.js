@@ -1,10 +1,11 @@
+import { i18n } from '../i18n/index.js';
 
 const STATES = [
-    { key: 1, label: 'FOCUS',   emoji: '🟣', color: '#9B6AFF', id: 'DEEP_FOCUS' },
-    { key: 2, label: 'STRESS',  emoji: '🔴', color: '#FF7A6A', id: 'STRESSED'   },
-    { key: 3, label: 'FATIGUE', emoji: '🟡', color: '#FFB84A', id: 'FATIGUED'   },
-    { key: 4, label: 'RELAX',   emoji: '🟢', color: '#6AD89A', id: 'RELAXED'    },
-    { key: 5, label: 'WIRED',   emoji: '🔵', color: '#6AB8FF', id: 'WIRED'      },
+    { key: 1, labelKey: 'demo.state_focus',   emoji: '🟣', color: '#9B6AFF', id: 'DEEP_FOCUS' },
+    { key: 2, labelKey: 'demo.state_stress',  emoji: '🔴', color: '#FF7A6A', id: 'STRESSED'   },
+    { key: 3, labelKey: 'demo.state_fatigue', emoji: '🟡', color: '#FFB84A', id: 'FATIGUED'   },
+    { key: 4, labelKey: 'demo.state_relax',   emoji: '🟢', color: '#6AD89A', id: 'RELAXED'    },
+    { key: 5, labelKey: 'demo.state_wired',   emoji: '🔵', color: '#6AB8FF', id: 'WIRED'      },
 ];
 
 export class DemoHotbar {
@@ -93,7 +94,7 @@ export class DemoHotbar {
             box.innerHTML = `
                 <span class="dh-num">[${s.key}]</span>
                 <span class="dh-icon">${s.emoji}</span>
-                <span class="dh-name">${s.label}</span>
+                <span class="dh-name">${i18n.t(s.labelKey)}</span>
             `;
             box.addEventListener('click', () => {
                 if (!this.manualEnabled) return;
@@ -152,11 +153,11 @@ export class DemoHotbar {
             dot.style.cssText = 'animation:_hotbarPulse 1s ease-in-out infinite;';
             this._headerEl.appendChild(dot);
             const txt = document.createElement('span');
-            txt.textContent = this._bleConnected ? ' WHOOP LIVE' : ' WHOOP API';
+            txt.textContent = ' ' + (this._bleConnected ? i18n.t('demo.whoop_live') : i18n.t('demo.whoop_api'));
             txt.style.color = '#6AD89A';
             this._headerEl.appendChild(txt);
             const toggle = document.createElement('span');
-            toggle.textContent = 'Demo Mode';
+            toggle.textContent = i18n.t('demo.demo_mode');
             toggle.style.cssText = `
                 color: #B8A88C; cursor: pointer; font-size: 7px;
                 border: 1px solid rgba(255,228,181,0.15); border-radius: 3px;
@@ -171,11 +172,11 @@ export class DemoHotbar {
             this._headerEl.appendChild(toggle);
         } else if (isLive && this._demoOverride) {
             const txt = document.createElement('span');
-            txt.textContent = 'DEMO OVERRIDE';
+            txt.textContent = i18n.t('demo.demo_override');
             txt.style.color = '#FFB84A';
             this._headerEl.appendChild(txt);
             const toggle = document.createElement('span');
-            toggle.textContent = 'Back to Live';
+            toggle.textContent = i18n.t('demo.back_to_live');
             toggle.style.cssText = `
                 color: #6AD89A; cursor: pointer; font-size: 7px;
                 border: 1px solid rgba(106,216,154,0.3); border-radius: 3px;
@@ -190,10 +191,10 @@ export class DemoHotbar {
             this._headerEl.appendChild(toggle);
         } else {
             const txt = document.createElement('span');
-            txt.textContent = 'DEMO STATES \xB7 NO SENSOR';
+            txt.textContent = i18n.t('demo.no_sensor');
             this._headerEl.appendChild(txt);
             const btn = document.createElement('span');
-            btn.textContent = '\uD83D\uDD17 PAIR WHOOP';
+            btn.textContent = '\uD83D\uDD17 ' + i18n.t('demo.pair_whoop');
             btn.style.cssText = `
                 color: #6AD89A; cursor: pointer; font-size: 8px;
                 border: 1px solid rgba(106,216,154,0.3); border-radius: 4px;

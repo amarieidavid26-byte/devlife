@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
 import { TownPlayer } from './TownPlayer.js';
+import { i18n } from '../i18n/index.js';
 
 const GRID_SIZE = 12;
 const GAME_ZOOM = 1.5;
@@ -127,11 +128,11 @@ export class CafeScene {
 
         // Ghost messages
         this._timers.push(setTimeout(() => {
-            this.onGhostSay?.("See? Your HRV is already improving. Breaks work.", 4000);
+            this.onGhostSay?.(i18n.t('cafe.ghost_1'), 4000);
         }, 5000));
 
         this._timers.push(setTimeout(() => {
-            this.onGhostSay?.("Recovery up 3%. Sometimes the best code is written after stepping away.", 5000);
+            this.onGhostSay?.(i18n.t('cafe.ghost_2'), 5000);
         }, 15000));
 
         // [E] interaction prompt
@@ -908,7 +909,7 @@ export class CafeScene {
         displayContainer.addChild(bg);
 
         // label
-        const label = new PIXI.Text('RECOVERY BOOST', {
+        const label = new PIXI.Text(i18n.t('cafe.recovery_boost'), {
             fontFamily: "'Fredoka', monospace, sans-serif",
             fontSize: 6,
             fill: COL.green,
@@ -988,7 +989,7 @@ export class CafeScene {
         matG.drawRoundedRect(x - 10, y + TILE_HEIGHT / 2 - 4, 20, 8, 2);
         matG.endFill();
         // "WELCOME" text on mat
-        const welcomeText = new PIXI.Text('WELCOME', {
+        const welcomeText = new PIXI.Text(i18n.t('cafe.welcome'), {
             fontFamily: 'monospace',
             fontSize: 5,
             fill: 0xF5F0E8,
@@ -1002,7 +1003,7 @@ export class CafeScene {
         this._furnitureContainer.addChild(matG);
         this._furnitureContainer.addChild(welcomeText);
 
-        const hint = new PIXI.Text('Press ESC to leave', {
+        const hint = new PIXI.Text(i18n.t('cafe.door_hint'), {
             fontFamily: 'monospace',
             fontSize: 9,
             fill: 0xc0b8a8,
@@ -1223,7 +1224,7 @@ export class CafeScene {
     }
 
     _interactWithCounter() {
-        this.onGhostSay?.("The barista recommends herbal tea for your stress levels. Smart ghost, smart barista.", 5000);
+        this.onGhostSay?.(i18n.t('cafe.ghost_counter'), 5000);
     }
 
     // -- Brewing --
@@ -1273,7 +1274,7 @@ export class CafeScene {
         this._brewBarFill = new PIXI.Graphics();
         this._brewBarContainer.addChild(this._brewBarFill);
 
-        const brewLabel = new PIXI.Text('Brewing...', {
+        const brewLabel = new PIXI.Text(i18n.t('cafe.brewing'), {
             fontFamily: "'Nunito', monospace, sans-serif",
             fontSize: 8,
             fill: COL.warm,
@@ -1313,7 +1314,7 @@ export class CafeScene {
             this._brewBarFill = null;
         }
 
-        this.onGhostSay?.("Fresh coffee. Your cortisol levels are already dropping.", 4000);
+        this.onGhostSay?.(i18n.t('cafe.ghost_brew_done'), 4000);
         this._timers.push(setTimeout(() => this._showRecoveryPanel(), 800));
     }
 
@@ -1376,16 +1377,16 @@ export class CafeScene {
 
         // Title
         const title = document.createElement('div');
-        title.textContent = '\u2615 Coffee Break Recovery';
+        title.textContent = i18n.t('cafe.panel_title');
         title.style.cssText = "font-family:'Fredoka',sans-serif;font-size:18px;margin-bottom:18px;color:#F5F0E8;font-weight:600";
         card.appendChild(title);
 
         // Stats
         const stats = [
-            { label: 'Heart Rate', from: 95, to: 72, unit: ' bpm', decimals: 0 },
-            { label: 'HRV', from: 35, to: 52, unit: 'ms', decimals: 0 },
-            { label: 'Stress', from: 2.1, to: 0.8, unit: '', decimals: 1 },
-            { label: 'Recovery', from: 45, to: 68, unit: '%', decimals: 0 },
+            { label: i18n.t('cafe.stat_hr'), from: 95, to: 72, unit: ' bpm', decimals: 0 },
+            { label: i18n.t('cafe.stat_hrv'), from: 35, to: 52, unit: 'ms', decimals: 0 },
+            { label: i18n.t('cafe.stat_stress'), from: 2.1, to: 0.8, unit: '', decimals: 1 },
+            { label: i18n.t('cafe.stat_recovery'), from: 45, to: 68, unit: '%', decimals: 0 },
         ];
 
         const statEls = [];
@@ -1440,13 +1441,13 @@ export class CafeScene {
 
         // Ghost quote
         const quote = document.createElement('div');
-        quote.textContent = '\u201CSometimes the best code is written after stepping away.\u201D';
+        quote.textContent = i18n.t('cafe.panel_quote');
         quote.style.cssText = 'font-style:italic;font-size:13px;color:#B8A88C;margin-top:16px;line-height:1.5';
         card.appendChild(quote);
 
         // Continue button
         const btn = document.createElement('button');
-        btn.textContent = 'Continue';
+        btn.textContent = i18n.t('cafe.continue');
         btn.style.cssText = [
             "font-family:'Fredoka',sans-serif;font-size:14px;font-weight:600",
             'background:rgba(106,168,154,0.25);color:#6AD89A;border:1px solid rgba(106,216,154,0.4)',
@@ -1473,6 +1474,6 @@ export class CafeScene {
         this._recoveryIntervals = [];
 
         if (this._player) this._player.enable();
-        this.onGhostSay?.("Recovery +8%. Back to work?", 3000);
+        this.onGhostSay?.(i18n.t('cafe.ghost_panel_close'), 3000);
     }
 }

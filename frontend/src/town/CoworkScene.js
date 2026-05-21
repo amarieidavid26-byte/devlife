@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
 import { TownPlayer } from './TownPlayer.js';
+import { i18n } from '../i18n/index.js';
 
 const GRID = 12;
 const ZOOM = 1.5;
@@ -49,11 +50,11 @@ const NPCS = [
 ];
 
 const GHOST_LINES = [
-    { t: 3, msg: 'Welcome to the coworking space. Everyone here has a ghost too.' },
-    { t: 10, msg: "See Alex over there? Heart rate at 112. His ghost is trying to calm him down." },
-    { t: 20, msg: "Sam's been in flow state for 2 hours. That's the zone we aim for." },
-    { t: 30, msg: "Mia should really go home. Her recovery is at 25%." },
-    { t: 45, msg: 'This is what DevLife looks like at scale. Every developer, understood.' },
+    { t: 3, key: 'cowork.ghost_1' },
+    { t: 10, key: 'cowork.ghost_2' },
+    { t: 20, key: 'cowork.ghost_3' },
+    { t: 30, key: 'cowork.ghost_4' },
+    { t: 45, key: 'cowork.ghost_5' },
 ];
 
 const INTERACT_ZONES = [
@@ -214,7 +215,7 @@ export class CoworkScene {
         // ghost commentary
         if (this._ghostLineIdx < GHOST_LINES.length) {
             if (this._elapsed >= GHOST_LINES[this._ghostLineIdx].t) {
-                if (this.onGhostSay) this.onGhostSay(GHOST_LINES[this._ghostLineIdx].msg);
+                if (this.onGhostSay) this.onGhostSay(i18n.t(GHOST_LINES[this._ghostLineIdx].key));
                 this._ghostLineIdx++;
             }
         }
@@ -415,7 +416,7 @@ export class CoworkScene {
         this._container.addChild(g);
 
         // column headers
-        const headers = ['TODO', 'IN PROG', 'DONE'];
+        const headers = [i18n.t('cowork.col_todo'), i18n.t('cowork.col_inprog'), i18n.t('cowork.col_done')];
         for (let i = 0; i < 3; i++) {
             const ht = new PIXI.Text(headers[i], {
                 fontFamily: "'Fredoka', sans-serif",
@@ -609,7 +610,7 @@ export class CoworkScene {
         this._container.addChild(g);
 
         // ESC hint above door
-        const hint = new PIXI.Text('Press ESC to leave', {
+        const hint = new PIXI.Text(i18n.t('cowork.door_hint'), {
             fontFamily: "'Fredoka', sans-serif",
             fontSize: 9,
             fill: '#F5F0E8',
@@ -840,7 +841,7 @@ export class CoworkScene {
 
             if (def.state === 'FATIGUED') {
                 // Mia: Zzz floating text
-                zzzText = new PIXI.Text('Zzz', {
+                zzzText = new PIXI.Text(i18n.t('cowork.zzz'), {
                     fontFamily: "'Fredoka', sans-serif",
                     fontSize: 9,
                     fill: '#FFFFFF',
@@ -962,7 +963,7 @@ export class CoworkScene {
 
     _createBadge(def) {
         const color = STATE_HEX[def.state] || '#888';
-        const stateLabel = def.state.replace('_', ' ');
+        const stateLabel = i18n.t('state.' + def.state);
         const container = new PIXI.Container();
 
         const bg = new PIXI.Graphics();
@@ -992,7 +993,7 @@ export class CoworkScene {
 
     _spawnNotif() {
         const npc = this._npcs[Math.floor(Math.random() * this._npcs.length)];
-        const msgs = ['\uD83D\uDCE9 New PR review', '\uD83D\uDD14 Slack ping', '\u2615 Coffee break?', '\uD83D\uDCCB Standup in 5m'];
+        const msgs = [i18n.t('cowork.notif_1'), i18n.t('cowork.notif_2'), i18n.t('cowork.notif_3'), i18n.t('cowork.notif_4')];
         const msg = msgs[Math.floor(Math.random() * msgs.length)];
 
         const chairPos = this._tileCenter(npc.def.gx, npc.def.gy + 1);
@@ -1107,10 +1108,10 @@ export class CoworkScene {
             `<h3 style="font-size:16px;color:${color};margin:0 0 14px 0;font-weight:500;">${bio.title}</h3>` +
             `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:12px;margin-bottom:14px;">` +
             `<div>\u2764\uFE0F <span style="color:${bpmColor};${bpmStyle}">${bio.bpm} bpm</span></div>` +
-            `<div>Recovery: <span style="color:${color}">${bio.recovery}%</span></div>` +
-            `<div>Strain: <span style="color:${color}">${bio.strain}</span></div>` +
-            `<div>HRV: <span style="color:${color}">${bio.hrv}ms</span></div>` +
-            `<div style="grid-column:1/-1">State: <span style="color:${color};font-weight:600">${npc.state.replace('_', ' ')}</span></div>` +
+            `<div>${i18n.t('cowork.lbl_recovery')} <span style="color:${color}">${bio.recovery}%</span></div>` +
+            `<div>${i18n.t('cowork.lbl_strain')} <span style="color:${color}">${bio.strain}</span></div>` +
+            `<div>${i18n.t('cowork.lbl_hrv')} <span style="color:${color}">${bio.hrv}ms</span></div>` +
+            `<div style="grid-column:1/-1">${i18n.t('cowork.lbl_state')} <span style="color:${color};font-weight:600">${i18n.t('state.' + npc.state)}</span></div>` +
             `</div>` +
             `<div style="background:#1E2D3D;border-radius:6px;padding:10px 12px;font-family:'Courier New',monospace;font-size:11px;line-height:1.7;color:#D4D4D4;margin-bottom:14px;white-space:pre;">${this._getCodeBlock(zone.id)}</div>` +
             `<div style="display:flex;align-items:flex-start;gap:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">` +
@@ -1121,9 +1122,9 @@ export class CoworkScene {
 
     _getBioData(id) {
         switch (id) {
-            case 'alex': return { title: 'Alex \u2014 Backend Developer', bpm: '112', recovery: '35', strain: '19.2', hrv: '22' };
-            case 'sam': return { title: 'Sam \u2014 Frontend Developer', bpm: '68', recovery: '82', strain: '11.5', hrv: '65' };
-            case 'mia': return { title: 'Mia \u2014 Data Scientist', bpm: '55', recovery: '22', strain: '21.0', hrv: '18' };
+            case 'alex': return { title: i18n.t('cowork.bio_alex'), bpm: '112', recovery: '35', strain: '19.2', hrv: '22' };
+            case 'sam': return { title: i18n.t('cowork.bio_sam'), bpm: '68', recovery: '82', strain: '11.5', hrv: '65' };
+            case 'mia': return { title: i18n.t('cowork.bio_mia'), bpm: '55', recovery: '22', strain: '21.0', hrv: '18' };
             default: return { title: '', bpm: '0', recovery: '0', strain: '0', hrv: '0' };
         }
     }
@@ -1154,9 +1155,9 @@ export class CoworkScene {
 
     _getGhostMsg(id) {
         switch (id) {
-            case 'alex': return "Alex has been debugging a race condition for 4 hours. His cortisol is through the roof. I\u2019ve blocked his git push twice already.";
-            case 'sam': return "Sam entered flow state 47 minutes ago. Optimal HRV. I haven\u2019t said a word \u2014 that\u2019s how you know it\u2019s going well.";
-            case 'mia': return "Mia\u2019s been here since 6am. Her sleep score was 42% last night. I\u2019ve been dimming her screen gradually \u2014 she hasn\u2019t noticed yet.";
+            case 'alex': return i18n.t('cowork.msg_alex');
+            case 'sam': return i18n.t('cowork.msg_sam');
+            case 'mia': return i18n.t('cowork.msg_mia');
             default: return '';
         }
     }
@@ -1165,7 +1166,7 @@ export class CoworkScene {
         return `<div style="display:flex;align-items:flex-start;gap:10px;">` +
             this._ghostSVG('#8AAAB8') +
             `<div style="font-style:italic;color:#A8A098;font-size:13px;line-height:1.6;">` +
-            `That desk is free. In the future, other players could sit here and you\u2019d see their real biometrics. Imagine that.` +
+            i18n.t('cowork.panel_empty') +
             `</div></div>`;
     }
 
@@ -1173,7 +1174,7 @@ export class CoworkScene {
         return `<div style="display:flex;align-items:flex-start;gap:10px;">` +
             this._ghostSVG('#F5F0E8') +
             `<div style="font-style:italic;color:#A8A098;font-size:13px;line-height:1.6;">` +
-            `Sprint board says: \u2018Ship DevLife by March 22.\u2019 Sounds familiar.` +
+            i18n.t('cowork.panel_whiteboard') +
             `</div></div>`;
     }
 }

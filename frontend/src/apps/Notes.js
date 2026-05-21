@@ -1,29 +1,4 @@
-
-const DEFAULT_NOTES = `# DevLife -- Sprint Planning
-
-## Current Tasks
-- [ ] Fix TypeError in calculate_total()
-- [ ] Add input validation for user data
-- [ ] Write unit tests for API endpoints
-- [ ] Optimize database queries
-
-## Architecture Notes
-- Backend: FastAPI on port 8000
-- Frontend: Vite + PixiJS on port 5173
-- Ghost AI: Claude API + WHOOP biometrics
-- WebSocket: ws:
-
-## Ideas
-- Particle effects when Ghost speaks
-- Sound effects for state transitions
-- Plant growth animation on intervention accept
-
-## Demo Checklist
-- [ ] Pre-load Python code with intentional bug
-- [ ] Test all 5 mock states (keys 1-5)
-- [ ] Dashboard on projector
-- [ ] Practice the 3-minute script
-`;
+import { i18n } from '../i18n/index.js';
 
 export class NotesApp {
     constructor(socket) {
@@ -71,7 +46,7 @@ export class NotesApp {
         title.style.color = '#e6edf3';
         title.style.fontSize = '14px';
         title.style.fontWeight = '600';
-        title.textContent = 'Notes -- Planning Board';
+        title.textContent = i18n.t('notes.title');
 
         const toolbar = document.createElement('div');
         Object.assign(toolbar.style, { display: 'flex', gap: '4px' });
@@ -152,7 +127,7 @@ export class NotesApp {
             cursor: 'pointer',
             padding: '4px 8px'
         });
-        closeBtn.textContent = 'ESC to close';
+        closeBtn.textContent = i18n.t('notes.close');
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#e6edf3'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
         closeBtn.addEventListener('click', () => this.close());
@@ -178,7 +153,7 @@ export class NotesApp {
         });
 
         const saved = localStorage.getItem('devlife-notes');
-        this.textarea.value = saved || DEFAULT_NOTES;
+        this.textarea.value = saved || i18n.t('notes.default_content');
         this._snapshotTasks = new Set(this._extractTasks(this.textarea.value));
 
         this.textarea.addEventListener('input', () => {
@@ -206,7 +181,7 @@ export class NotesApp {
         const end = this.textarea.selectionEnd;
         const val = this.textarea.value;
         if (start === end) {
-            const placeholder = wrapper === '**' ? 'bold' : 'italic'; // only 2 options so this works
+            const placeholder = wrapper === '**' ? i18n.t('notes.placeholder_bold') : i18n.t('notes.placeholder_italic'); // only 2 options so this works
             const insert = wrapper + placeholder + wrapper;
             this.textarea.value = val.slice(0, start) + insert + val.slice(end);
             this.textarea.selectionStart = start + wrapper.length;

@@ -1,6 +1,8 @@
 // demo mode - "a day in the life" cinematic auto play
 // cycles through all 5 states in ~5 min so judges can see everything without a whoop
 
+import { i18n } from '../i18n/index.js';
+
 const STATES = {
   RELAXED: 'RELAXED',
   DEEP_FOCUS: 'DEEP_FOCUS',
@@ -10,29 +12,30 @@ const STATES = {
 };
 
 // intro text lines (shown one at a time during Chapter 0)
+// text resolved at render time via i18n key so the current language is used
 const INTRO_LINES = [
-  { text: 'For 20 years, games asked players to adapt.', style: 'normal' },
-  { text: 'What if a game could adapt to YOU?', style: 'normal' },
-  { text: 'What if it could read your heartbeat...', style: 'normal' },
-  { text: '...measure your stress...', style: 'normal' },
-  { text: '...and protect you from yourself?', style: 'normal' },
-  { text: 'This is DevLife.', style: 'title' },
+  { key: 'demo.intro_1', style: 'normal' },
+  { key: 'demo.intro_2', style: 'normal' },
+  { key: 'demo.intro_3', style: 'normal' },
+  { key: 'demo.intro_4', style: 'normal' },
+  { key: 'demo.intro_5', style: 'normal' },
+  { key: 'demo.intro_6', style: 'title' },
 ];
 
-// chapter transition descriptions
-const CHAPTER_DESCRIPTIONS = {
-  1: 'The morning begins. Coffee first.',
-  2: 'Flow state. The code writes itself.',
-  3: 'Pressure builds. Deadlines approach.',
-  4: 'The body speaks. Will you listen?',
-  5: 'Wired on caffeine. Running on fumes.',
-  6: 'Rest. The most productive thing you can do.',
+// chapter transition descriptions -- resolved at render time
+const CHAPTER_DESC_KEYS = {
+  1: 'demo.chapter_desc_1',
+  2: 'demo.chapter_desc_2',
+  3: 'demo.chapter_desc_3',
+  4: 'demo.chapter_desc_4',
+  5: 'demo.chapter_desc_5',
+  6: 'demo.chapter_desc_6',
 };
 
-// outro credit lines
+// outro credit lines -- brand + author stay untranslated, line 2 resolved at render time
 const OUTRO_LINES = [
   { text: 'DevLife', font: 'Fredoka', size: 32, color: '#6AD89A' },
-  { text: 'A game that understands you.', font: 'Nunito', size: 16, color: '#F5F0E8' },
+  { key: 'demo.outro_2', font: 'Nunito', size: 16, color: '#F5F0E8' },
   { text: 'Built by David Amariei', font: 'Nunito', size: 14, color: '#B8A88C' },
 ];
 
@@ -42,6 +45,7 @@ const SCRIPT = [
   // -- ch0 "Intro: The Next 20 Years" (cinematic text crawl)
   {
     title: 'The Next 20 Years',
+    titleKey: 'demo.ch_title_1',
     state: null,
     duration: 22_000,
     events: [
@@ -60,6 +64,7 @@ const SCRIPT = [
   // -- ch1 "Morning: Fresh Start" (0:22-1:02)
   {
     title: 'Morning: Fresh Start',
+    titleKey: 'demo.ch_title_2',
     state: STATES.RELAXED,
     duration: 40_000,
     events: [
@@ -71,7 +76,7 @@ const SCRIPT = [
       {
         time: 500,
         action: 'ghostSay',
-        data: { text: "Good morning! Recovery looks great today. Let's build something cool." },
+        data: { key: 'demo.say_morning' },
       },
       {
         time: 10_000,
@@ -86,7 +91,7 @@ const SCRIPT = [
       {
         time: 16_000,
         action: 'ghostSay',
-        data: { text: 'Nice and calm heartbeat. Perfect for deep work.' },
+        data: { key: 'demo.say_calm' },
       },
     ],
   },
@@ -94,6 +99,7 @@ const SCRIPT = [
   // -- ch2 "Deep Work: The Zone"
   {
     title: 'Deep Work: The Zone',
+    titleKey: 'demo.ch_title_3',
     state: STATES.DEEP_FOCUS,
     duration: 40_000,
     events: [
@@ -110,7 +116,7 @@ const SCRIPT = [
       {
         time: 20_000,
         action: 'ghostSay',
-        data: { text: "You've been in flow for 20 minutes. I'll keep quiet." },
+        data: { key: 'demo.say_flow' },
       },
     ],
   },
@@ -118,6 +124,7 @@ const SCRIPT = [
   // -- ch3 "Stress: Something Broke"
   {
     title: 'Stress: Something Broke',
+    titleKey: 'demo.ch_title_4',
     state: STATES.STRESSED,
     duration: 40_000,
     events: [
@@ -129,7 +136,7 @@ const SCRIPT = [
       {
         time: 500,
         action: 'ghostSay',
-        data: { text: 'Whoa, heart rate spiking. 112 bpm. Take a breath.' },
+        data: { key: 'demo.say_spike' },
       },
       {
         time: 10_000,
@@ -144,12 +151,12 @@ const SCRIPT = [
       {
         time: 12_500,
         action: 'ghostSay',
-        data: { text: "I'm blocking that git push --force. You're not thinking straight." },
+        data: { key: 'demo.say_firewall' },
       },
       {
         time: 25_000,
         action: 'ghostSay',
-        data: { text: "Let's step back. Maybe grab some coffee?" },
+        data: { key: 'demo.say_stepback' },
       },
     ],
   },
@@ -157,6 +164,7 @@ const SCRIPT = [
   // -- ch4 "Fatigue: Running on Empty"
   {
     title: 'Fatigue: Running on Empty',
+    titleKey: 'demo.ch_title_5',
     state: STATES.FATIGUED,
     duration: 40_000,
     events: [
@@ -168,17 +176,17 @@ const SCRIPT = [
       {
         time: 500,
         action: 'ghostSay',
-        data: { text: "Recovery is at 30%. You've been coding for 8 hours." },
+        data: { key: 'demo.say_recovery_low' },
       },
       {
         time: 15_000,
         action: 'ghostSay',
-        data: { text: 'Your HRV dropped below 40ms. That\'s your body saying stop.' },
+        data: { key: 'demo.say_hrv_low' },
       },
       {
         time: 25_000,
         action: 'ghostSay',
-        data: { text: "I'm dimming the lights. You need to rest." },
+        data: { key: 'demo.say_dimming' },
       },
     ],
   },
@@ -186,6 +194,7 @@ const SCRIPT = [
   // -- ch5 "Wired: Can't Stop"
   {
     title: "Wired: Can't Stop",
+    titleKey: 'demo.ch_title_6',
     state: STATES.WIRED,
     duration: 30_000,
     events: [
@@ -197,12 +206,12 @@ const SCRIPT = [
       {
         time: 500,
         action: 'ghostSay',
-        data: { text: "Still going? Heart rate says you're wired but your body is done." },
+        data: { key: 'demo.say_still_going' },
       },
       {
         time: 15_000,
         action: 'ghostSay',
-        data: { text: 'This is where bugs happen. Last commit was 3am.' },
+        data: { key: 'demo.say_bugs_happen' },
       },
     ],
   },
@@ -210,6 +219,7 @@ const SCRIPT = [
   // -- ch6 "Sleep Mode"
   {
     title: 'Sleep Mode',
+    titleKey: 'demo.ch_title_7',
     state: null,
     duration: 20_000,
     events: [
@@ -221,7 +231,7 @@ const SCRIPT = [
       {
         time: 500,
         action: 'ghostSay',
-        data: { text: "Goodnight. I'll watch over the code." },
+        data: { key: 'demo.say_goodnight' },
       },
       {
         time: 2_000,
@@ -234,6 +244,7 @@ const SCRIPT = [
   // -- ch7 "Outro" (credits sequence)
   {
     title: 'Outro',
+    titleKey: 'demo.ch_title_8',
     state: null,
     duration: 11_000,
     events: [
@@ -382,11 +393,11 @@ export class DemoMode {
       margin-top: 10px; text-align: center;
       opacity: 0; transition: opacity 0.5s ease;
     `;
-    descEl.textContent = CHAPTER_DESCRIPTIONS[index] || '';
+    descEl.textContent = CHAPTER_DESC_KEYS[index] ? i18n.t(CHAPTER_DESC_KEYS[index]) : '';
     overlay.appendChild(descEl);
 
     // typewriter effect
-    const fullTitle = `Chapter ${index}: ${chapter.title}`;
+    const fullTitle = i18n.t('demo.chapter_prefix', { index, title: i18n.t(chapter.titleKey) });
     let charIdx = 0;
     const typeInterval = setInterval(() => {
       if (!this._running) { clearInterval(typeInterval); return; }
@@ -435,7 +446,7 @@ export class DemoMode {
         this._setBiometrics(event.data, chapter.state);
         break;
       case 'ghostSay':
-        this._ghostSay(event.data.text);
+        this._ghostSay(event.data.key ? i18n.t(event.data.key) : event.data.text);
         break;
       case 'playerMoveTo':
         this._playerMoveTo(event.data.target);
@@ -547,7 +558,7 @@ export class DemoMode {
   }
 
   _triggerFirewall(command) {
-    this._ghostSay(`\u26A0\uFE0F Blocked: ${command}`);
+    this._ghostSay(i18n.t('demo.firewall_blocked', { command }));
     if (this._ghost && typeof this._ghost.triggerFirewall === 'function') {
       this._ghost.triggerFirewall(command);
     }
@@ -623,10 +634,11 @@ export class DemoMode {
     const prevLine = this._currentIntroLine;
     const prevGlow = this._currentIntroGlow;
     const isTitle = lineData.style === 'title';
+    const lineText = i18n.t(lineData.key);
 
     // create new line element
     const el = document.createElement('div');
-    el.textContent = lineData.text;
+    el.textContent = lineText;
     el.style.cssText = `
       color: #F5F0E8;
       font-family: 'Fredoka', sans-serif;
@@ -642,7 +654,7 @@ export class DemoMode {
 
     // glow element (behind text, blurred)
     const glow = document.createElement('div');
-    glow.textContent = lineData.text;
+    glow.textContent = lineText;
     glow.style.cssText = `
       color: #F5F0E8;
       font-family: 'Fredoka', sans-serif;
@@ -759,7 +771,7 @@ export class DemoMode {
     if (!lineData) return;
 
     const el = document.createElement('div');
-    el.textContent = lineData.text;
+    el.textContent = lineData.key ? i18n.t(lineData.key) : lineData.text;
     el.style.cssText = `
       color: ${lineData.color};
       font-family: '${lineData.font}', sans-serif;

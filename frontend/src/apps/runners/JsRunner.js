@@ -35,7 +35,7 @@ export class JsRunner {
                 clearTimeout(this.timeoutId);
                 this._settle({
                     stdout: '',
-                    stderr: e.message || 'Worker error',
+                    stderr: e.message || i18n.t('runner.worker_error'),
                     exit: 1,
                     ms: Math.round(performance.now() - this._startedAt),
                 });
