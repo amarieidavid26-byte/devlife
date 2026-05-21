@@ -1,4 +1,5 @@
 import { i18n } from '../i18n/index.js';
+import { Spotify } from '../network/Spotify.js';
 
 const KEYBINDS = [
   ['WASD', 'settings.kb_move'],
@@ -98,6 +99,18 @@ export class SettingsMenu {
     muteRow.appendChild(muteLabel);
     muteRow.appendChild(muteBox);
     panel.appendChild(muteRow);
+
+    // spotify section — only shown when client_id is configured at build time
+    if (Spotify.isConfigured()) {
+      panel.appendChild(this._sectionLabel(i18n.t('spotify.section')));
+      this._spotifyRow = this._row();
+      this._spotifyRow.style.flexDirection = 'column';
+      this._spotifyRow.style.alignItems = 'stretch';
+      this._spotifyRow.style.gap = '8px';
+      panel.appendChild(this._spotifyRow);
+      this._renderSpotifyRow();
+      this._spotifyUnsub = Spotify.onChange(() => this._renderSpotifyRow());
+    }
 
     // language section
     panel.appendChild(this._sectionLabel(i18n.t('settings.language')));
@@ -216,7 +229,45 @@ export class SettingsMenu {
   }
 
   destroy() {
+    if (this._spotifyUnsub) { try { this._spotifyUnsub(); } catch (_) {} this._spotifyUnsub = null; }
     this._root.remove();
+  }
+
+  _renderSpotifyRow() {
+    if (!this._spotifyRow) return;
+    this._spotifyRow.innerHTML = '';
+    const connected = Spotify.isConnected();
+    const name = Spotify.getDisplayName();
+
+    const status = document.createElement('div');
+    status.style.cssText = "font-family:'Courier New',monospace;font-size:12px;color:#aaa;";
+    status.textContent = connected
+      ? '🎵 ' + i18n.t('spotify.connected_as', { name: name || '—' })
+      : i18n.t('spotify.not_connected');
+    this._spotifyRow.appendChild(status);
+
+    const btn = document.createElement('button');
+    const accent = connected ? '#FF7A6A' : '#1DB954';
+    btn.style.cssText = `padding:8px 16px;background:rgba(255,255,255,0.05);
+      color:${accent};border:1px solid ${accent};border-radius:4px;cursor:pointer;
+      font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;
+      transition:background 0.15s, color 0.15s;`;
+    btn.textContent = connected ? i18n.t('spotify.disconnect') : i18n.t('spotify.connect');
+    btn.addEventListener('mouseenter', () => { btn.style.background = `${accent}22`; });
+    btn.addEventListener('mouseleave', () => { btn.style.background = 'rgba(255,255,255,0.05)'; });
+    btn.addEventListener('click', () => {
+      if (connected) Spotify.disconnect();
+      else Spotify.beginAuth().catch(e => alert('Spotify: ' + e.message));
+    });
+    this._spotifyRow.appendChild(btn);
+
+    const err = Spotify.getLastError();
+    if (err) {
+      const errEl = document.createElement('div');
+      errEl.style.cssText = "font-family:'Courier New',monospace;font-size:10px;color:#FF7A6A;";
+      errEl.textContent = err;
+      this._spotifyRow.appendChild(errEl);
+    }
   }
 
   // internal helpers

@@ -28,6 +28,7 @@ import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
 import { CONFIG } from './config.js';
 import { initSession } from './network/session.js';
 import { OfflineBiometrics } from './network/offlineBiometrics.js';
+import { Spotify } from './network/Spotify.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -68,6 +69,10 @@ toastSystem = new ToastSystem();
 const settingsMenu = new SettingsMenu();
 settingsMenu.onVolumeChange((vol) => soundManager.setMasterVolume(vol));
 settingsMenu.onMuteToggle((muted) => muted ? soundManager.mute() : soundManager.unmute());
+
+// Spotify OAuth callback — runs once on load if ?code= is present.
+// Fire-and-forget; Spotify.onChange() notifies the settings menu when it lands.
+Spotify.completeAuthFromUrl().catch(() => {});
 
 // Main Menu
 const mainMenu = new MainMenu(pixiApp);
@@ -305,6 +310,28 @@ async function startGame(enableDemo = false) {
             toastSystem.show('ghost', '💻 ' + i18n.t('toast.terminal_title'), i18n.t('toast.terminal_body'), 3000);
         }
         if (name === 'speaker') {
+            soundManager.resume(); // user gesture unlocks audio context either way
+            if (Spotify.isConnected()) {
+                // ensure the procedural pad isn't fighting Spotify for the master gain
+                if (musicPlaying) { soundManager.stopMusic(); musicPlaying = false; }
+                Spotify.togglePlay().then((res) => {
+                    if (res.ok) {
+                        const msg = res.paused
+                            ? '⏸ ' + i18n.t('spotify.paused')
+                            : '🎵 ' + i18n.t('spotify.playing', { name: Spotify.getDisplayName() || 'Spotify' });
+                        toastSystem.show('info', msg, '', 2400);
+                    } else if (res.hint === 'spotify_no_context') {
+                        toastSystem.show('warning', '🎵', i18n.t('spotify.no_context'), 5000);
+                    } else if (res.hint === 'spotify_device_not_ready') {
+                        toastSystem.show('warning', '🎵', i18n.t('spotify.device_not_ready'), 4000);
+                    } else {
+                        toastSystem.show('warning', '🎵', i18n.t('spotify.playback_failed'), 4000);
+                    }
+                }).catch((e) => {
+                    toastSystem.show('warning', '🎵', e.message || i18n.t('spotify.playback_failed'), 5000);
+                });
+                return;
+            }
             toggleMusic();
             ghost.showSpeechBubble({
                 message: musicPlaying ? i18n.t('ghost.music_on') : i18n.t('ghost.music_off'),
