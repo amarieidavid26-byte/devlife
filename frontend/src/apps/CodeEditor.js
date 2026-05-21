@@ -386,8 +386,11 @@ export class CodeEditorApp {
         if (this.editor) this.editor.setModel(null);
         if (!this.overlay) return;
         if (this._placeholderEl) this._placeholderEl.remove();
+        // when files are disabled (deploy / no local file API) the tree isn't in the DOM,
+        // so don't reserve 220px on the left
+        const leftInset = (this.fileTree && this.fileTree.el && this.fileTree.el.parentElement) ? '220px' : '0';
         const el = document.createElement('div');
-        el.style.cssText = `position:absolute;inset:40px 0 180px 220px;display:flex;align-items:center;
+        el.style.cssText = `position:absolute;inset:40px 0 180px ${leftInset};display:flex;align-items:center;
             justify-content:center;color:#666;font-family:'Nunito',sans-serif;font-size:13px;
             pointer-events:none;z-index:5;text-align:center;padding:0 24px;`;
         el.textContent = text || '';

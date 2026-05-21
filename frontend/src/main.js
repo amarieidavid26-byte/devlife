@@ -67,8 +67,16 @@ document.addEventListener('click', () => soundManager.resume(), { once: true });
 toastSystem = new ToastSystem();
 
 const settingsMenu = new SettingsMenu();
-settingsMenu.onVolumeChange((vol) => soundManager.setMasterVolume(vol));
-settingsMenu.onMuteToggle((muted) => muted ? soundManager.mute() : soundManager.unmute());
+let _savedSpotifyVol = 0.5; // remembered across mute/unmute so the SDK volume is restored
+settingsMenu.onVolumeChange((vol) => {
+    soundManager.setMasterVolume(vol);
+    _savedSpotifyVol = vol;
+    Spotify.setVolume(vol);
+});
+settingsMenu.onMuteToggle((muted) => {
+    if (muted) { soundManager.mute(); Spotify.setVolume(0); }
+    else { soundManager.unmute(); Spotify.setVolume(_savedSpotifyVol); }
+});
 
 // Spotify OAuth callback — runs once on load if ?code= is present.
 // Fire-and-forget; Spotify.onChange() notifies the settings menu when it lands.

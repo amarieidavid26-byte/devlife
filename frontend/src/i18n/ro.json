@@ -79,7 +79,6 @@
   "runner.worker_error": "Eroare worker",
   "runner.pyodide_unavailable": "Pyodide nu este disponibil: {msg}\nRulează ./scripts/setup-pyodide.sh",
   "runner.discard_changes": "„{name}\" are modificări nesalvate. Renunți la ele?",
-  "runner.placeholder_empty": "Deschide sau creează un fișier din panou pentru a începe.",
 
   "ble.connected": "WHOOP conectat",
   "ble.connected_body": "Pulsul în timp real se vede în HUD",

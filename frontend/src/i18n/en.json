@@ -79,7 +79,6 @@
   "runner.worker_error": "Worker error",
   "runner.pyodide_unavailable": "Pyodide is unavailable: {msg}\nRun ./scripts/setup-pyodide.sh",
   "runner.discard_changes": "\"{name}\" has unsaved changes. Discard?",
-  "runner.placeholder_empty": "Open or create a file from the tree to start coding.",
 
   "ble.connected": "WHOOP connected",
   "ble.connected_body": "Live BPM showing in HUD",

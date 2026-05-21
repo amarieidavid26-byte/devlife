@@ -57,6 +57,7 @@ class SpotifyService {
         this._displayName = localStorage.getItem(LS.displayName) || '';
         this._listeners = new Set();
         this._isPaused = true;
+        this._volume = 0.5;   // tracked so Settings volume + mute can drive the SDK
         this._lastError = null;
     }
 
@@ -259,7 +260,7 @@ class SpotifyService {
             const player = new Spotify.Player({
                 name: 'DevLife — room speaker',
                 getOAuthToken: (cb) => this._getValidToken().then(cb).catch(() => cb('')),
-                volume: 0.5,
+                volume: this._volume,
             });
             player.addListener('ready', ({ device_id }) => {
                 this._deviceId = device_id;
@@ -293,6 +294,15 @@ class SpotifyService {
     }
 
     isPaused() { return this._isPaused; }
+
+    // 0..1 — propagated to the SDK player if it exists; cached otherwise so the next
+    // ensurePlayer() can apply it.
+    async setVolume(v) {
+        this._volume = Math.max(0, Math.min(1, Number(v) || 0));
+        if (this._player) {
+            try { await this._player.setVolume(this._volume); } catch (_) {}
+        }
+    }
 
     // Resume / start playback. If nothing's queued anywhere, asks user to queue first.
     // Returns { ok, paused, hint? }.
