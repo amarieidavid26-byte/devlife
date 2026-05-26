@@ -1,102 +1,91 @@
 # Spotify integration — setup pentru cont propriu
 
-DevLife are boxa din cameră legată la **Spotify Web Playback SDK** — click pe ea = play/pause
-direct pe contul tău Spotify, prin browser. Codul e gata; trebuie doar un Spotify dev app
-înregistrat (1x setup, gratuit) și client_id-ul pus în `.env`.
+Boxa din cameră deschide o **interfață Spotify**: un player oficial **embed** (iframe) plus o
+**căutare** prin care pui orice melodie. Codul e gata; trebuie doar un Spotify dev app
+înregistrat (1x setup, gratuit) și `VITE_SPOTIFY_CLIENT_ID` pus în `.env`.
+
+## Cum funcționează (2 suprafețe Spotify)
+
+1. **Căutarea** folosește Web API cu token-ul tău OAuth (PKCE, fără backend, fără secret).
+2. **Redarea** folosește **embed-ul oficial Spotify** (iframe) controlat prin *Embed iFrame API*.
+   Embed-ul redă **melodii complete doar dacă ești logat în Spotify (Premium) în același browser**;
+   altfel redă preview-uri de 30s. (Asta e independent de token-ul OAuth de căutare.)
 
 ## Cerințe
 
-- Cont **Spotify Premium** (Web Playback SDK nu funcționează cu Free)
-- Chrome / Edge / Brave (Safari nu suportă SDK complet)
-- Vite dev server pe `http://localhost:5173/` (default), sau orice origin pe care îl rulezi
+- Cont **Spotify Premium** + **logat în Spotify în browser-ul demo** (pentru melodii complete)
+- Chrome / Edge / Brave
+- Prezinți jocul pe **`http://127.0.0.1:5173`** (NU `localhost` — vezi mai jos)
+
+## ⚠️ De ce 127.0.0.1 și nu localhost
+
+Dashboard-ul Spotify **respinge** redirect URI-urile `http://localhost:...` ("not secure") și
+cere IP-ul loopback explicit `http://127.0.0.1:...`. Pentru ca login-ul (PKCE) să meargă,
+redirect-ul derivat (`window.location.origin + '/'`) trebuie să fie exact cel înregistrat — deci
+**rulezi tot jocul pe `http://127.0.0.1:5173`**.
+
+Backend-ul acceptă deja această origine: `config.py` `ALLOWED_ORIGINS` include atât
+`http://localhost:5173` cât și `http://127.0.0.1:5173`, ca să nu pice WebSocket-ul (biometrice /
+ghost / IDE) când prezinți pe 127.0.0.1.
 
 ## Pașii de înregistrare
 
-1. **Mergi la dashboard-ul Spotify Developer**
-   https://developer.spotify.com/dashboard → login cu contul tău (cel Premium)
-
+1. https://developer.spotify.com/dashboard → login (cont Premium)
 2. **Create app**
-   - App name: `DevLife` (sau orice)
-   - App description: orice ("Biometric companion for developers")
-   - Website: gol (sau https://github.com/your/repo)
-   - Redirect URIs — adaugă **fiecare** URI de unde rulezi app-ul (trailing slash obligatoriu):
-     - Dev local: `http://localhost:5173/`
-     - Dacă Vite ascultă pe alt port, adaugă acel port
-     - Prod Railway: `https://devlife-rog-production.up.railway.app/`
-   - API used: bifează **Web Playback SDK** și **Web API**
+   - App name: `DevLife`
+   - App description: orice
+   - Website: gol
+   - **Redirect URIs** (slash final obligatoriu): `http://127.0.0.1:5173/`
+     - (opțional, prod) `https://devlife-rog-production.up.railway.app/`
+   - API used: bifează **Web API** (Web Playback SDK e opțional — embed-ul nu îl folosește)
    - Save
-
 3. **Copy Client ID** de pe pagina app-ului
-
-4. **Pune-l în `.env`** (în rădăcina proiectului, lângă `.env.example`)
+4. Pune-l în `.env` (rădăcina proiectului — Vite citește root prin `envDir:'..'`):
+   ```
+   VITE_SPOTIFY_CLIENT_ID=clientul_tau_id
+   ```
+5. **Restart Vite** (env vars se citesc la pornire):
    ```bash
-   cp .env.example .env   # dacă nu există deja
+   cd frontend && npm run dev
    ```
-   Apoi editează `.env` și completează:
-   ```
-   VITE_SPOTIFY_CLIENT_ID=clientul_tau_id_de_la_spotify
-   ```
-
-5. **Restart Vite** — env vars se citesc o singură dată, la pornirea dev server-ului
-   ```bash
-   cd frontend
-   # Ctrl+C dacă rulează
-   npm run dev
-   ```
-
-## Flow de conectare
-
-- Pornește jocul → meniu principal → **Settings**
-- Secțiunea nouă **SPOTIFY** apare doar când `VITE_SPOTIFY_CLIENT_ID` e setat
-- Click **Connect Spotify** → redirect către accounts.spotify.com → login + Allow
-- Te întoarce automat (URL-ul curat, fără `?code=`); secțiunea acum zice
-  `🎵 Connected as <numele tău>` cu buton **Disconnect Spotify**
 
 ## Cum cânți efectiv
 
-1. Pe telefon / laptop / desktop, deschide Spotify și **pornește orice melodie**
-   (asta e necesar prima dată, ca Spotify să aibă un "playback context" activ pentru contul tău)
-2. În joc, intră în cameră și apasă pe **boxa de lângă birou**
-3. Toast: `🎵 Spotify playing — <nume>` și redarea continuă pe device-ul numit
-   **DevLife — room speaker** (poți schimba și manual din Spotify > Devices)
-4. Re-click pe boxă = pauză / play
+1. Deschide jocul pe **`http://127.0.0.1:5173`** și asigură-te că ești **logat în Spotify**
+   (Premium) în același browser.
+2. În cameră, apasă **E** lângă boxă (sau click pe ea) → se deschide interfața Spotify.
+3. (O dată) click **Connect Spotify** → login + Allow → te întoarce conectat (căutarea e activă).
+4. Scrie în caseta de căutare → apar rezultate → click pe o melodie → se încarcă în embed și pornește.
+5. Închizi cu **✕** (sau Escape) → revii în joc.
 
 ## Limite & comportament
 
-- **Fără client_id setat**: secțiunea Spotify e ascunsă în Settings, boxa cade pe pad-ul
-  procedural Web Audio (acelaşi comportament ca înainte). **Zero regresie**.
-- **Cu client_id dar neconectat**: boxa cade tot pe pad-ul procedural. După conectare, ia
-  prioritate.
-- **Cont non-Premium**: SDK emite `account_error`, toast: "Premium required". Boxa cade pe
-  pad procedural până te deconectezi sau upgradezi.
-- **Nimic nu cântă deja în Spotify-ul tău**: la prima apăsare pe boxă primești toast
-  "No recent playback. Open Spotify on your phone, start any track, then click the speaker
-  again." — odată ce ai un context activ, click-urile ulterioare funcționează direct.
-- **Token-ul expiră în 1h**: auto-refresh transparent prin refresh_token.
-- **Disconnect**: șterge toți token-ii din localStorage + revocă device-ul SDK.
+- **Melodii complete** doar dacă ești logat în Spotify (Premium) în browser; altfel preview 30s.
+- **Fără client_id**: căutarea e dezactivată (apare buton Connect); embed-ul tot poate reda
+  playlist-ul default.
+- Embed-ul e UI oficial Spotify (opac) — îl controlăm doar prin iFrame API (`loadUri`/`play`);
+  volumul master din Settings nu îl conduce.
+- Token OAuth expiră în 1h → refresh transparent.
 
 ## Securitate
 
-- **PKCE flow** (RFC 7636) — nu există client_secret în frontend; verifier-ul stă în
-  localStorage doar 1-2 secunde, între redirect și token exchange.
-- **State CSRF protection** — random `state` generat la fiecare auth, verificat pe callback.
-- Tokenii sunt în localStorage. Pentru un app educațional, riscul e acceptabil; dacă vrei
-  cookies httpOnly, ar trebui un backend OAuth proxy (out-of-scope pentru iterația asta).
+- **PKCE** (RFC 7636) — fără client_secret în frontend; `.env` e gitignored.
+- **State CSRF** verificat pe callback.
+- Tokenii stau în localStorage (acceptabil pentru un app educațional).
 
 ## Troubleshooting
 
-| Simptom | Cauză probabilă | Fix |
+| Simptom | Cauză | Fix |
 |---|---|---|
-| Secțiunea SPOTIFY nu apare în Settings | `VITE_SPOTIFY_CLIENT_ID` nu e setat sau Vite n-a fost restartat | restart `npm run dev` |
-| Spotify zice "INVALID_CLIENT: Invalid redirect URI" | URI-ul curent nu e în lista din dashboard | adaugă `http://localhost:5173/` (cu slash final) |
-| Toast "Premium required" la primul click | cont Free | upgrade Premium sau testează cu un cont Premium |
-| Toast "No recent playback" la primul click | nu există context activ | pornește o melodie pe alt device Spotify, apoi reapasă boxa |
-| Settings arată "Spotify token exchange failed (400)" | client_id greșit sau redirect URI mismatch | re-verifică client_id și redirect URI din dashboard |
-| Toast "Spotify device not ready yet" | SDK în curs de inițializare | așteaptă 1-2s, reapasă |
+| Spotify: "INVALID_CLIENT: Invalid redirect URI" | rulezi pe `localhost` în loc de `127.0.0.1`, sau lipsește slash-ul | deschide pe `http://127.0.0.1:5173`; redirect înregistrat `http://127.0.0.1:5173/` |
+| Căutarea nu merge / butonul Connect rămâne | `VITE_SPOTIFY_CLIENT_ID` lipsă sau Vite nerestartat | pune client_id în root `.env`, restart `npm run dev` |
+| Melodia pornește dar e doar 30s | nu ești logat în Spotify în browser sau cont Free | loghează-te în Spotify (Premium) în același browser |
+| Biometricele/ghost-ul nu apar pe 127.0.0.1 | origine blocată | confirmă `127.0.0.1:5173` în `ALLOWED_ORIGINS` (deja default), restart backend |
 
 ## Fișiere relevante
 
-- `frontend/src/network/Spotify.js` — serviciul singleton (PKCE + SDK + play/pause)
-- `frontend/src/menu/SettingsMenu.js` — secțiunea Spotify în Settings
-- `frontend/src/main.js` — `completeAuthFromUrl()` pe boot + dispatch boxă
-- `.env.example` — `VITE_SPOTIFY_CLIENT_ID=` cu pașii de setup
+- `frontend/src/network/Spotify.js` — OAuth PKCE + `search()` (Web API)
+- `frontend/src/apps/SpotifyApp.js` — overlay-ul boxei: embed iFrame API + căutare
+- `frontend/src/main.js` — `apps.speaker` + dispatch boxă → `openApp('speaker')`
+- `config.py` — `ALLOWED_ORIGINS` (include 127.0.0.1)
+- `.env` — `VITE_SPOTIFY_CLIENT_ID=`

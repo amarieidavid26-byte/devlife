@@ -15,6 +15,7 @@ import { TerminalApp } from './apps/Terminal.js';
 import { BrowserApp } from './apps/Browser.js';
 import { NotesApp } from './apps/Notes.js';
 import { ChatApp } from './apps/Chat.js';
+import { SpotifyApp } from './apps/SpotifyApp.js';
 import { MainMenu } from './menu/MainMenu.js';
 import { SoundManager } from './audio/SoundManager.js';
 import { DemoMode } from './demo/DemoMode.js';
@@ -180,6 +181,10 @@ async function startGame(enableDemo = false) {
         }
         applyMockState(key);
     });
+    // returning to live drops the backend's demo-state lock so real WHOOP resumes immediately
+    demoHotbar.setModeHandler((isDemo) => {
+        if (!isDemo) socket.resumeLive();
+    });
 
     // WHOOP BLE pairing - connects the PAIR WHOOP button to the Web Bluetooth API
     const whoop = new WHOOPBluetooth();
@@ -221,6 +226,7 @@ async function startGame(enableDemo = false) {
         second_monitor: new BrowserApp(socket),
         whiteboard: new NotesApp(socket),
         phone: new ChatApp(socket),
+        speaker: new SpotifyApp(socket),
     };
 
     activeApp = null;
@@ -318,36 +324,8 @@ async function startGame(enableDemo = false) {
             toastSystem.show('ghost', '💻 ' + i18n.t('toast.terminal_title'), i18n.t('toast.terminal_body'), 3000);
         }
         if (name === 'speaker') {
-            soundManager.resume(); // user gesture unlocks audio context either way
-            if (Spotify.isConnected()) {
-                // ensure the procedural pad isn't fighting Spotify for the master gain
-                if (musicPlaying) { soundManager.stopMusic(); musicPlaying = false; }
-                Spotify.togglePlay().then((res) => {
-                    if (res.ok) {
-                        const msg = res.paused
-                            ? '⏸ ' + i18n.t('spotify.paused')
-                            : '🎵 ' + i18n.t('spotify.playing', { name: Spotify.getDisplayName() || 'Spotify' });
-                        toastSystem.show('info', msg, '', 2400);
-                    } else if (res.hint === 'spotify_no_context') {
-                        toastSystem.show('warning', '🎵', i18n.t('spotify.no_context'), 5000);
-                    } else if (res.hint === 'spotify_device_not_ready') {
-                        toastSystem.show('warning', '🎵', i18n.t('spotify.device_not_ready'), 4000);
-                    } else {
-                        toastSystem.show('warning', '🎵', i18n.t('spotify.playback_failed'), 4000);
-                    }
-                }).catch((e) => {
-                    toastSystem.show('warning', '🎵', e.message || i18n.t('spotify.playback_failed'), 5000);
-                });
-                return;
-            }
-            toggleMusic();
-            ghost.showSpeechBubble({
-                message: musicPlaying ? i18n.t('ghost.music_on') : i18n.t('ghost.music_off'),
-                priority: 'low',
-                state: ghost._state,
-                buttons: [i18n.t('ghost.btn_nice')],
-                biometric: {},
-            });
+            soundManager.resume();   // user gesture unlocks the audio context
+            openApp('speaker');      // opens the Spotify embed player overlay
             return;
         }
         openApp(name);
@@ -442,6 +420,7 @@ async function startGame(enableDemo = false) {
         demoHotbar.setActive(data.state);
         atmosphere.setState(data.state);
         ghost.setStateTint(data.state);
+        ghost.setBiometrics(data);
         furniture.setMonitorState(data.state);
         soundManager.setState(data.state);
         if (apps && apps.desk_computer && apps.desk_computer.isOpen) {
@@ -497,10 +476,17 @@ async function startGame(enableDemo = false) {
         }
     });
 
-    // Sleep mode from backend (BLE disconnect / very low HR)
+    // Sleep mode from backend: WHOOP taken off the wrist (live pulse stopped) or a very low
+    // resting HR. The character and the ghost both fall asleep, and we stop trusting the
+    // resting-HR fallback as a live reading.
     socket.on('sleep_mode', (data) => {
-        if (ghost) {
-            ghost.setSleepMode(data.active);
+        if (ghost) ghost.setSleepMode(data.active);
+        if (player) player.setSleepMode(data.active);
+        const offWrist = data.reason && data.reason.indexOf('off wrist') !== -1;
+        if (data.active && offWrist) {
+            toastSystem.show('info', '💤 ' + i18n.t('sleep.whoop_off_title'), i18n.t('sleep.whoop_off_body'), 4000);
+        } else if (!data.active) {
+            toastSystem.show('info', '❤️ ' + i18n.t('sleep.awake_title'), i18n.t('sleep.awake_body'), 2500);
         }
     });
 

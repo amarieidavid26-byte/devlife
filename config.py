@@ -15,6 +15,15 @@ CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY", "")
 WHOOP_CLIENT_ID = os.getenv("WHOOP_CLIENT_ID", "")
 WHOOP_CLIENT_SECRET = os.getenv("WHOOP_CLIENT_SECRET", "")
 
+# how long the live BLE pulse can be missing before we treat the WHOOP as taken off the
+# wrist: the character falls asleep and the HUD shows "--" instead of presenting the
+# WHOOP API resting HR as if it were a live heartbeat.
+WHOOP_OFF_GRACE_SECONDS = int(os.getenv("WHOOP_OFF_GRACE_SECONDS", "15"))
+
+# how long a manually-selected demo state (keyboard 1-5) is held before live WHOOP resumes.
+# Long enough to span a presentation; "Back to live" clears it instantly.
+DEMO_STATE_HOLD_SECONDS = int(os.getenv("DEMO_STATE_HOLD_SECONDS", "3600"))
+
 # screenshot settings
 CAPTURE_INTERVAL_DEFAULT = 3 
 CAPTURE_WIDTH = 1280             # save api tokens cause we still broke
@@ -24,7 +33,9 @@ HASH_THRESHOLD = 5
 # ghost iq
 INTERVENTION_COOLDOWN = 30
 VISION_MODEL = "claude-sonnet-4-20250514"
-VISION_MAX_TOKENS = 500          # same reason as line 15
+# Big enough that code_suggestion can carry the COMPLETE corrected file (Apply Fix replaces the
+# whole file). At 500 the JSON truncated on full-file fixes -> parse failed -> no Apply Fix button.
+VISION_MAX_TOKENS = 2048
 GHOST_MAX_TOKENS_DEFAULT = 100
 
 # inline code completions (Cursor-style ghost text) — fast model, short output
@@ -45,7 +56,13 @@ STRESS_FIREWALL_THRESHOLD = 2.0
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = 8000
 WHOOP_REDIRECT_URI = os.getenv("WHOOP_REDIRECT_URI", "http://localhost:8000/api/whoop/callback")
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174").split(",")
+# Both localhost and the 127.0.0.1 loopback are allowed: Spotify's dev dashboard rejects
+# `localhost` redirect URIs, so the game is presented on http://127.0.0.1:5173 — the WS origin
+# check (security.check_origin) + CORS must accept that origin or biometrics/ghost/IDE all break.
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
+).split(",")
 DB_PATH = os.getenv("DB_PATH", "./devlife.db")
 DEMO_OFFLINE = os.getenv("DEMO_OFFLINE", "false").lower() == "true"
 

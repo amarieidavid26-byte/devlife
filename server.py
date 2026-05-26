@@ -25,7 +25,7 @@ from config import (
     GAME_MODE, CONTENT_REANALYZE_INTERVAL, CONTENT_MIN_LENGTH,
     WHOOP_REDIRECT_URI, ALLOWED_ORIGINS, DEMO_OFFLINE,
     WORKSPACE_ROOT, TERMINAL_ENABLED, FILES_ENABLED, LSP_ENABLED, INLINE_AI_ENABLED,
-    CODE_SERVER_ENABLED,
+    CODE_SERVER_ENABLED, WHOOP_OFF_GRACE_SECONDS, DEMO_STATE_HOLD_SECONDS,
 )
 
 import security
@@ -103,6 +103,11 @@ class AppState:
     connected_clients: list = field(default_factory=list)
     intervention_history: list = field(default_factory=list)
     mock_override_until: float = 0.0
+    # manually-selected demo state (keys 1-5): locked label + when the lock expires. While
+    # held, the loop broadcasts this state verbatim instead of re-classifying the (smoothly
+    # transitioning) mock numbers, so the selection never jumps to a neighbouring state.
+    forced_state: object = None
+    forced_until: float = 0.0
     suppressed_hashes: dict = field(default_factory=dict)
     intervention_cooldown_until: float = 0.0
     last_intervention_hash: object = None
@@ -157,7 +162,7 @@ def build_biometric_msg(data, state):
     return {
         "type": "biometric_update",
         "source": "ble" if ble_active else source,
-        "heartRate": round(data.get("heartRate", 0)),
+        "heartRate": round(data["heartRate"]) if data.get("heartRate") else None,
         "recovery": round(data.get("recovery", 0)),
         "strain": round(data.get("strain", 0), 1),
         "state": state,
@@ -227,31 +232,47 @@ def _on_ble_disconnect_timeout():
         logger.info("sleep mode on -- ble disconnected")
 
 
+def _set_sleep_mode(active, reason):
+    if app_state.sleep_mode_active == active:
+        return
+    app_state.sleep_mode_active = active
+    broadcast_sync({"type": "sleep_mode", "active": active, "reason": reason})
+    logger.info("sleep mode %s -- %s", "on" if active else "off", reason)
+
+
 def _check_sleep_mode(data):
-    if app_state.ble_disconnected:
+    # Wear is inferred from the live BLE pulse only. We never look at the WHOOP API resting
+    # HR here -- that value persists for hours after the band is removed, so it can't tell us
+    # whether the band is on the wrist right now.
+    now = time.time()
+    had_ble = bio.live_hr_timestamp > 0          # the band has streamed at least once this session
+    age = now - bio.live_hr_timestamp
+    ble_fresh = bio.live_heart_rate > 0 and age < 5
+
+    # Never paired a band (pure WHOOP-API mode): no live pulse to reason about, leave as-is.
+    if not had_ble:
         return
 
-    ble_fresh = bio.live_heart_rate >= 0 and (time.time() - bio.live_hr_timestamp < 10)
+    # Band streamed a pulse and then went silent past the grace window -> taken off the wrist.
+    if not ble_fresh and age >= WHOOP_OFF_GRACE_SECONDS:
+        app_state.sleep_low_hr_count = 0
+        _set_sleep_mode(True, "WHOOP off wrist (no live HR for %ds)" % int(age))
+        return
+
+    # Within the grace window after a dropout: hold the current state, don't flip yet.
     if not ble_fresh:
-        if app_state.sleep_mode_active:
-            app_state.sleep_mode_active = False
-            app_state.sleep_low_hr_count = 0
-            broadcast_sync({"type": "sleep_mode", "active": False})
-            logger.info("sleep mode off -- no ble data")
         return
 
+    # Live pulse is flowing -> band is worn. Sleep only on a genuinely low resting pulse
+    # (user actually dozing off), and wake as soon as it climbs back.
     hr = bio.live_heart_rate
     if hr < 50:
         app_state.sleep_low_hr_count += 1
-        if app_state.sleep_low_hr_count >= 5 and not app_state.sleep_mode_active:
-            app_state.sleep_mode_active = True
-            broadcast_sync({"type": "sleep_mode", "active": True})
-            logger.info("sleep mode on -- low HR=%s for %d cycles", hr, app_state.sleep_low_hr_count)
+        if app_state.sleep_low_hr_count >= 5:
+            _set_sleep_mode(True, "low HR=%s for %d cycles" % (hr, app_state.sleep_low_hr_count))
     else:
-        if app_state.sleep_mode_active:
-            app_state.sleep_mode_active = False
-            broadcast_sync({"type": "sleep_mode", "active": False})
-            logger.info("sleep mode off, HR=%s", hr)
+        app_state.sleep_low_hr_count = 0
+        _set_sleep_mode(False, "HR=%s" % hr)
 
 
 def biometric_loop():
@@ -273,11 +294,23 @@ def biometric_loop():
             ble_fresh = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
             if ble_fresh:
                 data["heartRate"] = bio.live_heart_rate
-            # no BLE strap connected: keep WHOOP's real resting HR (set in fetch_data). We do
-            # NOT synthesize a fake live pulse — real-time HR only comes from the Bluetooth path.
-            state = bio.classify(data)
+            elif bio.live_hr_timestamp > 0:
+                # a band streamed a live pulse and it stopped -> WHOOP is off the wrist. Don't
+                # pass the API resting HR off as a live heartbeat; null it so the HUD honestly
+                # shows "--" and the character can fall asleep (see _check_sleep_mode).
+                data["heartRate"] = None
+            # else: pure WHOOP-API mode (no band ever paired) -> keep the real resting HR from
+            # fetch_data. We never synthesize a fake live pulse.
+            if app_state.forced_state and time.time() < app_state.forced_until:
+                # A demo state is locked (keys 1-5). Hold it verbatim -- don't re-classify the
+                # transitioning mock numbers, which would briefly read as neighbouring states.
+                state = app_state.forced_state
+                bio.current_state = state
+                bio.estimated_stress = data.get("estimated_stress", bio.estimated_stress)
+            else:
+                state = bio.classify(data)
 
-            hr = data.get("heartRate", 0)
+            hr = data.get("heartRate") or 0
             if hr > 0:
                 app_state.hr_history.append((time.time(), hr))
                 if len(app_state.hr_history) > 120:
@@ -793,13 +826,25 @@ async def websocket_endpoint(ws: WebSocket):
                 state_num = data.get("state")
                 if state_num in [1, 2, 3, 4, 5]:
                     mock.set_state(state_num)
-                    data_now = mock.get_data()
-                    new_state = bio.classify(data_now)
-                    await ws.send_json(build_biometric_msg(data_now, new_state))
+                    # Lock this state so the 5s WHOOP poll can't override it and the smooth
+                    # number transition can't make it flicker through neighbouring states.
+                    forced = mock.get_state_name()
+                    now = time.time()
+                    app_state.forced_state = forced
+                    app_state.forced_until = now + DEMO_STATE_HOLD_SECONDS
+                    app_state.mock_override_until = now + DEMO_STATE_HOLD_SECONDS
+                    bio.current_state = forced
+                    await ws.send_json(build_biometric_msg(mock.get_data(), forced))
                     app_state.intervention_cooldown_until = 0
                     app_state.last_analyzed_hashes.clear()
                     app_state.suppressed_hashes.clear()
                     brain.last_intervention_time = 0
+
+            elif data.get("type") == "resume_live":
+                # "Back to live" toggle: drop the demo lock so real WHOOP data resumes at once.
+                app_state.forced_state = None
+                app_state.forced_until = 0.0
+                app_state.mock_override_until = 0.0
 
             elif data.get("type") == "app_focus":
                 app_type = data.get("app_type")

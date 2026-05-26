@@ -312,7 +312,7 @@ export class HUD {
 
         const strainFmt = d.strain    !== '--' ? parseFloat(d.strain).toFixed(1)  : '--';
         const hrvFmt    = d.hrv       !== '--' ? `${Math.round(d.hrv)}ms`         : '--';
-        const bpmFmt    = d.heartRate !== '--' ? `${Math.round(d.heartRate)}`     : '--';
+        const bpmFmt    = (d.heartRate && d.heartRate !== '--') ? `${Math.round(d.heartRate)}` : '--';
 
         // data-source honesty: live BLE heart rate vs WHOOP morning summary vs demo mock
         const src = d.source || 'mock';

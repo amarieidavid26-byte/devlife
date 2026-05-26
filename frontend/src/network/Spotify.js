@@ -224,6 +224,33 @@ class SpotifyService {
         return r;
     }
 
+    // ---- Web API: search ----
+
+    // Search tracks. Returns a tidy array for the in-game player UI. Requires a connected
+    // user token (the speaker overlay shows a Connect button when not connected).
+    async search(query, { limit = 20 } = {}) {
+        const q = (query || '').trim();
+        if (!q) return [];
+        const params = new URLSearchParams({ q, type: 'track', limit: String(limit) });
+        const r = await this._api('/search?' + params.toString(), { method: 'GET' });
+        if (!r.ok) {
+            this._lastError = `Spotify search failed (${r.status})`;
+            return [];
+        }
+        const data = await r.json();
+        const items = (data.tracks && data.tracks.items) || [];
+        return items.map((t) => ({
+            uri: t.uri,
+            id: t.id,
+            name: t.name,
+            artists: (t.artists || []).map((a) => a.name).join(', '),
+            albumArt: (t.album && t.album.images && t.album.images.length)
+                ? t.album.images[t.album.images.length - 1].url   // smallest image
+                : null,
+            durationMs: t.duration_ms || 0,
+        }));
+    }
+
     // ---- Web Playback SDK ----
 
     _loadSdk() {

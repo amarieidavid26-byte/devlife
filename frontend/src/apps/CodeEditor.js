@@ -273,10 +273,11 @@ export class CodeEditorApp {
         try {
             const { listDir } = await import('../network/files.js');
             const root = await listDir('');
-            if (root.entries.length === 0) {
-                for (const [name, content] of Object.entries(WELCOME_FILES)) {
-                    await writeFile(name, content);
-                }
+            // self-heal: seed any welcome file that's missing (not only when the workspace is
+            // empty), so the JS/Python/C++ demo files are always present. Never clobbers edits.
+            const existing = new Set(root.entries.map(e => e.path.split('/').pop()));
+            for (const [name, content] of Object.entries(WELCOME_FILES)) {
+                if (!existing.has(name)) await writeFile(name, content);
             }
             await this.fileTree.mount();
             const first = (await listDir('')).entries.find(e => e.type === 'file');

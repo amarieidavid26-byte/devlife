@@ -156,6 +156,10 @@ export class GhostSocket {
         this.send({ type: 'mock_state', state: stateNumber });
     }
 
+    resumeLive() {
+        this.send({ type: 'resume_live' });
+    }
+
     sendAppFocus(appType) {
         this.send({
             type: 'app_focus',

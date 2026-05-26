@@ -4,6 +4,10 @@ export default defineConfig({
     // read the project-root .env so VITE_* vars live next to the backend ones
     envDir: '..',
     server: {
+        // listen on all interfaces so the game is reachable on BOTH
+        // http://127.0.0.1:5173 (required — Spotify rejects `localhost` redirect URIs)
+        // and http://localhost:5173. Default Vite binds only one of them.
+        host: true,
         proxy: {
             '/ws': {
                 target: 'ws://localhost:8000',

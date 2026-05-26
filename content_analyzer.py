@@ -68,7 +68,9 @@ Stuck signals:
 - adding and deleting the same lines
 
 If extra_context contains "Runtime error:", diagnose THAT specific error.
-Put the fix in code_suggestion (full corrected snippet, same language as input).
+code_suggestion MUST be the COMPLETE corrected file: copy EVERY original line and apply the
+fix in place. Do NOT return only the changed lines — the editor replaces the whole file with
+code_suggestion, so a partial snippet would delete all the other lines. Same language as input.
 priority = "high" for runtime errors, type = "fix".""",
 
         "terminal": """Ghost watching terminal. JSON only:

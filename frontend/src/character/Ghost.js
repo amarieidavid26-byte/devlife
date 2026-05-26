@@ -98,6 +98,9 @@ export class Ghost {
         this._bubble = null;
         this._bubbleRoot = document.getElementById('ghost-bubble-root');
         this._currentData = null;
+        // latest real biometric snapshot, so speech cards (welcome / sleep / praise) can show
+        // live bpm + recovery instead of "--" even when the card itself carries no biometrics.
+        this._lastBio = {};
 
         this._vignette = null;
         this._vignetteStyle = null;
@@ -293,6 +296,15 @@ export class Ghost {
         requestAnimationFrame(animate);
     }
 
+    // cache the latest biometric_update so cards without their own biometrics show real values
+    setBiometrics(data) {
+        if (!data) return;
+        this._lastBio = {
+            heartRate: data.heartRate,
+            recovery: data.recovery,
+        };
+    }
+
     setStateTint(stateName) {
         if (!STATE_COLORS[stateName]) return;
         const changed = stateName !== this._state;
@@ -470,8 +482,8 @@ export class Ghost {
             ? '0 8px 32px rgba(0,0,0,0.6), 0 0 30px rgba(255,80,80,0.6)'
             : `0 8px 32px rgba(0,0,0,0.4), 0 0 20px ${glowColor}`;
 
-        const bpm = data.biometric?.heartRate ?? '--';
-        const recovery = data.biometric?.recovery ?? '--';
+        const bpm = (data.biometric?.heartRate ?? this._lastBio.heartRate) ?? '--';
+        const recovery = (data.biometric?.recovery ?? this._lastBio.recovery) ?? '--';
         const recDot = recovery >= 66 ? '🟢' : recovery >= 33 ? '🟡' : '🔴';
 
         const buttons = (data.buttons || [i18n.t('ghost.btn_not_now')]).map(label => `

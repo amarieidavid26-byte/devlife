@@ -17,9 +17,13 @@ export class DemoHotbar {
         this._demoOverride = false;
         this._headerEl = null;
         this._rowEl    = null;
+        this._onModeChange = null;
         this._el      = this._build();
         document.body.appendChild(this._el);
     }
+
+    // fn(isDemo): isDemo=true entered manual demo override, false returned to live WHOOP
+    setModeHandler(fn) { this._onModeChange = fn; }
 
     _build() {
         if (!document.getElementById('dh-style')) {
@@ -168,6 +172,7 @@ export class DemoHotbar {
                 this._demoOverride = true;
                 if (this._rowEl) this._rowEl.style.display = 'flex';
                 this._updateHeader();
+                if (this._onModeChange) this._onModeChange(true);
             });
             this._headerEl.appendChild(toggle);
         } else if (isLive && this._demoOverride) {
@@ -187,6 +192,7 @@ export class DemoHotbar {
                 this._demoOverride = false;
                 if (this._rowEl) this._rowEl.style.display = 'none';
                 this._updateHeader();
+                if (this._onModeChange) this._onModeChange(false);
             });
             this._headerEl.appendChild(toggle);
         } else {
