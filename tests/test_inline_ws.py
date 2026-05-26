@@ -34,6 +34,9 @@ def test_inline_streams_completion(monkeypatch):
         for chunk in ["def ", "foo():", " pass"]:
             yield chunk
 
+    # the /inline endpoint is feature-flagged off by default (fail-safe); enable it for the
+    # test so the gate doesn't close the socket with 1008 before the stream runs.
+    monkeypatch.setattr(server, "INLINE_AI_ENABLED", True)
     monkeypatch.setattr(server.inline_completer, "stream", fake_stream)
     client = TestClient(server.app)
     with client.websocket_connect(f"/inline?token={security.SESSION_TOKEN}", headers=ORIGIN) as ws:

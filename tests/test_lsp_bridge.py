@@ -44,7 +44,10 @@ def test_lsp_rejects_bad_token():
             pass
 
 
-def test_lsp_unavailable_language_reports_error():
+def test_lsp_unavailable_language_reports_error(monkeypatch):
+    # the /lsp endpoint is feature-flagged off by default (fail-safe); enable it for the
+    # test so the gate doesn't close the socket with 1008 before the language check runs.
+    monkeypatch.setattr(server, "LSP_ENABLED", True)
     client = TestClient(server.app)
     with client.websocket_connect(f"/lsp/ruby?token={security.SESSION_TOKEN}", headers=ORIGIN) as ws:
         msg = ws.receive_json()
