@@ -446,7 +446,7 @@ export class DemoMode {
         this._setBiometrics(event.data, chapter.state);
         break;
       case 'ghostSay':
-        this._ghostSay(event.data.key ? i18n.t(event.data.key) : event.data.text);
+        this._ghostSay(event.data.key ? i18n.t(event.data.key) : event.data.text, chapter.state);
         break;
       case 'playerMoveTo':
         this._playerMoveTo(event.data.target);
@@ -458,7 +458,7 @@ export class DemoMode {
         this._closeApp(event.data.app);
         break;
       case 'triggerFirewall':
-        this._triggerFirewall(event.data.command);
+        this._triggerFirewall(event.data.command, chapter.state);
         break;
       case 'showIntro':
         this._showIntro();
@@ -517,17 +517,25 @@ export class DemoMode {
     if (this._atmosphere && typeof this._atmosphere.setState === 'function') {
       this._atmosphere.setState(state);
     }
+    // wake ghost + player when a waking chapter starts, so a looped demo recovers from
+    // chapter 6's sleep instead of staying asleep on the second pass.
+    if (state) {
+      if (this._ghost && typeof this._ghost.setSleepMode === 'function') this._ghost.setSleepMode(false);
+      if (this._player && typeof this._player.setSleepMode === 'function') this._player.setSleepMode(false);
+    }
   }
 
-  _ghostSay(text) {
-    if (!this._ghost) return;
-    if (typeof this._ghost.showMessage === 'function') {
-      this._ghost.showMessage(text);
-    } else if (typeof this._ghost.say === 'function') {
-      this._ghost.say(text);
-    } else {
-      console.log(`[DemoMode] Ghost: "${text}"`);
-    }
+  _ghostSay(text, state) {
+    if (!this._ghost || !text) return;
+    // the real ghost API is showSpeechBubble; buttons:[] renders a button-less narration
+    // bubble that auto-replaces the previous one (showSpeechBubble dismisses it first).
+    this._ghost.showSpeechBubble({
+      message: text,
+      priority: 'low',
+      state: state || 'RELAXED',
+      buttons: [],
+      biometric: {},
+    });
   }
 
   _playerMoveTo(target) {
@@ -557,21 +565,30 @@ export class DemoMode {
     }
   }
 
-  _triggerFirewall(command) {
-    this._ghostSay(i18n.t('demo.firewall_blocked', { command }));
-    if (this._ghost && typeof this._ghost.triggerFirewall === 'function') {
-      this._ghost.triggerFirewall(command);
+  _triggerFirewall(command, state) {
+    // critical bubble = red border + glow (see Ghost.showSpeechBubble), plus a screen shake
+    if (this._ghost) {
+      this._ghost.showSpeechBubble({
+        message: i18n.t('demo.firewall_blocked', { command }),
+        priority: 'critical',
+        state: state || 'STRESSED',
+        buttons: [],
+        biometric: {},
+      });
+    }
+    if (this._atmosphere && typeof this._atmosphere.triggerShake === 'function') {
+      this._atmosphere.triggerShake(600, 5);
     }
   }
 
   _sleep() {
-    if (this._atmosphere && typeof this._atmosphere.darken === 'function') {
-      this._atmosphere.darken();
+    // ghost + character both fall asleep (same path as the real off-wrist sleep mode)
+    if (this._ghost && typeof this._ghost.setSleepMode === 'function') {
+      this._ghost.setSleepMode(true);
     }
-    if (this._player && typeof this._player.lieDown === 'function') {
-      this._player.lieDown();
+    if (this._player && typeof this._player.setSleepMode === 'function') {
+      this._player.setSleepMode(true);
     }
-    console.log('[DemoMode] Sleep mode');
   }
 
   // --- cinematic intro overlay (chapter 0)
