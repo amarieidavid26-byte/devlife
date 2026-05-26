@@ -113,8 +113,6 @@ class AppState:
     last_intervention_hash: object = None
     sleep_mode_active: bool = False
     sleep_low_hr_count: int = 0
-    ble_disconnected: bool = False
-    ble_disconnected_timer: object = None
     last_coding_activity: float = 0.0
     ghost_running: bool = False
     main_event_loop: object = None
@@ -223,13 +221,6 @@ def _mark_stress_peak():
 def _mark_recovery():
     app_state.recovery_velocity = time.time() - app_state.last_stress_peak
     app_state.last_stress_peak = None
-
-
-def _on_ble_disconnect_timeout():
-    if app_state.ble_disconnected and not app_state.sleep_mode_active:
-        app_state.sleep_mode_active = True
-        broadcast_sync({"type": "sleep_mode", "active": True})
-        logger.info("sleep mode on -- ble disconnected")
 
 
 def _set_sleep_mode(active, reason):

@@ -1,5 +1,6 @@
 // runs C/C++ source via JSCPP, a pure-JS interpreter
-// supports cin/cout/printf, basic STL containers, classes, pointers
+// supports cin/cout/printf, classes, pointers, C-arrays. NOTE: no STL containers
+// (<vector>/<map> etc. aren't implemented) -- use plain arrays in demo code.
 // stdin is drained once by JSCPP when it needs input
 import JSCPP from 'JSCPP';
 

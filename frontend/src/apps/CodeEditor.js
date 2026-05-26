@@ -6,7 +6,7 @@ import { initMonaco } from './monaco/monacoSetup.js';
 import { FileTree } from './ide/FileTree.js';
 import { registerInlineCompletions } from './ide/inlineCompletions.js';
 import { LspManager } from './ide/languageClient.js';
-import { readFile, writeFile, createPath } from '../network/files.js';
+import { readFile, writeFile, createPath, listDir } from '../network/files.js';
 import { getWorkspaceRoot, getFeatures, privilegedWsUrl, authHeaders } from '../network/session.js';
 import { CONFIG } from '../config.js';
 
@@ -271,7 +271,6 @@ export class CodeEditorApp {
     async _bootstrapWorkspace() {
         // seed an empty workspace, then open the first file
         try {
-            const { listDir } = await import('../network/files.js');
             const root = await listDir('');
             // self-heal: seed any welcome file that's missing (not only when the workspace is
             // empty), so the JS/Python/C++ demo files are always present. Never clobbers edits.
