@@ -33,6 +33,7 @@ export class GhostSocket {
             clearTimeout(this._connectTimeout);
             this.isConnected = true;
             this._retryCount = 0;
+            this.sendLang(i18n.getLang());
             this.emit('connected', {});
         };
 
@@ -150,6 +151,10 @@ export class GhostSocket {
 
     sendMockState(stateNumber) {
         this.send({ type: 'mock_state', state: stateNumber });
+    }
+
+    sendLang(lang) {
+        this.send({ type: 'set_lang', lang });
     }
 
     resumeLive() {

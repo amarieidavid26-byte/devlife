@@ -18,6 +18,28 @@ const STATE_GLOW_CSS = {
 };
 
 const FOLLOW_DIST_TILES = 3.5;
+
+// backend sends canonical English button labels (they double as protocol IDs
+// for feedback matching) -- translate only at render time
+const BUTTON_I18N = {
+    'Apply Fix':     'ghost.btn_apply_fix',
+    'Show More':     'ghost.btn_show_more',
+    'Save Draft':    'ghost.btn_save_draft',
+    'Do It Anyway':  'ghost.btn_do_it_anyway',
+    'Remind Later':  'ghost.btn_remind_later',
+    'Cancel':        'ghost.btn_cancel',
+    'Thanks':        'ghost.btn_thanks',
+    'Not Now':       'ghost.btn_not_now',
+};
+
+function esc(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function buttonText(label) {
+    const key = BUTTON_I18N[label];
+    return esc(key ? i18n.t(key) : label);
+}
 const BOB_PERIOD = 180;
 
 export class Ghost {
@@ -486,12 +508,12 @@ export class Ghost {
         const recovery = (data.biometric?.recovery ?? this._lastBio.recovery) ?? '--';
         const recDot = recovery >= 66 ? '🟢' : recovery >= 33 ? '🟡' : '🔴';
 
-        const buttons = (data.buttons || [i18n.t('ghost.btn_not_now')]).map(label => `
-            <button class="ghost-btn" data-label="${label}">${label}</button>
+        const buttons = (data.buttons || ['Not Now']).map(label => `
+            <button class="ghost-btn" data-label="${esc(label)}">${buttonText(label)}</button>
         `).join('');
 
         const trailingBtn = data.trailingButton
-            ? `<button class="ghost-btn ghost-btn-trailing" data-label="${data.trailingButton}">${data.trailingButton}</button>`
+            ? `<button class="ghost-btn ghost-btn-trailing" data-label="${esc(data.trailingButton)}">${buttonText(data.trailingButton)}</button>`
             : '';
 
         const el = document.createElement('div');

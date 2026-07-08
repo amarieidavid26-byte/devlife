@@ -108,6 +108,7 @@ async function startGame(enableDemo = false) {
 
     socket = new GhostSocket(CONFIG.WS_URL);
     socket.setToastSystem(toastSystem);
+    i18n.onChange((lang) => socket.sendLang(lang));
 
     // client-side biometric demo when there's no backend; the real backend takes over
     // the moment the WS connects (see the 'connected'/'disconnected' handlers below).

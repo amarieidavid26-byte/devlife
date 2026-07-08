@@ -41,6 +41,7 @@ class GhostBrain:
 
     def __init__(self, api_key):
         self.client = anthropic.Anthropic(api_key=api_key, timeout=self.CLAUDE_TIMEOUT_SECONDS)
+        self.lang = "en"  # set via WS 'set_lang' from the frontend i18n
         self.last_intervention_time = 0
         self.cooldown = 30
         self.context_history = []
@@ -157,6 +158,11 @@ class GhostBrain:
 
         # look up the system prompt for this bio state
         system = self.PROMPTS.get(biometric_state, self.PROMPTS["RELAXED"])
+        if self.lang == "ro":
+            system += (
+                " Respond in Romanian -- natural, colloquial, like a friend. "
+                "Keep technical terms in English (git push, force push, HRV, deploy)."
+            )
 
         # build the user message as a f string
 
@@ -205,6 +211,14 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
         cmd = vision_analysis.get("risky_description", "unknown command")
         hrv = f"{modifiers.get('hrv_baseline', 50):.0f}"
         stress = f"{modifiers.get('estimated_stress', 0):.1f}"
+
+        if self.lang == "ro":
+            if reason == "fatigue_firewall":
+                return f"FATIGUE FIREWALL -- HRV {hrv}ms, stres {stress}/3.0. '{cmd}' e ireversibil. salveaza-ti munca mai intai."
+            elif reason == "stress_firewall":
+                return f"ALERTA DE STRES -- HRV {hrv}ms, stres {stress}/3.0. '{cmd}' cand esti stresat e cautare de belele. respira mai intai."
+            else:
+                return f"hei, '{cmd}' pare riscant. verifica de doua ori inainte sa rulezi."
 
         if reason == "fatigue_firewall":
             return f"FATIGUE FIREWALL -- HRV {hrv}ms, stress {stress}/3.0. '{cmd}' is irreversible. save your work first."

@@ -61,6 +61,8 @@ Look for bugs like:
 - off by one errors, infinite loops
 - missing null checks, logic errors
 - unclosed files/connections
+- JS: ReferenceError, reading properties of undefined, missing await on promises
+- JS: == vs ===, accidental globals, forEach with async callbacks
 
 Stuck signals:
 - same code unchanged for a while
@@ -94,6 +96,7 @@ Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
 
     def __init__(self, api_key):
         self.client = Anthropic(api_key=api_key, timeout=self.CLAUDE_TIMEOUT_SECONDS)
+        self.lang = "en"  # set via WS 'set_lang' from the frontend i18n
         self.last_analysis = None
         self.last_analysis_time = 0
         self.content_history = {}
@@ -137,6 +140,12 @@ Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
                 return analysis
 
         system_prompt = self.APP_PROMPTS.get(app_type, self.APP_PROMPTS["code"])
+        if self.lang == "ro":
+            system_prompt += (
+                "\n\nAll human-readable strings (activity, stuck_reason, mistake_description, "
+                "help_opportunity, message, context_summary) must be in Romanian -- natural and "
+                "colloquial. Keep JSON keys, code and technical terms (git push, force push) in English."
+            )
         user_msg = f"App type: {app_type}\n"
         user_msg += f"Content:\n{content}\n"
 

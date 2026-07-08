@@ -294,11 +294,17 @@ class BiometricEngine:
             elif live_hr > 75: 
                 new_state = "DEEP_FOCUS"
                 estimated_stress = 1.2
-            elif live_hr >= 60: 
+            elif live_hr >= 60:
                 new_state = "RELAXED"
                 estimated_stress = 0.5
             else:
                 live_hr = 0
+            # real WHOOP recovery/sleep can veto the HR-only bands: fatigue barely
+            # shows in HR, so a normal pulse must not mask a 30% recovery day
+            if live_hr > 0 and live_hr <= 95 and self.access_token:
+                if recovery < 40 or sleep < 0.7:
+                    new_state = "FATIGUED"
+                    estimated_stress = max(estimated_stress, 1.8)
         if live_hr == 0:
             if recovery < 40 or sleep < 0.7:
                 new_state = "FATIGUED"

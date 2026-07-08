@@ -161,6 +161,8 @@ def build_biometric_msg(data, state):
     return {
         "type": "biometric_update",
         "source": "ble" if ble_active else source,
+        # where recovery/HRV/strain come from -- lets the HUD be honest in BLE-only mode
+        "metrics_source": source,
         "heartRate": round(data["heartRate"]) if data.get("heartRate") else None,
         "recovery": round(data.get("recovery", 0)),
         "strain": round(data.get("strain", 0), 1),
@@ -379,7 +381,7 @@ def ghost_loop():
                             app_state.last_analyzed_hashes[app_type] = content_hash
                             with app_state.content_lock:
                                 app_state.pending_content.pop(app_type, None)
-                            fb = get_fallback_intervention(state)
+                            fb = get_fallback_intervention(state, brain.lang)
                             bio_data = mock.get_data() if (not bio.access_token or time.time() < app_state.mock_override_until) else (bio.current_data or {})
                             fb["biometric"] = build_biometric_msg(bio_data, state)
                             fb["app_type"] = app_type
@@ -842,6 +844,12 @@ async def websocket_endpoint(ws: WebSocket):
                     app_state.last_analyzed_hashes.clear()
                     app_state.suppressed_hashes.clear()
                     brain.last_intervention_time = 0
+
+            elif data.get("type") == "set_lang":
+                lang = data.get("lang")
+                if lang in ("ro", "en"):
+                    brain.lang = lang
+                    content_analyzer.lang = lang
 
             elif data.get("type") == "resume_live":
                 # "Back to live" toggle: drop the demo lock so real WHOOP data resumes at once.

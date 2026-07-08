@@ -302,21 +302,26 @@ export class HUD {
         const stateColor = this._sleepMode ? '#4444aa' : (STATE_COLORS[d.state] || '#888888');
         const stateLabel = this._sleepMode ? i18n.t('hud.sleep_mode') : (STATE_COLORS[d.state] ? i18n.t('state.' + d.state) : d.state);
 
-        const rec    = parseFloat(d.recovery);
+        // BLE-only honesty: the pulse is real but recovery/HRV/strain would be mock --
+        // show dashes instead of fake numbers next to a real heart rate
+        const src = d.source || 'mock';
+        const bleOnly = src === 'ble' && d.metrics_source === 'mock';
+
+        const rec    = bleOnly ? NaN : parseFloat(d.recovery);
         const recDot = isNaN(rec) ? '⚫' : rec >= 66 ? '🟢' : rec >= 33 ? '🟡' : '🔴';
         const recFmt = isNaN(rec) ? '--' : `${rec}%`;
 
-        const stress         = parseFloat(d.estimated_stress) || 0;
+        const stress         = bleOnly ? 0 : (parseFloat(d.estimated_stress) || 0);
         const stressBarWidth = Math.min(100, (stress / 3) * 100);
         const stressBarColor = stress < 1 ? '#6AD89A' : stress < 2 ? '#FFB84A' : '#FF7A6A';
 
-        const strainFmt = d.strain    !== '--' ? parseFloat(d.strain).toFixed(1)  : '--';
-        const hrvFmt    = d.hrv       !== '--' ? `${Math.round(d.hrv)}ms`         : '--';
+        const strainFmt = (!bleOnly && d.strain !== '--') ? parseFloat(d.strain).toFixed(1)  : '--';
+        const hrvFmt    = (!bleOnly && d.hrv    !== '--') ? `${Math.round(d.hrv)}ms`         : '--';
         const bpmFmt    = (d.heartRate && d.heartRate !== '--') ? `${Math.round(d.heartRate)}` : '--';
 
-        // data-source honesty: live BLE heart rate vs WHOOP morning summary vs demo mock
-        const src = d.source || 'mock';
-        const srcBadge = src === 'ble'
+        const srcBadge = bleOnly
+            ? `<span class="live-dot" style="color:#6AD89A;font-size:10px;letter-spacing:0.05em" title="${i18n.t('hud.tip_bleonly')}">${i18n.t('hud.badge_live')} · ${i18n.t('hud.badge_bleonly')}</span>`
+            : src === 'ble'
             ? `<span class="live-dot" style="color:#6AD89A;font-size:10px;letter-spacing:0.05em" title="${i18n.t('hud.tip_live')}">${i18n.t('hud.badge_live')}</span>`
             : src === 'whoop'
             ? `<span style="color:#7FB0FF;font-size:10px;letter-spacing:0.05em" title="${i18n.t('hud.tip_whoop')}">${i18n.t('hud.badge_whoop')}</span>`
