@@ -36,7 +36,7 @@ def test_patch_rejects_empty_rationale():
 def test_patch_rejects_too_many_lines():
     from apply_fix.validator import validate_patch
     from apply_fix.contract import PatchContract
-    big = "\n".join(f"line_{i} = {i}" for i in range(60))
+    big = "\n".join(f"line_{i} = {i}" for i in range(600))
     p = PatchContract(**_make_patch(replacement_text=big))
     ok, reason = validate_patch(p)
     assert not ok

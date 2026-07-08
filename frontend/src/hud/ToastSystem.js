@@ -34,7 +34,7 @@ export class ToastSystem {
 
   setEnabled(enabled) { this._enabled = enabled; } // so toasts dont show over cutscenes
 
-  show(type, title, message, duration = 3000) {
+  show(type, title, message, duration = 3000, action = null) {
     if (!this._enabled) return;
     const id = this._nextId++;
     const cfg = ToastSystem.TYPES[type] || ToastSystem.TYPES.info;
@@ -67,6 +67,20 @@ export class ToastSystem {
         `<span style="font-weight:bold;font-family:'Fredoka',sans-serif">${this._esc(title)}</span>` +
       `</div>` +
       `<div style="color:#B8A88C;margin-top:2px">${this._esc(message)}</div>`;
+
+    if (action && action.label) {
+      const btn = document.createElement('button');
+      btn.textContent = action.label;
+      btn.style.cssText =
+        `margin-top:8px; padding:4px 12px; background:transparent; color:${cfg.color};` +
+        `border:1px solid ${cfg.color}; border-radius:4px; cursor:pointer;` +
+        `font-family:'Fredoka',sans-serif; font-size:12px; font-weight:bold;`;
+      btn.onclick = () => {
+        this.dismiss(id);
+        if (action.onClick) action.onClick();
+      };
+      el.appendChild(btn);
+    }
 
     this._container.appendChild(el);
 

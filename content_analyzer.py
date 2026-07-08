@@ -159,7 +159,7 @@ Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
             user_msg += f"\n\nRecent context: {extra_context}"
 
         # detection if the user is stuck, tracks content hashes overtime
-        content_hash = hash(content[:500])
+        content_hash = hash(content)
         now = time.time()
 
         if app_type not in self.content_history:

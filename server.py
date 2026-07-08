@@ -131,13 +131,14 @@ app_state = AppState()
 
 async def broadcast(message: dict):
     dead = []
-    for client in app_state.connected_clients:
+    for client in list(app_state.connected_clients):
         try:
             await client.send_json(message)
         except Exception:
             dead.append(client)
     for client in dead:
-        app_state.connected_clients.remove(client)
+        if client in app_state.connected_clients:
+            app_state.connected_clients.remove(client)
 
 
 def broadcast_sync(message: dict):
@@ -353,7 +354,7 @@ def ghost_loop():
                             content_data = d
 
                 if content_data and len(content_data.get("content", "")) >= CONTENT_MIN_LENGTH:
-                    content_hash = hash(content_data["content"][:500])
+                    content_hash = hash(content_data["content"])
                     already_analyzed = content_hash == app_state.last_analyzed_hashes.get(app_type)
                     in_cooldown      = time.time() < app_state.intervention_cooldown_until
                     user_suppressed  = app_state.suppressed_hashes.get(content_hash, 0) > time.time()
@@ -374,7 +375,16 @@ def ghost_loop():
                             with app_state.content_lock:
                                 app_state.pending_content.pop(app_type, None)
                         except Exception as e:
-                            logger.warning("content analysis failed: %s", e)
+                            logger.warning("content analysis failed: %s -- fallback ghost line", e)
+                            app_state.last_analyzed_hashes[app_type] = content_hash
+                            with app_state.content_lock:
+                                app_state.pending_content.pop(app_type, None)
+                            fb = get_fallback_intervention(state)
+                            bio_data = mock.get_data() if (not bio.access_token or time.time() < app_state.mock_override_until) else (bio.current_data or {})
+                            fb["biometric"] = build_biometric_msg(bio_data, state)
+                            fb["app_type"] = app_type
+                            app_state.intervention_cooldown_until = time.time() + 8
+                            broadcast_sync(fb)
 
                 if analysis:
                     tracker.update(analysis, state, bio.estimated_stress)
@@ -688,6 +698,8 @@ async def apply_fix_preview(body: PatchContract):
         audit_record("reject", "?", file=body.file, original_text=body.original_text, reason=reason)
         return JSONResponse(status_code=400, content={"valid": False, "reason": reason})
     patch_hash = make_patch_hash(body.original_text, body.replacement_text)
+    while len(app_state.pending_patches) >= 100:
+        app_state.pending_patches.pop(next(iter(app_state.pending_patches)))
     app_state.pending_patches[patch_hash] = body.original_text
     audit_record("preview", patch_hash, file=body.file, original_text=body.original_text)
     return {"valid": True, "patch_hash": patch_hash}

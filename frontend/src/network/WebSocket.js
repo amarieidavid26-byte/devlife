@@ -10,7 +10,6 @@ export class GhostSocket {
         this.reconnectTimer = null;
         this._connectTimeout = null;
         this.isConnected = false;
-        this._offline = false;
         this.lastSentContent = {};
         this._retryCount = 0;
         this._toastSystem = null;
@@ -20,17 +19,13 @@ export class GhostSocket {
     setToastSystem(ts) { this._toastSystem = ts; }
 
     connect() {
-        if (this._offline) return;
-
         this.ws = new WebSocket(this.url);
 
-        // connection timeout -- if not open within 5s, go offline
+        // connection timeout -- if not open within 5s, close and retry in background
         this._connectTimeout = setTimeout(() => {
             if (!this.isConnected) {
-                console.warn('[GhostSocket] Connection timeout -- entering offline mode');
-                this._offline = true;
+                console.warn('[GhostSocket] Connection timeout -- retrying in background');
                 this.ws.close();
-                this.emit('disconnected', {});
             }
         }, 5000);
 
@@ -45,7 +40,7 @@ export class GhostSocket {
             clearTimeout(this._connectTimeout);
             this.isConnected = false;
             this.emit('disconnected', {});
-            if (!this._offline) this.reconnect();
+            this.reconnect();
         };
 
         this.ws.onerror = (err) => {
@@ -105,7 +100,8 @@ export class GhostSocket {
         clearTimeout(this.reconnectTimer);
         this._retryCount++;
         const delay = Math.min(1000 * Math.pow(2, this._retryCount - 1), 30000);
-        if (this._toastSystem) {
+        // toast only the first attempts, then keep retrying silently
+        if (this._toastSystem && this._retryCount <= 3) {
             const s = Math.round(delay / 1000);
             this._toastSystem.show('warning', i18n.t('toast.reconnecting'),
                 i18n.t('toast.reconnecting_body', { s, n: this._retryCount }), delay);

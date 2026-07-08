@@ -13,7 +13,7 @@ _SHELL_PATTERNS = re.compile(
     re.MULTILINE,
 )
 
-MAX_LINES = 50
+MAX_LINES = 500
 
 
 def validate_patch(contract: PatchContract) -> tuple:

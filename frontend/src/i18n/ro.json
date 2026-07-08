@@ -101,6 +101,8 @@
   "toast.reconnecting_body": "Backend indisponibil. Reîncercare în {s}s (încercarea {n})",
   "toast.fix_applied": "Fix aplicat",
   "toast.fix_applied_body": "Apasă Revert pentru anulare",
+  "toast.revert": "Revert",
+  "toast.fix_reverted": "Fix anulat",
   "toast.fix_rejected": "Fix respins",
   "toast.fix_cancelled": "Anulat",
   "toast.fix_cancelled_body": "Modificarea nu a fost aplicată",

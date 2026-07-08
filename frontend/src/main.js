@@ -88,7 +88,8 @@ const mainMenu = new MainMenu(pixiApp);
 mainMenu.show(
     () => { soundManager.playClick(); startGame(false); },
     () => { soundManager.playClick(); startGame(true); },
-    () => { soundManager.playClick(); settingsMenu.show(); }
+    () => { soundManager.playClick(); settingsMenu.show(); },
+    soundManager
 );
 
 // Game init (called when menu START or DEMO is clicked)
@@ -100,12 +101,13 @@ async function startGame(enableDemo = false) {
         // silent — code editor surfaces the error on first Run if pyodide missing
     });
 
-    let socket, room, furniture, ghost, atmosphere, hud, beneathView, demoHotbar, apps, activeApp, ePrompt;
+    let socket, room, furniture, ghost, atmosphere, hud, dashboard, demoHotbar, apps, activeApp, ePrompt;
     let currentGameScene = 'room';
     let coffeeCount = 0;
     let _lastRecVel = null;
 
     socket = new GhostSocket(CONFIG.WS_URL);
+    socket.setToastSystem(toastSystem);
 
     // client-side biometric demo when there's no backend; the real backend takes over
     // the moment the WS connects (see the 'connected'/'disconnected' handlers below).
@@ -172,7 +174,7 @@ async function startGame(enableDemo = false) {
 
     hud = new HUD();
     // real "last night" sleep arrives via biometric_update (WHOOP sleep endpoint) — no placeholder
-    beneathView = new DashboardOverlay();
+    dashboard = new DashboardOverlay();
     demoHotbar = new DemoHotbar();
     demoHotbar.setClickHandler((key) => {
         if (!demoHotbar.manualEnabled) {
@@ -209,7 +211,7 @@ async function startGame(enableDemo = false) {
         demoHotbar.setBLEConnected(connected);
         if (connected && bpm > 0) {
             socket.send({ type: 'heart_rate', bpm });
-            hud.update({ heart_rate: bpm });
+            hud.update({ heartRate: bpm });
         }
         if (!connected) {
             toastSystem.show('warning', '\uD83D\uDCF4 ' + i18n.t('ble.disconnected'), i18n.t('ble.disconnected_body'), 4000);
@@ -391,19 +393,33 @@ async function startGame(enableDemo = false) {
         editor.replaceContent(code);
         socket.sendFeedback('Apply Fix');
 
-        // rollback button via toast
-        toastSystem.show('ghost', i18n.t('toast.fix_applied'), i18n.t('toast.fix_applied_body'), 8000);
-        // store hash for possible rollback
-        window._lastPatchHash = patchHash;
-        window._lastPatchOriginal = originalText;
+        toastSystem.show('ghost', i18n.t('toast.fix_applied'), i18n.t('toast.fix_applied_body'), 8000, {
+            label: i18n.t('toast.revert'),
+            onClick: async () => {
+                try {
+                    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/apply-fix/rollback`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ patch_hash: patchHash }),
+                    });
+                    const json = await res.json();
+                    if (res.ok && json.original_text != null) {
+                        editor.replaceContent(json.original_text);
+                        toastSystem.show('info', i18n.t('toast.fix_reverted'), '', 3000);
+                    }
+                } catch (e) {
+                    editor.replaceContent(originalText);
+                    toastSystem.show('info', i18n.t('toast.fix_reverted'), '', 3000);
+                }
+            },
+        });
     });
 
-    socket.on('connected', () => { hud.setConnected(true); beneathView.setConnected(true); offlineBio.stop(); });
-    socket.on('disconnected', () => { hud.setConnected(false); beneathView.setConnected(false); offlineBio.start(); });
+    socket.on('connected', () => { hud.setConnected(true); dashboard.setConnected(true); offlineBio.stop(); });
+    socket.on('disconnected', () => { hud.setConnected(false); dashboard.setConnected(false); offlineBio.start(); });
 
     socket.on('intervention', (data) => {
         ghost.showSpeechBubble(data);
-        beneathView.ddIntervention(data);
+        dashboard.ddIntervention(data);
         if (data.priority === 'critical' || data.priority === 'warning') {
             soundManager.playGhostAlert();
         } else {
@@ -416,7 +432,7 @@ async function startGame(enableDemo = false) {
 
     socket.on('biometric_update', (data) => {
         hud.update(data);
-        beneathView.update(data);
+        dashboard.update(data);
         demoHotbar.setActive(data.state);
         atmosphere.setState(data.state);
         ghost.setStateTint(data.state);
@@ -469,10 +485,10 @@ async function startGame(enableDemo = false) {
         }
     });
 
-    // Plant growth from backend
+    // Plant health from backend: clean code heals it, ignored interventions wither it
     socket.on('plant_update', (data) => {
-        if (data.delta > 0 && furniture) {
-            furniture.onInterventionAccepted();
+        if (furniture && typeof data.delta === 'number') {
+            furniture.adjustPlantHealth(data.delta);
         }
     });
 
@@ -517,7 +533,7 @@ async function startGame(enableDemo = false) {
         // TAB: toggle Beneath the Surface overlay (only when no app is open)
         if (e.key === 'Tab') {
             e.preventDefault();
-            if (!activeApp) beneathView.toggle();
+            if (!activeApp) dashboard.toggle();
             return;
         }
 
@@ -566,8 +582,8 @@ async function startGame(enableDemo = false) {
         atmosphere.applyScreenShake(gameContainer);
 
         // Beneath the Surface: feed screen-space positions for rings + particles
-        if (beneathView._visible) {
-            beneathView.setPositions(
+        if (dashboard._visible) {
+            dashboard.setPositions(
                 {
                     x: gameContainer.x + player.container.x * GAME_ZOOM,
                     y: gameContainer.y + player.container.y * GAME_ZOOM,

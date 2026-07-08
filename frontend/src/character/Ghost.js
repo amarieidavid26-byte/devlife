@@ -684,6 +684,7 @@ export class Ghost {
 
     _typewriterEffect(el, text) {
         el.textContent = '';
+        if (!text) return;
         let i = 0;
         const interval = setInterval(() => {
             el.textContent += text[i];

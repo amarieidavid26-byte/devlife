@@ -1,8 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { EventEmitter } from '../utils/EventEmitter.js';
+import { Plant } from './Plant.js';
 
 const HIGHLIGHT_COLOR = 0xe94560;
-let plantStage = 0;
 
 export class Furniture extends EventEmitter {
     constructor(stage, room) {
@@ -12,7 +12,7 @@ export class Furniture extends EventEmitter {
         stage.addChild(this.container);
 
         this._items = [];
-        this._plantGraphics = null;
+        this._plant = null;
         this.acceptedInterventions = 0;
 
         // Animation state
@@ -456,77 +456,33 @@ export class Furniture extends EventEmitter {
     _addPlant(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.plant) {
-            const sprite = new PIXI.Sprite(Furniture._textures.plant);
-            sprite.anchor.set(0.5, 0.92);
-            sprite.scale.set(0.50);
-            c.addChild(sprite);
-        } else {
-            this._plantGraphics = new PIXI.Graphics();
-            this._drawPlantStage(this._plantGraphics, plantStage);
-            c.addChild(this._plantGraphics);
-        }
+        // pot
+        const pot = new PIXI.Graphics();
+        pot.beginFill(0xC87A4A);
+        pot.drawRect(-10, 10, 20, 16);
+        pot.endFill();
+        pot.beginFill(0xB06A3A);
+        pot.moveTo(-10, 10); pot.lineTo(10, 10); pot.lineTo(12, 26); pot.lineTo(-12, 26); pot.closePath();
+        pot.endFill();
+        pot.beginFill(0x6B4A2A);
+        pot.drawEllipse(0, 10, 10, 4);
+        pot.endFill();
+        c.addChild(pot);
+
+        // living plant -- health driven by plant_update deltas from the backend
+        this._plant = new Plant();
+        c.addChild(this._plant.container);
 
         this._placeItem(c, gx, gy, 'plant', false, null);
     }
 
-    _drawPlantStage(g, stage) {
-        g.clear();
-        g.beginFill(0xC87A4A);
-        g.drawRect(-10, 10, 20, 16);
-        g.endFill();
-        g.beginFill(0xB06A3A);
-        g.moveTo(-10, 10); g.lineTo(10, 10); g.lineTo(12, 26); g.lineTo(-12, 26); g.closePath();
-        g.endFill();
-        g.beginFill(0x6B4A2A);
-        g.drawEllipse(0, 10, 10, 4);
-        g.endFill();
-
-        if (stage === 0) {
-            g.beginFill(0x4A8A3C);
-            g.drawRect(-1, 0, 2, 12);
-            g.endFill();
-            g.beginFill(0x5BA05C);
-            g.drawEllipse(-4, 0, 5, 4);
-            g.drawEllipse(4, 0, 5, 4);
-            g.endFill();
-        } else if (stage === 1) {
-            g.beginFill(0x4A8A3C);
-            g.drawRect(-1, -20, 2, 32);
-            g.endFill();
-            g.beginFill(0x5BA05C);
-            g.drawEllipse(-10, -10, 10, 7);
-            g.drawEllipse(10, -15, 10, 7);
-            g.drawEllipse(-6, -22, 8, 6);
-            g.endFill();
-        } else {
-            g.beginFill(0x4A8A3C);
-            g.drawRect(-1, -40, 2, 52);
-            g.endFill();
-            g.beginFill(0x5BA05C);
-            g.drawEllipse(0, -35, 18, 14);
-            g.drawEllipse(-15, -20, 14, 10);
-            g.drawEllipse(15, -22, 14, 10);
-            g.drawEllipse(-10, -42, 10, 8);
-            g.drawEllipse(10, -40, 10, 8);
-            g.endFill();
-            g.beginFill(0xffaa00);
-            g.drawCircle(0, -46, 5);
-            g.endFill();
-        }
-    }
-
-    growPlant() {
-        if (plantStage < 2) {
-            plantStage++;
-            if (this._plantGraphics) this._drawPlantStage(this._plantGraphics, plantStage);
-        }
+    adjustPlantHealth(delta) {
+        if (this._plant) this._plant.adjustHealth(delta);
     }
 
     onInterventionAccepted() {
         this.acceptedInterventions++;
-        if (this.acceptedInterventions === 3) this.growPlant();
-        if (this.acceptedInterventions === 7) this.growPlant();
+        this.adjustPlantHealth(8);
     }
 
     _addSpeaker(gx, gy) {
@@ -740,6 +696,8 @@ export class Furniture extends EventEmitter {
     update(delta) {
         this._animTick += delta;
 
+        if (this._plant) this._plant.update(delta);
+
         // scan line scrolls down the screen
         if (this._deskScanLine) {
             this._deskScanLine.y += 0.5 * delta;
@@ -884,6 +842,7 @@ export class Furniture extends EventEmitter {
 
     setMonitorState(state) {
         this._currentState = state;
+        if (this._plant) this._plant.getStateColor(state);
         if (this._deskScreenOverlay) this._drawMonitorContent(this._deskScreenOverlay, state);
         const colors = { DEEP_FOCUS: 0x8000ff, STRESSED: 0xff5050, FATIGUED: 0xffa000, RELAXED: 0x00c864, WIRED: 0x0096ff };
         const c = colors[state] || 0x00c864;

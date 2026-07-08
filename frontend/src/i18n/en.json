@@ -101,6 +101,8 @@
   "toast.reconnecting_body": "Backend unreachable. Retrying in {s}s (attempt {n})",
   "toast.fix_applied": "Fix applied",
   "toast.fix_applied_body": "Press Revert to undo",
+  "toast.revert": "Revert",
+  "toast.fix_reverted": "Fix reverted",
   "toast.fix_rejected": "Fix rejected",
   "toast.fix_cancelled": "Cancelled",
   "toast.fix_cancelled_body": "Change was not applied",
