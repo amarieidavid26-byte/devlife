@@ -21,6 +21,59 @@ import termios
 logger = logging.getLogger(__name__)
 
 
+class KeystrokeFirewall:
+    """Server-side mirror of the typed input line (defense in depth for the Fatigue
+    Firewall). The browser terminal already intercepts risky commands in the UI, but a
+    client talking to the WebSocket directly would bypass that — this catches the Enter
+    key BEFORE it reaches the shell and replaces it with Ctrl-U (kill-line), so the
+    command never executes.
+
+    Limitation (documented): commands recalled via shell history (up-arrow) arrive as
+    escape sequences, not plain keystrokes, so the mirror resets on ESC to avoid
+    false matches.
+    """
+
+    ENTER = (0x0D, 0x0A)
+    BACKSPACE = (0x7F, 0x08)
+    CTRL_C, CTRL_U, ESC = 0x03, 0x15, 0x1B
+
+    def __init__(self, block_reason_fn):
+        # block_reason_fn(line) -> reason string if the line must be blocked, else None
+        self._blocked_check = block_reason_fn
+        self._buf = bytearray()
+
+    def filter(self, data: bytes):
+        """Returns (bytes_to_write_to_pty, list_of_block_reasons)."""
+        out = bytearray()
+        blocked = []
+        for b in data:
+            if b in self.ENTER:
+                line = self._buf.decode(errors="ignore").strip()
+                self._buf.clear()
+                reason = self._blocked_check(line) if line else None
+                if reason:
+                    out.append(self.CTRL_U)  # clear the shell's pending line instead of running it
+                    blocked.append(reason)
+                    continue
+                out.append(b)
+            elif b in self.BACKSPACE:
+                if self._buf:
+                    self._buf.pop()
+                out.append(b)
+            elif b in (self.CTRL_C, self.CTRL_U):
+                self._buf.clear()
+                out.append(b)
+            elif b == self.ESC:
+                self._buf.clear()
+                out.append(b)
+            elif 32 <= b < 127:
+                self._buf.append(b)
+                out.append(b)
+            else:
+                out.append(b)
+        return bytes(out), blocked
+
+
 class PtySession:
     def __init__(self, cwd, shell=None, env=None):
         self.cwd = cwd

@@ -150,6 +150,8 @@ def broadcast_sync(message: dict):
 def build_biometric_msg(data, state):
     ble_active = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
     source = "whoop" if bio.access_token and time.time() >= app_state.mock_override_until else "mock"
+    # RMSSD computed live from BLE RR intervals wins over the daily WHOOP summary / mock
+    live_hrv = bio.live_hrv if (time.time() - bio.live_hrv_timestamp < 30) else None
 
     if len(app_state.hr_history) >= 2:
         recent = app_state.hr_history[-1][1]
@@ -168,7 +170,8 @@ def build_biometric_msg(data, state):
         "strain": round(data.get("strain", 0), 1),
         "state": state,
         "sleepPerformance": round(data.get("sleepPerformance", 0), 2),
-        "hrv": round(data.get("hrv", 0), 1),
+        "hrv": live_hrv if live_hrv is not None else round(data.get("hrv", 0), 1),
+        "hrv_live": live_hrv is not None,
         "estimated_stress": round(data.get("estimated_stress", 0), 2),
         "spo2": round(data.get("spo2", 0), 1),
         "skinTemp": round(data.get("skinTemp", 0), 1),
@@ -323,6 +326,20 @@ def biometric_loop():
             if is_whoop:
                 src = "ble" if ble_fresh else "whoop"
                 logger.info("WHOOP state=%s rec=%s strain=%s hrv=%s hr=%s src=%s", state, data.get("recovery"), data.get("strain"), data.get("hrv"), data.get("heartRate"), src)
+
+            # black-box recording: one sample per cycle feeds the session replay
+            try:
+                live_hrv = bio.live_hrv if (time.time() - bio.live_hrv_timestamp < 30) else None
+                db.save_biometric(
+                    hr=data.get("heartRate") or 0,
+                    hrv=live_hrv if live_hrv is not None else data.get("hrv", 0),
+                    recovery=data.get("recovery", 0),
+                    strain=data.get("strain", 0),
+                    source="ble" if ble_fresh else ("whoop" if is_whoop else "mock"),
+                    state=state,
+                )
+            except Exception as e:
+                logger.warning("biometric sample persist failed: %s", e)
 
             broadcast_sync(build_biometric_msg(data, state))
 
@@ -725,6 +742,12 @@ async def apply_fix_rollback(body: PatchHashBody):
     return {"ok": True, "original_text": original}
 
 
+@app.get("/api/session/replay")
+async def session_replay(session_id: int = None):
+    # the black box: biometric samples + interventions of a session on one timeline
+    return db.get_session_timeline(session_id)
+
+
 @app.get("/api/history")
 async def get_history(since: float = 0.0, limit: int = 50):
     rows = db.get_interventions(since=since, limit=min(limit, 200))
@@ -880,6 +903,9 @@ async def websocket_endpoint(ws: WebSocket):
                 if isinstance(bpm, (int, float)) and 30 <= bpm <= 220:
                     bio.live_heart_rate = int(bpm)
                     bio.live_hr_timestamp = time.time()
+                rr = data.get("rr")
+                if isinstance(rr, list) and len(rr) <= 30:
+                    bio.add_rr_intervals(rr)
 
             elif data.get("type") == "run_error":
                 # user clicked Run in the desk code editor and got a runtime error
@@ -1094,24 +1120,56 @@ async def terminal_ws(ws: WebSocket):
             pass
 
     sender = asyncio.create_task(pump_output())
+
+    # defense in depth: even if the browser-side firewall is bypassed (direct WS client),
+    # risky commands typed while FATIGUED/STRESSED never reach the shell
+    def _block_reason(line):
+        if bio.current_state not in ("FATIGUED", "STRESSED"):
+            return None
+        risky, desc = content_analyzer.detect_risky_commands(line)
+        return desc if risky else None
+
+    firewall = terminal_pty.KeystrokeFirewall(_block_reason)
+
+    def _firewall_banner(reason):
+        title = "FATIGUE FIREWALL" if bio.current_state == "FATIGUED" else "STRESS ALERT"
+        if brain.lang == "ro":
+            text = f"{title} (server): comanda blocata -- {reason}. Starea ta: {bio.current_state}."
+        else:
+            text = f"{title} (server): command blocked -- {reason}. Your state: {bio.current_state}."
+        return f"\r\n\x1b[1;31m⛔ {text}\x1b[0m\r\n".encode()
+
     try:
         while True:
             msg = await ws.receive()
             if msg.get("type") == "websocket.disconnect":
                 break
             if msg.get("bytes") is not None:
-                session.write(msg["bytes"])  # keystrokes
+                passthrough, blocked = firewall.filter(msg["bytes"])  # keystrokes
+                session.write(passthrough)
+                for reason in blocked:
+                    logger.info("server-side firewall blocked: %s (state %s)", reason, bio.current_state)
+                    out_queue.put_nowait(_firewall_banner(reason))
+                    db.save_intervention(
+                        state=bio.current_state,
+                        source="terminal-server-firewall",
+                        claude_text=f"blocked: {reason}",
+                    )
             elif msg.get("text") is not None:
                 text = msg["text"]
                 try:
                     ctrl = json.loads(text)
                 except (json.JSONDecodeError, TypeError):
-                    session.write(text.encode())
-                    continue
+                    ctrl = None
                 if isinstance(ctrl, dict) and ctrl.get("type") == "resize":
                     session.resize(int(ctrl.get("rows", 24)), int(ctrl.get("cols", 80)))
                 else:
-                    session.write(text.encode())
+                    # same firewall on the text path -- it's the obvious bypass vector
+                    passthrough, blocked = firewall.filter(text.encode())
+                    session.write(passthrough)
+                    for reason in blocked:
+                        logger.info("server-side firewall blocked (text path): %s", reason)
+                        out_queue.put_nowait(_firewall_banner(reason))
     except WebSocketDisconnect:
         pass
     finally:

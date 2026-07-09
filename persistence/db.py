@@ -34,7 +34,12 @@ def connect() -> sqlite3.Connection:
 def _run_migrations(conn: sqlite3.Connection):
     for sql_file in sorted(_MIGRATIONS_DIR.glob("*.sql")):
         logger.info("running migration: %s", sql_file.name)
-        conn.executescript(sql_file.read_text())
+        try:
+            conn.executescript(sql_file.read_text())
+        except sqlite3.OperationalError as e:
+            # migrations re-run on every connect; ALTER TABLE is a no-op the second time
+            if "duplicate column" not in str(e).lower():
+                raise
     conn.commit()
 
 
@@ -91,16 +96,35 @@ def save_intervention(state: str, source: str, claude_text: str,
 
 # biometric samples 
 
-def save_biometric(hr: float, hrv: float, recovery: float, strain: float, source: str):
+def save_biometric(hr: float, hrv: float, recovery: float, strain: float, source: str, state: str = None):
     sid = _current_session_id
     if sid is None:
         return
     conn = connect()
     conn.execute(
-        "INSERT INTO biometric_samples (session_id, ts, hr, hrv, recovery, strain, source) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (sid, time.time(), hr, hrv, recovery, strain, source),
+        "INSERT INTO biometric_samples (session_id, ts, hr, hrv, recovery, strain, source, state) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (sid, time.time(), hr, hrv, recovery, strain, source, state),
     )
     conn.commit()
+
+
+# session replay: the black-box recording of a coding session
+
+def get_session_timeline(session_id: int = None) -> dict:
+    conn = connect()
+    sid = session_id or _current_session_id
+    if sid is None:
+        row = conn.execute("SELECT id FROM sessions ORDER BY started_at DESC LIMIT 1").fetchone()
+        if row is None:
+            return {"session_id": None, "samples": [], "interventions": []}
+        sid = row["id"]
+    samples = [dict(r) for r in conn.execute(
+        "SELECT ts, hr, hrv, recovery, strain, source, state FROM biometric_samples WHERE session_id = ? ORDER BY ts",
+        (sid,)).fetchall()]
+    interventions = [dict(r) for r in conn.execute(
+        "SELECT ts, state, source, claude_text FROM interventions WHERE session_id = ? ORDER BY ts",
+        (sid,)).fetchall()]
+    return {"session_id": sid, "samples": samples, "interventions": interventions}
 
 
 # feedback 

@@ -309,7 +309,9 @@ export class HUD {
         const stressBarColor = stress < 1 ? '#6AD89A' : stress < 2 ? '#FFB84A' : '#FF7A6A';
 
         const strainFmt = (!bleOnly && d.strain !== '--') ? parseFloat(d.strain).toFixed(1)  : '--';
-        const hrvFmt    = (!bleOnly && d.hrv    !== '--') ? `${Math.round(d.hrv)}ms`         : '--';
+        // hrv_live = RMSSD computed from streamed RR intervals -- real even in BLE-only mode
+        const hrvFmt    = d.hrv_live ? `${Math.round(d.hrv)}ms<span style="color:#6AD89A">●</span>`
+            : (!bleOnly && d.hrv !== '--') ? `${Math.round(d.hrv)}ms` : '--';
         const bpmFmt    = (d.heartRate && d.heartRate !== '--') ? `${Math.round(d.heartRate)}` : '--';
 
         const srcBadge = bleOnly

@@ -211,10 +211,12 @@ async function startGame(enableDemo = false) {
             toastSystem.show('warning', '\uD83D\uDCE1 ' + i18n.t('ble.pair_failed_generic', { err: res.errorMessage }), '', 5000);
         }
     };
-    whoop.onUpdate((bpm, connected) => {
+    whoop.onUpdate((bpm, connected, rr) => {
         demoHotbar.setBLEConnected(connected);
         if (connected && bpm > 0) {
-            socket.send({ type: 'heart_rate', bpm });
+            // rr = inter-beat intervals (ms) when the strap broadcasts them (flag bit 4);
+            // the backend computes live RMSSD-HRV from these
+            socket.send(rr && rr.length ? { type: 'heart_rate', bpm, rr } : { type: 'heart_rate', bpm });
             hud.update({ heartRate: bpm });
         }
         if (!connected) {

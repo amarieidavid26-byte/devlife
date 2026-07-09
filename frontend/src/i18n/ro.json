@@ -211,6 +211,8 @@
   "dashboard.sess_duration": "Sesiune",
   "dashboard.sess_analyses": "Analize",
   "dashboard.sess_stuck": "Blocaje",
+  "dashboard.replay": "Replay sesiune",
+  "dashboard.replay_hint": "treci cu mouse-ul peste grafic — liniile roșii sunt intervenții",
   "dashboard.ecg_lead": "Derivația II · ECG",
   "dashboard.cqi_hint_high_risk": "⚠️ Risc mare de erori. Se recomandă o pauză.",
   "dashboard.cqi_hint_below": "⚡ Sub valoarea de referință. Recomandate sarcini simple.",

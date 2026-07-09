@@ -37,7 +37,38 @@ class BiometricEngine:
         self._sleep_error_logged = False
         self.live_heart_rate = 0
         self.live_hr_timestamp = 0
+        # inter-beat (RR) intervals streamed over BLE -> live RMSSD-HRV
+        self.live_rr = []          # list of (timestamp, rr_ms)
+        self.live_hrv = None
+        self.live_hrv_timestamp = 0
         self._load_tokens()
+
+    RR_WINDOW_SECONDS = 60
+    RR_MIN_MS, RR_MAX_MS = 300, 2000   # physiological bounds; outside = sensor artifact
+    RR_MIN_SAMPLES = 8
+
+    def add_rr_intervals(self, rr_list):
+        # called from the WS 'heart_rate' handler with RR intervals (ms) parsed
+        # from the BLE Heart Rate Measurement characteristic (flag bit 4)
+        now = time.time()
+        for rr in rr_list:
+            if isinstance(rr, (int, float)) and self.RR_MIN_MS <= rr <= self.RR_MAX_MS:
+                self.live_rr.append((now, float(rr)))
+        cutoff = now - self.RR_WINDOW_SECONDS
+        self.live_rr = [(t, v) for t, v in self.live_rr if t >= cutoff]
+        hrv = self.compute_live_hrv()
+        if hrv is not None:
+            self.live_hrv = hrv
+            self.live_hrv_timestamp = now
+
+    def compute_live_hrv(self):
+        # RMSSD over the sliding window: sqrt(mean(successive RR differences squared)).
+        # This is the standard short-window HRV metric (same family WHOOP reports).
+        values = [v for _, v in self.live_rr]
+        if len(values) < self.RR_MIN_SAMPLES:
+            return None
+        diffs = [values[i + 1] - values[i] for i in range(len(values) - 1)]
+        return round((sum(d * d for d in diffs) / len(diffs)) ** 0.5, 1)
 
     # oauth2 urls
     AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth"
@@ -283,7 +314,19 @@ class BiometricEngine:
         else:
             estimated_stress = 0.5
         live_hr = self.live_heart_rate if (time.time() - self.live_hr_timestamp < 5) else 0
-        
+        # real HRV computed from streamed RR intervals beats any estimate
+        live_hrv = self.live_hrv if (time.time() - self.live_hrv_timestamp < 30) else None
+        if live_hrv is not None and self.hrv_baseline > 0:
+            live_ratio = live_hrv / self.hrv_baseline
+            if live_ratio < 0.6:
+                estimated_stress = 2.5
+            elif live_ratio < 0.75:
+                estimated_stress = 1.8
+            elif live_ratio < 0.85:
+                estimated_stress = 1.2
+            else:
+                estimated_stress = 0.5
+
         if live_hr > 0:
             if live_hr > 100:
                 new_state = "STRESSED"

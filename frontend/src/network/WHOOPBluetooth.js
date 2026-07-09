@@ -66,14 +66,26 @@ export class WHOOPBluetooth {
     }
 
     _onHeartRate(event) {
+        // BLE Heart Rate Measurement (0x2A37): flags byte, HR (8/16-bit by flag bit 0),
+        // optional energy expended (bit 3), then RR-intervals (bit 4) as uint16 LE in 1/1024s
         const value = event.target.value;
         const flags = value.getUint8(0);
+        let offset = 1;
         if (flags & 0x01) {
-            this.currentBPM = value.getUint16(1, true);
+            this.currentBPM = value.getUint16(offset, true);
+            offset += 2;
         } else {
-            this.currentBPM = value.getUint8(1);
+            this.currentBPM = value.getUint8(offset);
+            offset += 1;
         }
-        this._notifyListeners(this.currentBPM, true);
+        if (flags & 0x08) offset += 2; // skip energy expended
+        const rr = [];
+        if (flags & 0x10) {
+            for (; offset + 1 < value.byteLength; offset += 2) {
+                rr.push(Math.round(value.getUint16(offset, true) * 1000 / 1024)); // -> ms
+            }
+        }
+        this._notifyListeners(this.currentBPM, true, rr);
     }
 
     async _tryReconnect() {
@@ -140,8 +152,8 @@ export class WHOOPBluetooth {
         this._onGiveUp = callback;
     }
 
-    _notifyListeners(bpm, connected) {
-        this._listeners.forEach(cb => cb(bpm, connected));
+    _notifyListeners(bpm, connected, rr = []) {
+        this._listeners.forEach(cb => cb(bpm, connected, rr));
     }
 
     disconnect() {

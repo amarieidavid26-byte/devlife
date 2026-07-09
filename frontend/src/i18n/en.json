@@ -211,6 +211,8 @@
   "dashboard.sess_duration": "Session",
   "dashboard.sess_analyses": "Analyses",
   "dashboard.sess_stuck": "Times stuck",
+  "dashboard.replay": "Session Replay",
+  "dashboard.replay_hint": "hover to scrub the session — red ticks are interventions",
   "dashboard.ecg_lead": "Lead II · ECG",
   "dashboard.cqi_hint_high_risk": "⚠️ High bug risk. Consider stepping away.",
   "dashboard.cqi_hint_below": "⚡ Below baseline. Stick to simple tasks.",
