@@ -20,6 +20,7 @@ import { MainMenu } from './menu/MainMenu.js';
 import { SoundManager } from './audio/SoundManager.js';
 import { DemoMode } from './demo/DemoMode.js';
 import { ToastSystem } from './hud/ToastSystem.js';
+import { ShortcutsOverlay } from './hud/ShortcutsOverlay.js';
 import { SettingsMenu } from './menu/SettingsMenu.js';
 import { SceneManager } from './scenes/SceneManager.js';
 import { Town } from './town/Town.js';
@@ -109,6 +110,7 @@ async function startGame(enableDemo = false) {
     socket = new GhostSocket(CONFIG.WS_URL);
     socket.setToastSystem(toastSystem);
     i18n.onChange((lang) => socket.sendLang(lang));
+    window.addEventListener('devlife:personality', (e) => socket.sendPersonality(e.detail));
 
     // client-side biometric demo when there's no backend; the real backend takes over
     // the moment the WS connects (see the 'connected'/'disconnected' handlers below).
@@ -173,6 +175,7 @@ async function startGame(enableDemo = false) {
     // Link atmosphere to ghost so critical interventions can trigger screen shake
     ghost.setAtmosphere(atmosphere);
 
+    const shortcutsOverlay = new ShortcutsOverlay();
     hud = new HUD();
     // real "last night" sleep arrives via biometric_update (WHOOP sleep endpoint) — no placeholder
     dashboard = new DashboardOverlay();
@@ -440,6 +443,7 @@ async function startGame(enableDemo = false) {
         ghost.setBiometrics(data);
         furniture.setMonitorState(data.state);
         soundManager.setState(data.state);
+        soundManager.setHeartbeat(data.heartRate, data.state === 'FATIGUED' || data.state === 'STRESSED');
         if (apps && apps.desk_computer && apps.desk_computer.isOpen) {
             apps.desk_computer.setBiometricState(data.state); // biometric Cursor indicator
         }
@@ -526,8 +530,18 @@ async function startGame(enableDemo = false) {
 
         // Escape always works (closes apps/bubbles even while typing)
         if (e.key === 'Escape') {
+            if (shortcutsOverlay.visible) { shortcutsOverlay.hide(); return; }
             if (ghost._bubble) { ghost.dismissBubble(true); return; }
             closeAllApps();
+            return;
+        }
+
+        // ?: keyboard shortcuts overlay
+        if (e.key === '?') {
+            const t = e.target.tagName;
+            if (t === 'INPUT' || t === 'TEXTAREA' || e.target.isContentEditable) return;
+            e.preventDefault();
+            shortcutsOverlay.toggle();
             return;
         }
 

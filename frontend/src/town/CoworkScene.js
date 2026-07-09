@@ -2,26 +2,11 @@ import * as PIXI from 'pixi.js';
 import { cartToIso, TILE_WIDTH, TILE_HEIGHT } from '../utils/isometric.js';
 import { TownPlayer } from './TownPlayer.js';
 import { i18n } from '../i18n/index.js';
+import { STATE_COLORS, STATE_COLORS_CSS as STATE_HEX } from '../theme.js';
 
 const GRID = 12;
 const ZOOM = 1.5;
 const WALL_H = 100;
-
-const STATE_COLORS = {
-    DEEP_FOCUS: 0x9B6AFF,
-    STRESSED: 0xFF7A6A,
-    FATIGUED: 0xFFB84A,
-    RELAXED: 0x6AD89A,
-    WIRED: 0x6AB8FF,
-};
-
-const STATE_HEX = {
-    DEEP_FOCUS: '#9B6AFF',
-    STRESSED: '#FF7A6A',
-    FATIGUED: '#FFB84A',
-    RELAXED: '#6AD89A',
-    WIRED: '#6AB8FF',
-};
 
 const COL = {
     floorA: 0x9A9AA0,

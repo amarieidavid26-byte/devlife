@@ -1,13 +1,6 @@
 import { ensureInfoPanel, infoBtn } from './InfoPanel.js';
 import { i18n } from '../i18n/index.js';
-
-const STATE_COLORS = {
-    DEEP_FOCUS: '#9B6AFF',
-    STRESSED:   '#FF7A6A',
-    FATIGUED:   '#FFB84A',
-    RELAXED:    '#6AD89A',
-    WIRED:      '#6AB8FF',
-};
+import { STATE_COLORS_CSS as STATE_COLORS } from '../theme.js';
 
 const BEAT_SHAPE = [
     0.5, 0.5, 0.5, 0.5,
@@ -88,7 +81,7 @@ export class HUD {
             position: fixed;
             top: 16px;
             right: 16px;
-            width: 220px;
+            width: clamp(170px, 18vw, 220px);
             background: rgba(42,36,28,0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -108,7 +101,7 @@ export class HUD {
         const dpr = window.devicePixelRatio || 1;
         this._ecgCanvas.width = ECG_W * dpr;
         this._ecgCanvas.height = ECG_H * dpr;
-        this._ecgCanvas.style.cssText = `display:block;width:${ECG_W}px;height:${ECG_H}px;`;
+        this._ecgCanvas.style.cssText = `display:block;width:100%;max-width:${ECG_W}px;height:${ECG_H}px;`;
         this._ecgCtx = this._ecgCanvas.getContext('2d');
         this._ecgCtx.scale(dpr, dpr);
         this._ecgDpr = dpr;

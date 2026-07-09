@@ -146,6 +146,33 @@ export class SettingsMenu {
     }
     panel.appendChild(langRow);
 
+    // ghost personality section
+    panel.appendChild(this._sectionLabel(i18n.t('settings.personality')));
+    const persRow = this._row();
+    persRow.style.gap = '10px';
+    const getPers = () => localStorage.getItem('devlife_personality') || 'friend';
+    const persStyles = [];
+    for (const p of ['coach', 'friend', 'sarcastic']) {
+      const btn = document.createElement('button');
+      btn.textContent = i18n.t(`settings.personality.${p}`);
+      const style = () => {
+        const active = p === getPers();
+        btn.style.cssText = `padding:6px 16px;border-radius:4px;cursor:pointer;font-family:'Courier New',monospace;font-size:12px;border:1px solid;transition:all 0.15s;
+          background:${active ? 'rgba(0,200,100,0.15)' : 'rgba(255,255,255,0.05)'};
+          color:${active ? '#00c864' : '#666'};
+          border-color:${active ? '#00c864' : 'rgba(255,255,255,0.1)'};`;
+      };
+      style();
+      persStyles.push(style);
+      btn.addEventListener('click', () => {
+        localStorage.setItem('devlife_personality', p);
+        persStyles.forEach(fn => fn());
+        window.dispatchEvent(new CustomEvent('devlife:personality', { detail: p }));
+      });
+      persRow.appendChild(btn);
+    }
+    panel.appendChild(persRow);
+
     // controls section
     panel.appendChild(this._sectionLabel(i18n.t('settings.controls')));
 

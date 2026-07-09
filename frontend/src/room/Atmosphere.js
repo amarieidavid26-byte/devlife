@@ -60,7 +60,21 @@ export class Atmosphere {
         this.container.addChild(this._vignetteContainer);
         this._buildVignette();
 
-        window.addEventListener('resize', () => this._buildVignette());
+        window.addEventListener('resize', () => {
+            this._buildVignette();
+            // reposition the fixed-at-build-time light effects (fullscreen toggle mid-demo)
+            if (this._lampGlow) {
+                this._lampGlow.x = window.innerWidth * 0.35;
+                this._lampGlow.y = window.innerHeight * 0.6;
+            }
+            if (this._moonlight) {
+                const idx = this.container.getChildIndex(this._moonlight);
+                this.container.removeChild(this._moonlight);
+                this._moonlight.destroy();
+                this._buildMoonlight();
+                this.container.setChildIndex(this._moonlight, idx);
+            }
+        });
     }
 
     _initDustMotes() {

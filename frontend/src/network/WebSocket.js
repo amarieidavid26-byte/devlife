@@ -34,6 +34,7 @@ export class GhostSocket {
             this.isConnected = true;
             this._retryCount = 0;
             this.sendLang(i18n.getLang());
+            this.sendPersonality(localStorage.getItem('devlife_personality') || 'friend');
             this.emit('connected', {});
         };
 
@@ -155,6 +156,10 @@ export class GhostSocket {
 
     sendLang(lang) {
         this.send({ type: 'set_lang', lang });
+    }
+
+    sendPersonality(personality) {
+        this.send({ type: 'set_personality', personality });
     }
 
     resumeLive() {

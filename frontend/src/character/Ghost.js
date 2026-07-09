@@ -1,13 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { i18n } from '../i18n/index.js';
-
-const STATE_COLORS = {
-    DEEP_FOCUS: 0x9B6AFF,
-    STRESSED:   0xFF7A6A,
-    FATIGUED:   0xFFB84A,
-    RELAXED:    0x6AD89A,
-    WIRED:      0x6AB8FF,
-};
+import { STATE_COLORS } from '../theme.js';
 
 const STATE_GLOW_CSS = {
     DEEP_FOCUS: 'rgba(155,106,255,0.3)',

@@ -851,6 +851,11 @@ async def websocket_endpoint(ws: WebSocket):
                     brain.lang = lang
                     content_analyzer.lang = lang
 
+            elif data.get("type") == "set_personality":
+                p = data.get("personality")
+                if p in ("coach", "friend", "sarcastic"):
+                    brain.personality = p
+
             elif data.get("type") == "resume_live":
                 # "Back to live" toggle: drop the demo lock so real WHOOP data resumes at once.
                 app_state.forced_state = None

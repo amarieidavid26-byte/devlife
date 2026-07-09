@@ -359,6 +359,14 @@ export class SoundManager {
     });
   }
 
+  // heartbeat thumps synced to the (real) BPM while FATIGUED/STRESSED -- you *hear* your own pulse
+  setHeartbeat(bpm, active) {
+    clearInterval(this._heartbeatTimer);
+    this._heartbeatTimer = null;
+    if (!active || !bpm || bpm < 30 || bpm > 220) return;
+    this._heartbeatTimer = setInterval(() => this.playHeartbeat(), Math.round(60000 / bpm));
+  }
+
   playHeartbeat() {
     this._playSfx((ctx, dest) => {
       const osc = ctx.createOscillator();

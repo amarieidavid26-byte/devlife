@@ -1,13 +1,7 @@
 import { ensureInfoPanel, infoBtn } from './InfoPanel.js';
 import { i18n } from '../i18n/index.js';
-
-const STATE_COLORS = {
-    DEEP_FOCUS: '#9B6AFF',
-    STRESSED:   '#FF7A6A',
-    FATIGUED:   '#FFB84A',
-    RELAXED:    '#6AD89A',
-    WIRED:      '#6AB8FF',
-};
+import { STATE_COLORS_CSS as STATE_COLORS } from '../theme.js';
+import { CONFIG } from '../config.js';
 
 const BEAT_SHAPE = [
     0.5, 0.5, 0.5, 0.5,
@@ -401,6 +395,23 @@ export class DashboardOverlay {
         <div class="log-scroll" id="dov-log">
             <div class="log-empty" id="dov-log-empty" data-i18n="dashboard.monitoring">Monitoring...</div>
         </div>
+
+        <div class="log-title" style="margin-top:14px"><span data-i18n="dashboard.ghost_learning">Ghost Learning</span></div>
+        <div id="dov-learn" style="font-family:'Nunito',sans-serif;font-size:11px;color:#B8A88C;line-height:1.7">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <span data-i18n="dashboard.accept_rate">Accept rate</span>
+                <strong id="dov-learn-rate" style="color:#F5F0E8">--%</strong>
+            </div>
+            <div class="stress-track" style="margin:3px 0 6px">
+                <div class="stress-fill" id="dov-learn-bar" style="width:0%;background:#6AD89A"></div>
+            </div>
+            <div id="dov-learn-mode" style="font-style:italic"></div>
+            <div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,228,181,0.08)">
+                <div style="display:flex;justify-content:space-between"><span data-i18n="dashboard.sess_duration">Session</span><strong id="dov-sess-dur" style="color:#F5F0E8">--</strong></div>
+                <div style="display:flex;justify-content:space-between"><span data-i18n="dashboard.sess_analyses">Analyses</span><strong id="dov-sess-analyses" style="color:#F5F0E8">--</strong></div>
+                <div style="display:flex;justify-content:space-between"><span data-i18n="dashboard.sess_stuck">Times stuck</span><strong id="dov-sess-stuck" style="color:#F5F0E8">--</strong></div>
+            </div>
+        </div>
     </div>
 
     <div class="bottom" id="dov-ecg-container">
@@ -451,6 +462,12 @@ export class DashboardOverlay {
             ansSns:       this._el.querySelector('#dov-ans-sns'),
             ansPns:       this._el.querySelector('#dov-ans-pns'),
             ansStatus:    this._el.querySelector('#dov-ans-status'),
+            learnRate:    this._el.querySelector('#dov-learn-rate'),
+            learnBar:     this._el.querySelector('#dov-learn-bar'),
+            learnMode:    this._el.querySelector('#dov-learn-mode'),
+            sessDur:      this._el.querySelector('#dov-sess-dur'),
+            sessAnalyses: this._el.querySelector('#dov-sess-analyses'),
+            sessStuck:    this._el.querySelector('#dov-sess-stuck'),
         };
 
         // shared 💡 science panel (also used by the in-game HUD) handles all the wiring
@@ -835,12 +852,45 @@ export class DashboardOverlay {
             this._el.style.display = 'block';
             this._visible = true;
             requestAnimationFrame(() => { this._resizeECG(); this._resizeSpark(); });
+            this._pollStatus();
+            this._statusTimer = setInterval(() => this._pollStatus(), 5000);
         }
     }
 
     hide() {
         this._el.style.display = 'none';
         this._visible = false;
+        clearInterval(this._statusTimer);
+    }
+
+    // ghost-learning + session stats panel, fed by /api/status while the dashboard is open
+    async _pollStatus() {
+        let s;
+        try {
+            const res = await fetch(`${CONFIG.BACKEND_URL}/api/status`);
+            s = await res.json();
+        } catch (e) {
+            return; // offline demo -- panel keeps showing '--'
+        }
+        const acc = s.interventions_accepted || 0;
+        const ign = s.interventions_ignored || 0;
+        const total = acc + ign;
+        if (total > 0) {
+            const rate = Math.round((acc / total) * 100);
+            this._$.learnRate.textContent = `${rate}%`;
+            this._$.learnBar.style.width = `${rate}%`;
+            this._$.learnBar.style.background = rate >= 60 ? '#6AD89A' : rate >= 30 ? '#FFB84A' : '#FF7A6A';
+        }
+        // mirrors the backend's adaptive cooldown (ghost_brain.should_intervene)
+        const modeKey = ign >= 3 ? 'dashboard.learn_backed_off'
+            : (acc > ign && total > 0) ? 'dashboard.learn_speaks_more'
+            : 'dashboard.learn_calibrating';
+        this._$.learnMode.textContent = i18n.t(modeKey);
+
+        const st = s.session_stats || {};
+        if (st.session_duration_minutes != null) this._$.sessDur.textContent = `${st.session_duration_minutes} min`;
+        if (st.total_analyses != null) this._$.sessAnalyses.textContent = st.total_analyses;
+        if (st.times_stuck != null) this._$.sessStuck.textContent = st.times_stuck;
     }
 
     _escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }

@@ -42,6 +42,7 @@ class GhostBrain:
     def __init__(self, api_key):
         self.client = anthropic.Anthropic(api_key=api_key, timeout=self.CLAUDE_TIMEOUT_SECONDS)
         self.lang = "en"  # set via WS 'set_lang' from the frontend i18n
+        self.personality = "friend"  # coach | friend | sarcastic, set via WS 'set_personality'
         self.last_intervention_time = 0
         self.cooldown = 30
         self.context_history = []
@@ -90,6 +91,19 @@ class GhostBrain:
             "They'll crash soon. decisions feel fast but accuracy drops hard. "
             "Give quick responses. 'Fix line 5.' 'Ship it.' keep it short."
         )
+    }
+
+    # user-selectable ghost personality -- 'friend' is the baseline prompts above
+    PERSONALITY_TONES = {
+        "friend": "",
+        "coach": (
+            "Tone override: you are a STRICT COACH. Direct, imperative, zero sugar-coating. "
+            "Short commands. You care about results, not feelings."
+        ),
+        "sarcastic": (
+            "Tone override: you are LOVINGLY SARCASTIC. Dry wit, playful jabs, eye-rolls in text form. "
+            "Still genuinely helpful underneath the sass."
+        ),
     }
 
     # here is the decision being made
@@ -158,6 +172,9 @@ class GhostBrain:
 
         # look up the system prompt for this bio state
         system = self.PROMPTS.get(biometric_state, self.PROMPTS["RELAXED"])
+        tone = self.PERSONALITY_TONES.get(self.personality, "")
+        if tone:
+            system += " " + tone
         if self.lang == "ro":
             system += (
                 " Respond in Romanian -- natural, colloquial, like a friend. "
