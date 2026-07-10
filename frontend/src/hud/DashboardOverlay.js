@@ -27,8 +27,6 @@ function injectStyles() {
     const s = document.createElement('style');
     s.id = 'dov-styles';
     s.textContent = `
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
 #dov-root {
     position:fixed;top:0;left:0;width:100%;height:100%;
     overflow:hidden;

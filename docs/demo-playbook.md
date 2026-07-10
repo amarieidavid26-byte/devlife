@@ -103,7 +103,7 @@ puncte de mentionat:
 sau arata rapid: `pytest tests/ -v`
 
 puncte:
-- 43 teste (unit + integration + WS flow + heart_rate + run_error routing)
+- 92 teste (unit + integration + WS flow + heart_rate + run_error routing + HRV live/RMSSD + session replay + keystroke firewall + firewall anti-drift)
 - test_biometric_classifier: clasele de stare cognitive
 - test_apply_fix: contract, validator, lifecycle complet
 - test_ws_flow: conexiune WebSocket end-to-end + handler heart_rate
@@ -120,7 +120,7 @@ puncte:
 > Yerkes-Dodson — performanta optima la arousal moderat. FATIGUED: recovery < 40% sau sleep < 70%. STRESSED: HRV ratio < 0.75 sau strain > 16. DEEP_FOCUS: estimated_stress intre 0.9-1.5 cu strain moderat.
 
 **"Apply Fix e sigur?"**
-> Patch-ul trece prin validator inainte de aplicare: max 50 linii, fara metacaractere shell, rationale obligatoriu, range valid. Pre-imaginea e stocata pentru rollback. Totul e in audit log.
+> Patch-ul trece prin validator inainte de aplicare: max 500 linii (fisier complet), fara metacaractere shell, rationale obligatoriu, range valid. Pre-imaginea e stocata pentru rollback — butonul Revert de pe toast o restaureaza. Totul e in audit log.
 
 **"Ce date biometrice colectezi?"**
 > HR, HRV, recovery, strain, sleep performance, SpO2, temperatura pielii — doar din WHOOP cu consimtamant explicit prin OAuth. Nimic fara acord.
@@ -139,4 +139,18 @@ puncte:
 | ghost nu raspunde | cooldown activ (8s) | schimba starea cu hotbar-ul |
 | apply fix nu apare | continut prea scurt (`< 10 chars`) | scrie mai mult cod in editor |
 | WHOOP token expirat | token WHOOP dureaza 1h | apasa `DEMO MODE` pe hotbar |
-| WebSocket deconectat | backend restart | toast "Reconectare..." apare automat cu backoff |
+| WebSocket deconectat | backend restart | toast "Reconectare..." apare automat cu backoff; retry continua in fundal la nesfarsit |
+| pagina deschisa inaintea backend-ului | ordinea de pornire | nimic de facut — socket-ul reincearca singur si preia cand backend-ul e sus |
+| Claude API cade in timpul demo-ului | timeout / cheie / retea | ghost-ul trece automat pe replici fallback pre-scrise (RO/EN) — demo-ul continua |
+| fara internet in sala | WiFi cazut | fonturile sunt self-hosted, Pyodide e local, demo offline complet functional; doar replicile AI si Spotify pica |
+| Python runner nu merge pe deploy | pyodide gitignored | fallback automat pe CDN jsdelivr (doar pe deploy; local e servit din `lib/pyodide/`) |
+
+---
+
+## beats noi de demo (adaugate pentru nationala)
+
+1. **HRV live (RMSSD)** — cu strapul BLE conectat: "WHOOP va arata HRV-ul de ieri. Noi il calculam LIVE, din intervalele RR brute dintre batai, cu RMSSD pe fereastra de 60s — uite punctul verde de langa HRV in HUD." (matematica: `biometric_engine.py::compute_live_hrv`, teste in `test_live_hrv.py`)
+2. **Session Replay** — deschide dashboard-ul (TAB) → panoul "Replay sesiune": linia HR colorata dupa stare, liniile rosii = interventii. Scrub cu mouse-ul: "aici m-am blocat, aici ghost-ul m-a oprit din force push."
+3. **Personalitate** — Settings → Personalitatea Ghost-ului → Sarcastic → declanseaza firewall-ul → replica sarcastica. 10 secunde, memorabil.
+4. **Firewall server-side** — intrebarea juriului "si daca ocolesti UI-ul?": conecteaza-te direct la WS-ul de terminal (sau arata `test_keystroke_firewall.py`) — serverul inghite Enter-ul si trimite Ctrl-U; comanda nu ajunge NICIODATA la shell. Defense in depth.
+5. **Ghost invata** — dashboard → panoul "Ghost invata": rata de acceptare + cooldown-ul adaptiv ("3+ ignorate → Ghost s-a retras la 60s").

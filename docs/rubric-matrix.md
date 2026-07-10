@@ -10,7 +10,7 @@ total: 100 puncte. matricea de mai jos mapeaza fiecare sub-criteriu la artefacte
 | **II.2 Tehnologiile folosite** | 5 | justificarea fiecarei tehnologii: Python+FastAPI, PixiJS, SQLite WAL, Anthropic SDK, WHOOP API + Web Bluetooth, slowapi, Pydantic, Pyodide (Python in browser), Web Worker (sandbox JS) | `docs/architecture.md` sectiunea decizii, `docs/desk-code-runner.md`, `docs/assets-compliance.md` |
 | **II.3 Stabilitatea aplicatiei** | 5 | fara memory leaks (RSS stabil 60min), degradare gratioasa (Claude timeout 15s, WHOOP fallback la mock), demo rulabil end-to-end | `evidence/perf/latency-table.md`, `evidence/tests/SUMMARY.md` |
 | **II.4 Securitatea aplicatiei** | 5 | validare input Pydantic, CORS strict, logging fara secrete, rate limiting 30/min, timeout Claude, bounds WS, audit Apply Fix, OWASP API Top 10 mapping | `docs/security-checklist.md` |
-| **II.5 Testarea produsului** | 5 | 43 teste pytest (apply_fix, classifier, fallback, server_smoke, ws_flow, run_error_routing), automatizare prin scripts/run-tests.sh + coverage HTML | `evidence/tests/junit.xml`, `evidence/tests/coverage/`, `evidence/tests/SUMMARY.md` |
+| **II.5 Testarea produsului** | 5 | 92 teste pytest (apply_fix, classifier, fallback, server_smoke, ws_flow, run_error_routing, live_hrv, session_replay, keystroke_firewall, firewall_sync), automatizare prin scripts/run-tests.sh + coverage HTML | `evidence/tests/junit.xml`, `evidence/tests/coverage/`, `evidence/tests/SUMMARY.md` |
 | **II.6 Maturitatea aplicatiei** | 5 | app functionala online + offline, deployed pe Railway, public tinta clar definit, `/ready` endpoint, demo playbook | `docs/demo-playbook.md`, `docs/deploy-runbook.md`, `docs/positioning.md` sectiunea public tinta |
 | **II.7 Sistem de versionare** | 5 | git history cu mesaje structurate t02-t13 + code-editor-remake, 9 tag-uri semantice (v0.1-mvp → v1.1-hardening), branch strategy documentat | `evidence/team-process/git-graph.txt`, `evidence/team-process/branch-strategy.md`, `evidence/team-process/commit-timeline.md` |
 | **III.1 Interfata** | 5 | camera izometrica 2.5D, HUD biometric (CQI, ECG, autonomic balance), layout responsive, paleta Animal Crossing, ghost personality vizuala | `docs/ui-ux-decisions.md`, `evidence/screenshots/*.png` |
@@ -30,7 +30,7 @@ total: 100 puncte. matricea de mai jos mapeaza fiecare sub-criteriu la artefacte
 |------|-----------|---------|
 | backend + persistence | ✅ 100% | — |
 | security + hardening | ✅ 100% | — |
-| testing (43/43 verzi) | ✅ 100% | — |
+| testing (92/92 verzi) | ✅ 100% | — |
 | desk code runner (Pyodide + Web Worker) | ✅ 100% | — |
 | documentatie (docs/) | ✅ 95% | DOCX final pentru predare |
 | evidence pack | ✅ 95% | screenshots PNG efective (de capturat) |

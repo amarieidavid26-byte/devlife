@@ -1,13 +1,23 @@
 // loads Pyodide and runs user Python in a dedicated worker
 // stdout/stderr redirected to io.StringIO; stdin fed from user input
 
-importScripts('/lib/pyodide/pyodide.js');
+// local copy first (offline demo, ./scripts/setup-pyodide.sh); on deploys where the
+// 1GB+ pyodide dir isn't in the build (it's gitignored), fall back to the official CDN
+const PYODIDE_LOCAL = '/lib/pyodide/';
+const PYODIDE_CDN = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
+let pyodideBase = PYODIDE_LOCAL;
+try {
+    importScripts(PYODIDE_LOCAL + 'pyodide.js');
+} catch (e) {
+    pyodideBase = PYODIDE_CDN;
+    importScripts(PYODIDE_CDN + 'pyodide.js');
+}
 
 let pyodideReady = null;
 
 function init() {
     if (pyodideReady) return pyodideReady;
-    pyodideReady = loadPyodide({ indexURL: '/lib/pyodide/' }).then((py) => {
+    pyodideReady = loadPyodide({ indexURL: pyodideBase }).then((py) => {
         // pre-import once so first run is faster
         py.runPython('import io, sys, traceback');
         return py;
