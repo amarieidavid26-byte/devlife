@@ -20,11 +20,21 @@ ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza ac
 - **biometric Cursor** — completari AI inline (ghost-text in stil Cursor, Claude Haiku, accepti cu Tab) care se **adapteaza la starea ta cognitiva**: prudente/safety-first cand esti FATIGUED/STRESSED, minimale in DEEP_FOCUS. badge `🧠 <STARE>` in editor.
 - **inteligenta de limbaj (LSP)** — diagnostice, autocomplete si hover reale prin pyright / typescript-language-server
 - **Open in full VS Code** — buton care lanseaza code-server (VS Code real, 1:1) in iframe pe acelasi workspace, pentru editare „power". local-only.
-- **fatigue firewall** — detecteaza comenzile periculoase si le blocheaza cand starea ta e FATIGUED
-- **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback
+- **fatigue firewall** — detecteaza comenzile periculoase si le blocheaza cand starea ta e FATIGUED. **defense in depth**: pe langa interceptarea din UI, serverul mirroreaza tastele in PTY si inghite Enter-ul (inlocuit cu Ctrl-U) — comanda nu ajunge niciodata la shell, chiar daca ocolesti browserul
+- **HRV live (RMSSD)** — cand strapul transmite intervalele RR intre batai (BLE flag bit 4), calculam RMSSD pe fereastra glisanta de 60s, cu filtrare de artefacte. WHOOP iti arata HRV-ul de ieri; noi il calculam in timp real, in mijlocul sesiunii de cod
+- **session replay** — fiecare sesiune e inregistrata in SQLite (sample-uri biometrice + interventii); dashboard-ul are un timeline colorat pe stari prin care poti face scrub: "aici am obosit, aici ghost-ul m-a oprit din force push"
+- **personalitate ghost** — antrenor strict / prieten cald / sarcastic, din Settings; schimba tonul interventiilor AI
+- **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback (buton Revert pe toast)
 - **desk code runner** — butonul Run executa Python (Pyodide) si JavaScript (Web Worker) in sandbox; runtime errors merg la ghost prin flow-ul apply-fix. detalii in `docs/desk-code-runner.md`
 - **sleep mode** — dai jos wearable-ul si camera se intuneca automat
 - **demo offline** — fara backend, biometricele sunt simulate client-side: starile (1-5), HUD-ul, ghost-ul si ECG-ul functioneaza complet (doar replicile AI ale ghost-ului au nevoie de backend)
+
+## public tinta
+
+- **developeri care lucreaza noaptea / freelanceri** — nimeni nu le spune "opreste-te"; DevLife o face pe baza de date, nu de ceas
+- **studenti si elevi la informatica** — invata igiena cognitiva (somn, stres, pauze) direct in fluxul de lucru, gamificat
+- **echipe mici / startup-uri** — un singur force push obosit pe productie costa mai mult decat tot setup-ul
+- **quantified-self enthusiasts cu wearables** — au deja datele (WHOOP, Polar, orice strap BLE standard); DevLife e primul tool care le transforma in interventii active in editor si terminal
 
 ## tech stack
 
@@ -35,6 +45,19 @@ ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza ac
 - biometrice: WHOOP API + Chrome Web Bluetooth
 - persistenta: SQLite
 - deploy: Railway (functiile locale privilegiate — terminal/fisiere/LSP — sunt OFF in prod)
+
+### de ce aceste tehnologii
+
+| alegere | alternativa respinsa | motivul |
+|---------|---------------------|---------|
+| FastAPI | Flask / Django | WebSocket nativ + Pydantic integrat (validarea e parte din contractul Apply Fix); async fara plugin-uri |
+| PixiJS 7 | Three.js / Phaser | 2D WebGL pur, control complet pe randarea izometrica procedurala (zero sprite-uri externe); Three.js e overkill 3D, Phaser impune un game-loop opinionat |
+| vanilla JS | React / Vue | UI-ul de joc e canvas, nu DOM; un framework ar adauga un layer de reconciliere peste PixiJS fara castig |
+| SQLite (WAL) | Postgres | zero deployment overhead, ACID, reads concurente; volumul (o sesiune de cod) nu justifica un server de DB |
+| Claude API | GPT / local LLM | JSON structurat stabil pentru contractul de analiza + calitate pe cod; Haiku tine completarile inline sub ~1s |
+| WHOOP + Web Bluetooth | doar API polling | API-ul da sumarul zilnic; BLE da pulsul + intervalele RR in timp real — din ele calculam HRV-ul live noi insine |
+| Pyodide + Web Worker | executie pe server | codul utilizatorului ruleaza sandboxed in browser, zero risc pe server; workerul se poate termina fortat la timeout |
+| pty (stdlib) | node-pty / xterm server | zero dependinte native; add_reader pe master fd = streaming fara thread busy |
 
 ## arhitectura
 
@@ -57,6 +80,14 @@ cd devlife
 ```
 
 vezi `docs/install-runbook.md` pentru setup complet cu .env.
+
+## teste
+
+```bash
+./scripts/run-tests.sh    # 92 teste + junit.xml + coverage HTML in evidence/tests/
+```
+
+unit + integration: clasificator biometric, RMSSD/HRV live, contract Apply Fix, keystroke firewall (PTY), sincronizare pattern-uri firewall frontend/backend, session replay, flux WebSocket end-to-end, security jail. detalii in `evidence/tests/SUMMARY.md`.
 
 ## conectare WHOOP (date reale)
 

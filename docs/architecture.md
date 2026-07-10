@@ -281,6 +281,56 @@ sequenceDiagram
     Frontend->>User: alert vizual + screen shake
 ```
 
+### scenariu: HRV live din intervalele RR (BLE → RMSSD → clasificare)
+
+```mermaid
+sequenceDiagram
+    Strap->>Browser: BLE notify 0x2A37 (flags bit 4 → RR intervals, uint16 @ 1/1024s)
+    Browser->>Browser: WHOOPBluetooth parseaza RR → ms
+    Browser->>Backend: WS heart_rate{bpm, rr:[812, 798, 803, ...]}
+    Backend->>BiometricEngine: add_rr_intervals(rr)
+    Note over BiometricEngine: filtrare artefacte (300–2000ms),<br/>fereastra glisanta 60s
+    BiometricEngine->>BiometricEngine: RMSSD = sqrt(mean(diff(RR)²))
+    Note over BiometricEngine: live_hrv castiga in fata sumarului<br/>zilnic WHOOP la classify()
+    Backend->>Frontend: biometric_update{hrv: <RMSSD>, hrv_live: true}
+    Frontend->>User: HUD arata HRV real cu punct verde
+```
+
+De ce conteaza: WHOOP expune HRV o data pe zi (sumarul de dimineata). Din intervalele RR
+brute transmise pe BLE, DevLife calculeaza acelasi tip de metrica (RMSSD — standardul pentru
+HRV pe fereastra scurta) **in timp real**, deci `estimated_stress` si Fatigue Firewall
+reactioneaza la starea autonoma din momentul respectiv, nu la cea de ieri. Matematica e in
+`biometric_engine.py::compute_live_hrv`, cu teste pe valori calculate de mana (`test_live_hrv.py`).
+
+### scenariu: firewall server-side in PTY (defense in depth)
+
+Interceptarea din UI (`Terminal.js`) poate fi ocolita de un client care vorbeste direct cu
+WebSocket-ul de terminal. De aceea exista un al doilea strat, pe server:
+
+```
+tastele utilizatorului ──WS──> KeystrokeFirewall (terminal_pty.py)
+                                  │  mirroreaza linia curenta (backspace, Ctrl-C/U, reset pe ESC)
+                                  │  pe Enter: detect_risky_commands(linie) + stare FATIGUED/STRESSED?
+                                  ├── sigur → byte-urile trec nemodificate spre PTY
+                                  └── riscant → Enter-ul e INGHITIT, se scrie Ctrl-U (kill-line)
+                                       → shell-ul nu primeste niciodata comanda
+                                       → banner rosu in terminal + audit in SQLite
+```
+
+Cele doua straturi sunt tinute sincron printr-un test anti-drift (`test_firewall_sync.py`)
+care parseaza pattern-urile din `Terminal.js` si le compara cu `content_analyzer.py`.
+Limitare documentata: comenzile rechemate din istoricul shell-ului (sageata sus) sosesc ca
+secvente escape, nu ca taste — mirror-ul se reseteaza pe ESC ca sa evite match-uri false.
+
+### subsistem: session replay ("cutia neagra")
+
+`biometric_loop` persista un sample la fiecare ciclu (HR, HRV — cel live daca exista,
+recovery, strain, sursa, stare) in `biometric_samples`; interventiile erau deja persistate.
+`GET /api/session/replay` intoarce ambele serii pe un timeline comun, iar dashboard-ul le
+deseneaza: polilinia HR colorata dupa starea cognitiva, tick-uri rosii pentru interventii,
+scrub cu mouse-ul pentru valori punctuale. Rezultatul: demo-ul nu mai e o simulare, e o
+**dovada pe date reale** ("aici am obosit, aici ghost-ul m-a oprit din force push").
+
 ## decizii arhitecturale cheie
 
 | decizie | alternativa | motiv ales |

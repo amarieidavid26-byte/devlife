@@ -1,6 +1,6 @@
 # screenshots — checklist pentru predare
 
-22 capturi necesare pentru documentatia DOCX + sustinerea rubricii (Cap III + IV.2).
+36 capturi necesare pentru documentatia DOCX + sustinerea rubricii (Cap III + IV.2).
 
 ## conventii
 
@@ -235,3 +235,11 @@ deschide http://localhost:5173 in Chrome.
 | 26 | runner-js-timeout | ⏳ | Web Worker sandbox 5s |
 | 27 | runner-review-only-hint | ⏳ | degradare gratioasa C++/Go |
 | 28 | whoop-ble-live-bpm | ⏳ | optional, necesita hardware WHOOP |
+| 29 | session-replay-scrub | ⏳ | **NOU** dashboard (TAB) → panoul "Replay sesiune", mouse pe timeline, readout vizibil |
+| 30 | ghost-learning-panel | ⏳ | **NOU** dashboard → "Ghost invata": rata acceptare + mesajul de cooldown adaptiv |
+| 31 | personality-settings | ⏳ | **NOU** Settings → Personalitatea Ghost-ului, "Sarcastic" activ |
+| 32 | firewall-sarcastic | ⏳ | **NOU** interventie firewall cu personalitatea Sarcastic — combo memorabil |
+| 33 | hrv-live-dot | ⏳ | **NOU** necesita strap BLE cu RR: HUD cu HRV + punct verde (RMSSD live) |
+| 34 | server-firewall-banner | ⏳ | **NOU** banner rosu "FATIGUE FIREWALL (server)" in terminal (stare FATIGUED + comanda riscanta) |
+| 35 | shortcuts-overlay | ⏳ | **NOU** apasa `?` in joc |
+| 36 | plant-withering | ⏳ | **NOU** planta ofilita (frunze cazand) dupa interventii ignorate |
