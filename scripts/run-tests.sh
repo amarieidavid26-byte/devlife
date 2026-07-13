@@ -2,17 +2,19 @@
 set -e
 cd "$(dirname "$0")/.."
 
-if [ -f "venv/bin/activate" ]; then
-    source venv/bin/activate
+PY="python3"
+if [ -x "venv/bin/python" ]; then
+    PY="venv/bin/python"
 fi
 
-pip install pytest pytest-asyncio pytest-cov httpx slowapi -q
+"$PY" -m pip install pytest pytest-asyncio pytest-cov httpx slowapi -q
 
 mkdir -p evidence/tests
 
-python3 -m pytest tests/ \
+"$PY" -m pytest tests/ \
     --junitxml=evidence/tests/junit.xml \
-    --cov=server --cov=biometric_engine --cov=ghost_brain \
+    --cov=server --cov=runtime --cov=loops --cov=ws_game \
+    --cov=biometric_engine --cov=keystroke_dynamics --cov=ghost_brain \
     --cov=content_analyzer --cov=fallback_responses \
     --cov=apply_fix --cov=persistence \
     --cov-report=html:evidence/tests/coverage \
