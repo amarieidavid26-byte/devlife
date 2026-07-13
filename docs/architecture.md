@@ -42,7 +42,7 @@ Locatie: `frontend/src/`
 
 **Render izometric procedural** (fara sprite sheets pentru core):
 - `room/Room.js` — camera principala 2.5D
-- `room/Furniture.js` — integrare Kenney Furniture Kit 2.0 (CC0) prin AssetLoader
+- `room/Furniture.js` — tot mobilierul e desenat procedural cu PIXI.Graphics (zero sprite-uri externe)
 - `room/Atmosphere.js` — vignette, ambient glow, screen shake
 - `room/Plant.js` — plant procedural care creste cu activitatea utilizatorului
 - `character/Player.js`, `character/Ghost.js` — protagonistii
@@ -51,8 +51,8 @@ Locatie: `frontend/src/`
 - `hud/HUD.js` — biometrice live (HR, HRV, recovery, strain, CQI)
 - `hud/DashboardOverlay.js` — dashboard extins (ECG procedural, autonomic balance)
 - `hud/DemoHotbar.js` — switcher 1-5 pentru stari mock
-- `hud/ToastSystem.js` — notificari non-intrusive
-- `hud/BeneathView.js` — vedere alternativa "sub suprafata"
+- `hud/ToastSystem.js` — notificari non-intrusive (cu butoane de actiune, ex. Revert)
+- `hud/ShortcutsOverlay.js` — panoul de scurtaturi de tastatura (`?`)
 - `hud/TransitionOverlay.js` — tranzitii intre scene
 
 **Aplicatii in-game** (5 surfaces):
@@ -121,14 +121,18 @@ REST endpoints (vezi `server.py`):
 
 Locatie: root `*.py` + `apply_fix/` + `persistence/`
 
-**Core orchestration** (`server.py`):
-- `AppState` dataclass — toate variabilele globale incapsulate (state, content, hashes, baseline_hr, etc.)
-- `lifespan(app)` — gestionare ciclu de viata: connect DB, start session, lansare thread-uri daemon
-- 2 thread-uri:
-  - `biometric_loop` (5s) — fetch WHOOP / mock / BLE, clasifica, broadcast
+**Core orchestration** — impartit in 4 module cu responsabilitati clare:
+- `runtime.py` — `AppState` dataclass (toate variabilele globale incapsulate), singletons
+  (engine/brain/analyzer), `broadcast_sync()` — marshaling broadcast-uri din thread-uri
+  non-async catre event loop cu `asyncio.run_coroutine_threadsafe` — si `build_biometric_msg`
+- `loops.py` — cele 2 thread-uri daemon:
+  - `biometric_loop` (5s) — fetch WHOOP / mock / BLE, clasifica, persista sample replay, broadcast
   - `ghost_loop` (1s) — citeste pending_content, ruleaza ContentAnalyzer + GhostBrain, broadcast interventii
-- `broadcast_sync()` — marshaling broadcast-uri din thread-uri non-async catre event loop async cu `asyncio.run_coroutine_threadsafe`
-- WebSocket endpoint cu validare payload (bounds explicite: `WS_MAX_CONTENT_CHARS=50000`, `WS_MAX_ACTION_CHARS=100`, etc.)
+- `ws_game.py` — handler-ele mesajelor WS de joc, dispatch prin `WS_HANDLERS` (un mesaj nou =
+  o functie + o intrare in dict); validare payload cu bounds explicite
+  (`WS_MAX_CONTENT_CHARS=50000`, `WS_MAX_ACTION_CHARS=100`, etc.)
+- `server.py` — app-ul FastAPI, `lifespan(app)` (connect DB, start session, lansare thread-uri),
+  rutele HTTP si endpoint-urile WebSocket (joc + cele privilegiate locale)
 
 **Biometric engine** (`biometric_engine.py`):
 - OAuth 2.0 client pentru WHOOP API (auth, exchange, refresh, _save_tokens, _load_tokens)

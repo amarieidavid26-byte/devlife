@@ -95,8 +95,6 @@ mainMenu.show(
 
 // Game init (called when menu START or DEMO is clicked)
 async function startGame(enableDemo = false) {
-    await Furniture.preloadTextures();
-
     // background-load Pyodide so the desk code editor is ready when opened
     PythonRunner.get().preload().catch(() => {
         // silent — code editor surfaces the error on first Run if pyodide missing

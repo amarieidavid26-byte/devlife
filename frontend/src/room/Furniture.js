@@ -36,33 +36,7 @@ export class Furniture extends EventEmitter {
         });
     }
 
-    static async preloadTextures() {
-        const sprites = {
-            desk: '/assets/Isometric/desk_SE.png',
-            monitor: '/assets/Isometric/computerScreen_SE.png',
-            keyboard: '/assets/Isometric/computerKeyboard_SE.png',
-            chair: '/assets/Isometric/chairDesk_SE.png',
-            coffee: '/assets/Isometric/kitchenCoffeeMachine_SE.png',
-            speaker: '/assets/Isometric/speaker_SE.png',
-            plant: '/assets/Isometric/pottedPlant_SE.png',
-            radio: '/assets/Isometric/radio_SE.png',
-            lamp: '/assets/Isometric/lampRoundTable_SE.png',
-            bookcase: '/assets/Isometric/bookcaseOpen_SE.png',
-            laptop: '/assets/Isometric/laptop_SE.png',
-            rug: '/assets/Isometric/rugRectangle_SE.png',
-            televisionModern: '/assets/Isometric/televisionModern_SE.png',
-            trashcan: '/assets/Isometric/trashcan_SE.png',
-        };
-        Furniture._textures = {};
-        for (const [key, path] of Object.entries(sprites)) {
-            try {
-                Furniture._textures[key] = await PIXI.Assets.load(path);
-            } catch(e) { console.warn('Sprite load failed:', key); }
-        }
-    }
-
     _buildRoom() {
-        this._addDecorative('rug', 6, 6, 0.35);   // rug first so it renders behind everything
         this._addDesk(5, 2);
         this._addTerminal(7, 2);
         this._addSecondMonitor(2, 2);
@@ -73,127 +47,89 @@ export class Furniture extends EventEmitter {
         this._addSpeaker(8, 2);
         this._addChair(5, 4);
         this._addDoor(0, 10);
-        this._addDecorative('lamp', 3, 3, 0.45);
-        this._addDecorative('trashcan', 8, 4, 0.38);
-    }
-
-    _addDecorative(key, gx, gy, scale) {
-        if (!Furniture._textures?.[key]) return;
-        const sprite = new PIXI.Sprite(Furniture._textures[key]);
-        sprite.anchor.set(0.5, 0.85);
-        sprite.scale.set(scale);
-        const { x, y } = this.room.getTileCenter(gx, gy);
-        sprite.x = x;
-        sprite.y = y;
-        this.container.addChild(sprite);
     }
 
     // these offsets took forever to get right
     _addDesk(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.desk) {
-            const deskSprite = new PIXI.Sprite(Furniture._textures.desk);
-            deskSprite.anchor.set(0.5, 0.88);
-            deskSprite.scale.set(0.50);
-            c.addChild(deskSprite);
+        const g = new PIXI.Graphics();
 
-            if (Furniture._textures?.monitor) {
-                const monSprite = new PIXI.Sprite(Furniture._textures.monitor);
-                monSprite.anchor.set(0.5, 0.85);
-                monSprite.scale.set(0.45);
-                monSprite.x = 2;
-                monSprite.y = -40;
-                c.addChild(monSprite);
-            }
+        // Desk shadow (warm, not cold black)
+        g.beginFill(0x3C2A1A, 0.12);
+        g.drawRect(-35, -9, 80, 40);
+        g.endFill();
 
-            if (Furniture._textures?.keyboard) {
-                const kbSprite = new PIXI.Sprite(Furniture._textures.keyboard);
-                kbSprite.anchor.set(0.5, 0.85);
-                kbSprite.scale.set(0.30);
-                kbSprite.x = 2;
-                kbSprite.y = -8;
-                c.addChild(kbSprite);
-            }
-        } else {
-            const g = new PIXI.Graphics();
+        g.beginFill(0xA0845C);
+        g.drawRect(-40, -12, 80, 40);
+        g.endFill();
+        g.beginFill(0x8B7348);
+        g.drawRect(-35, 28, 10, 28);
+        g.drawRect(25, 28, 10, 28);
+        g.endFill();
+        g.lineStyle(1, 0xBFA072, 0.8);
+        g.drawRect(-40, -12, 80, 40);
+        // Top edge highlight
+        g.lineStyle(1, 0xBFA072, 1);
+        g.moveTo(-40, -12);
+        g.lineTo(40, -12);
 
-            // Desk shadow (warm, not cold black)
-            g.beginFill(0x3C2A1A, 0.12);
-            g.drawRect(-35, -9, 80, 40);
-            g.endFill();
-
-            g.beginFill(0xA0845C);
-            g.drawRect(-40, -12, 80, 40);
-            g.endFill();
-            g.beginFill(0x8B7348);
-            g.drawRect(-35, 28, 10, 28);
-            g.drawRect(25, 28, 10, 28);
-            g.endFill();
-            g.lineStyle(1, 0xBFA072, 0.8);
-            g.drawRect(-40, -12, 80, 40);
-            // Top edge highlight
-            g.lineStyle(1, 0xBFA072, 1);
-            g.moveTo(-40, -12);
-            g.lineTo(40, -12);
-
-            // Monitor frame
-            g.lineStyle(0);
-            g.beginFill(0xE8E0D4);
-            g.drawRect(-20, -46, 40, 30);
-            g.endFill();
-            // Bezel border
-            g.lineStyle(2, 0xE8E0D4, 1);
-            g.drawRect(-20, -46, 40, 30);
-            g.lineStyle(0);
-            g.beginFill(0xE8E0D4);
-            g.drawRect(-18, -44, 36, 26);
-            g.endFill();
-            // Screen content
-            g.beginFill(0x1E2D3D);
-            g.drawRect(-16, -43, 32, 23);
-            g.endFill();
-            // Scanline effect
-            g.beginFill(0x000000, 0.05);
-            for (let sy = -43; sy < -20; sy += 2) {
-                g.drawRect(-16, sy, 32, 1);
-            }
-            g.endFill();
-            // Static code lines
-            g.lineStyle(1, 0x00ff41, 0.3);
-            for (let i = 0; i < 4; i++) {
-                const y = -40 + i * 5;
-                const w = 14 + Math.floor(i * 3.5);
-                g.moveTo(-14, y); g.lineTo(-14 + w, y);
-            }
-            // Power LED on bottom bezel
-            g.lineStyle(0);
-            g.beginFill(0x50D890, 0.5);
-            g.drawCircle(0, -17, 1);
-            g.endFill();
-            // Monitor stand
-            g.beginFill(0xC8C0B4);
-            g.drawRect(-4, -16, 8, 6);
-            g.endFill();
-            // Keyboard
-            g.beginFill(0xE8E0D4);
-            g.drawRoundedRect(-18, 10, 30, 10, 2);
-            g.endFill();
-            // Key dots (3x2 grid)
-            g.beginFill(0xD4CCC0);
-            for (let kx = 0; kx < 3; kx++) {
-                for (let ky = 0; ky < 2; ky++) {
-                    g.drawRect(-14 + kx * 9, 12 + ky * 4, 6, 2);
-                }
-            }
-            g.endFill();
-            // Mouse
-            g.beginFill(0xE8E0D4);
-            g.drawEllipse(18, 15, 3, 5);
-            g.endFill();
-
-            c.addChild(g);
+        // Monitor frame
+        g.lineStyle(0);
+        g.beginFill(0xE8E0D4);
+        g.drawRect(-20, -46, 40, 30);
+        g.endFill();
+        // Bezel border
+        g.lineStyle(2, 0xE8E0D4, 1);
+        g.drawRect(-20, -46, 40, 30);
+        g.lineStyle(0);
+        g.beginFill(0xE8E0D4);
+        g.drawRect(-18, -44, 36, 26);
+        g.endFill();
+        // Screen content
+        g.beginFill(0x1E2D3D);
+        g.drawRect(-16, -43, 32, 23);
+        g.endFill();
+        // Scanline effect
+        g.beginFill(0x000000, 0.05);
+        for (let sy = -43; sy < -20; sy += 2) {
+            g.drawRect(-16, sy, 32, 1);
         }
+        g.endFill();
+        // Static code lines
+        g.lineStyle(1, 0x00ff41, 0.3);
+        for (let i = 0; i < 4; i++) {
+            const y = -40 + i * 5;
+            const w = 14 + Math.floor(i * 3.5);
+            g.moveTo(-14, y); g.lineTo(-14 + w, y);
+        }
+        // Power LED on bottom bezel
+        g.lineStyle(0);
+        g.beginFill(0x50D890, 0.5);
+        g.drawCircle(0, -17, 1);
+        g.endFill();
+        // Monitor stand
+        g.beginFill(0xC8C0B4);
+        g.drawRect(-4, -16, 8, 6);
+        g.endFill();
+        // Keyboard
+        g.beginFill(0xE8E0D4);
+        g.drawRoundedRect(-18, 10, 30, 10, 2);
+        g.endFill();
+        // Key dots (3x2 grid)
+        g.beginFill(0xD4CCC0);
+        for (let kx = 0; kx < 3; kx++) {
+            for (let ky = 0; ky < 2; ky++) {
+                g.drawRect(-14 + kx * 9, 12 + ky * 4, 6, 2);
+            }
+        }
+        g.endFill();
+        // Mouse
+        g.beginFill(0xE8E0D4);
+        g.drawEllipse(18, 15, 3, 5);
+        g.endFill();
+
+        c.addChild(g);
 
         // Ambient monitor glow on the floor beneath the desk
         const monitorGlow = new PIXI.Graphics();
@@ -202,36 +138,34 @@ export class Furniture extends EventEmitter {
         monitorGlow.endFill();
         c.addChildAt(monitorGlow, 0); // behind everything in this container
 
-        // Procedural overlays (only when not using sprite textures)
-        if (!Furniture._textures?.desk) {
-            // Monitor underglow (state-reactive, updated via setMonitorState)
-            this._monitorUnderglow = new PIXI.Graphics();
-            this._monitorUnderglow.beginFill(0x00c864, 0.04);
-            this._monitorUnderglow.drawRect(-22, -16, 44, 6);
-            this._monitorUnderglow.endFill();
-            c.addChild(this._monitorUnderglow);
+        // Procedural overlays
+        // Monitor underglow (state-reactive, updated via setMonitorState)
+        this._monitorUnderglow = new PIXI.Graphics();
+        this._monitorUnderglow.beginFill(0x00c864, 0.04);
+        this._monitorUnderglow.drawRect(-22, -16, 44, 6);
+        this._monitorUnderglow.endFill();
+        c.addChild(this._monitorUnderglow);
 
-            // LED strip along desk back edge (warm amber by default)
-            this._deskLedStrip = new PIXI.Graphics();
-            this._deskLedStrip.beginFill(0xE8A04C, 0.2);
-            this._deskLedStrip.drawRect(-38, -12, 76, 2);
-            this._deskLedStrip.endFill();
-            c.addChild(this._deskLedStrip);
+        // LED strip along desk back edge (warm amber by default)
+        this._deskLedStrip = new PIXI.Graphics();
+        this._deskLedStrip.beginFill(0xE8A04C, 0.2);
+        this._deskLedStrip.drawRect(-38, -12, 76, 2);
+        this._deskLedStrip.endFill();
+        c.addChild(this._deskLedStrip);
 
-            // State-reactive screen overlay (sits on top of static screen, under scan line)
-            this._deskScreenOverlay = new PIXI.Graphics();
-            this._drawMonitorContent(this._deskScreenOverlay, 'RELAXED');
-            c.addChild(this._deskScreenOverlay);
+        // State-reactive screen overlay (sits on top of static screen, under scan line)
+        this._deskScreenOverlay = new PIXI.Graphics();
+        this._drawMonitorContent(this._deskScreenOverlay, 'RELAXED');
+        c.addChild(this._deskScreenOverlay);
 
-            // Animated scan line (separate Graphics, animated in update())
-            const scanLine = new PIXI.Graphics();
-            scanLine.beginFill(0x00ff41, 0.28);
-            scanLine.drawRect(-14, 0, 30, 2);
-            scanLine.endFill();
-            scanLine.y = -43;
-            c.addChild(scanLine);
-            this._deskScanLine = scanLine;
-        }
+        // Animated scan line (separate Graphics, animated in update())
+        const scanLine = new PIXI.Graphics();
+        scanLine.beginFill(0x00ff41, 0.28);
+        scanLine.drawRect(-14, 0, 30, 2);
+        scanLine.endFill();
+        scanLine.y = -43;
+        c.addChild(scanLine);
+        this._deskScanLine = scanLine;
 
         this._placeItem(c, gx, gy, 'desk_computer', true, 'code');
     }
@@ -239,30 +173,23 @@ export class Furniture extends EventEmitter {
     _addTerminal(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.laptop) {
-            const sprite = new PIXI.Sprite(Furniture._textures.laptop);
-            sprite.anchor.set(0.5, 0.88);
-            sprite.scale.set(0.50);
-            c.addChild(sprite);
-        } else {
-            const g = new PIXI.Graphics();
+        const g = new PIXI.Graphics();
 
-            g.beginFill(0xC8C0B4);
-            g.drawRect(-20, 0, 40, 16);
-            g.endFill();
-            g.beginFill(0xE8E0D4);
-            g.drawRect(-18, -34, 36, 36);
-            g.endFill();
-            g.beginFill(0x1E2D3D);
-            g.drawRect(-16, -32, 32, 32);
-            g.endFill();
-            // Static text lines
-            g.lineStyle(1, 0x00ff41, 0.3);
-            g.moveTo(-13, -28); g.lineTo(0, -28);
-            g.moveTo(-13, -23); g.lineTo(6, -23);
+        g.beginFill(0xC8C0B4);
+        g.drawRect(-20, 0, 40, 16);
+        g.endFill();
+        g.beginFill(0xE8E0D4);
+        g.drawRect(-18, -34, 36, 36);
+        g.endFill();
+        g.beginFill(0x1E2D3D);
+        g.drawRect(-16, -32, 32, 32);
+        g.endFill();
+        // Static text lines
+        g.lineStyle(1, 0x00ff41, 0.3);
+        g.moveTo(-13, -28); g.lineTo(0, -28);
+        g.moveTo(-13, -23); g.lineTo(6, -23);
 
-            c.addChild(g);
-        }
+        c.addChild(g);
 
         // Blinking cursor (separate Graphics, toggled in update())
         const cursor = new PIXI.Graphics();
@@ -278,52 +205,45 @@ export class Furniture extends EventEmitter {
     _addSecondMonitor(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.televisionModern) {
-            const sprite = new PIXI.Sprite(Furniture._textures.televisionModern);
-            sprite.anchor.set(0.5, 0.88);
-            sprite.scale.set(0.50);
-            c.addChild(sprite);
-        } else {
-            const g = new PIXI.Graphics();
+        const g = new PIXI.Graphics();
 
-            g.beginFill(0xE8E0D4);
-            g.drawRect(-30, -50, 60, 40);
-            g.endFill();
-            // Bezel border
-            g.lineStyle(2, 0xD4CCC0, 1);
-            g.drawRect(-30, -50, 60, 40);
-            g.lineStyle(0);
-            g.beginFill(0xE8E0D4);
-            g.drawRect(-27, -47, 54, 34);
-            g.endFill();
-            g.beginFill(0x1E2D3D);
-            g.drawRect(-25, -45, 50, 30);
-            g.endFill();
-            // Scanline effect
-            g.beginFill(0x000000, 0.05);
-            for (let sy = -45; sy < -15; sy += 2) {
-                g.drawRect(-25, sy, 50, 1);
-            }
-            g.endFill();
-            // Browser tabs
-            g.beginFill(0x2A3A4A);
-            g.drawRect(-25, -45, 16, 6);
-            g.endFill();
-            g.beginFill(0x1E2D3D);
-            g.drawRect(-8, -45, 16, 6);
-            g.endFill();
-            // Power LED on bottom bezel
-            g.beginFill(0x50D890, 0.5);
-            g.drawCircle(0, -11, 1);
-            g.endFill();
-            // Stand
-            g.beginFill(0xC8C0B4);
-            g.drawRect(-4, -10, 8, 12);
-            g.endFill();
-            g.drawRect(-10, 2, 20, 4);
-
-            c.addChild(g);
+        g.beginFill(0xE8E0D4);
+        g.drawRect(-30, -50, 60, 40);
+        g.endFill();
+        // Bezel border
+        g.lineStyle(2, 0xD4CCC0, 1);
+        g.drawRect(-30, -50, 60, 40);
+        g.lineStyle(0);
+        g.beginFill(0xE8E0D4);
+        g.drawRect(-27, -47, 54, 34);
+        g.endFill();
+        g.beginFill(0x1E2D3D);
+        g.drawRect(-25, -45, 50, 30);
+        g.endFill();
+        // Scanline effect
+        g.beginFill(0x000000, 0.05);
+        for (let sy = -45; sy < -15; sy += 2) {
+            g.drawRect(-25, sy, 50, 1);
         }
+        g.endFill();
+        // Browser tabs
+        g.beginFill(0x2A3A4A);
+        g.drawRect(-25, -45, 16, 6);
+        g.endFill();
+        g.beginFill(0x1E2D3D);
+        g.drawRect(-8, -45, 16, 6);
+        g.endFill();
+        // Power LED on bottom bezel
+        g.beginFill(0x50D890, 0.5);
+        g.drawCircle(0, -11, 1);
+        g.endFill();
+        // Stand
+        g.beginFill(0xC8C0B4);
+        g.drawRect(-4, -10, 8, 12);
+        g.endFill();
+        g.drawRect(-10, 2, 20, 4);
+
+        c.addChild(g);
 
         this._placeItem(c, gx, gy, 'second_monitor', true, 'browser');
     }
@@ -331,49 +251,42 @@ export class Furniture extends EventEmitter {
     _addWhiteboard(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.bookcase) {
-            const sprite = new PIXI.Sprite(Furniture._textures.bookcase);
-            sprite.anchor.set(0.5, 0.92);
-            sprite.scale.set(0.55);
-            c.addChild(sprite);
-        } else {
-            const g = new PIXI.Graphics();
+        const g = new PIXI.Graphics();
 
-            g.beginFill(0xA0845C);
-            g.drawRect(-35, -65, 70, 58);
-            g.endFill();
-            g.beginFill(0xF5F0E8);
-            g.drawRect(-32, -62, 64, 52);
-            g.endFill();
-            // Brainstorm lines in state colors
-            g.lineStyle(2, 0x8000ff, 0.2);
-            g.moveTo(-26, -56); g.lineTo(4, -56);
-            g.lineStyle(2, 0x334466, 0.8);
-            g.moveTo(-26, -50); g.lineTo(10, -50);
-            g.moveTo(-26, -42); g.lineTo(20, -42);
-            g.moveTo(-26, -34); g.lineTo(5, -34);
-            g.lineStyle(2, 0x0096ff, 0.2);
-            g.moveTo(-26, -28); g.lineTo(12, -28);
-            g.lineStyle(1.5, 0xcc3333, 0.35);
-            g.drawRect(-10, -44, 20, 16);
-            // Sticky notes
-            g.lineStyle(0);
-            g.beginFill(0x00c864, 0.25);
-            g.drawRect(14, -56, 6, 6);
-            g.endFill();
-            g.beginFill(0xffd700, 0.25);
-            g.drawRect(6, -24, 6, 6);
-            g.endFill();
-            g.beginFill(0xff5050, 0.25);
-            g.drawRect(18, -38, 6, 6);
-            g.endFill();
-            g.lineStyle(0);
-            g.beginFill(0xA0845C);
-            g.drawRect(-32, -10, 64, 6);
-            g.endFill();
+        g.beginFill(0xA0845C);
+        g.drawRect(-35, -65, 70, 58);
+        g.endFill();
+        g.beginFill(0xF5F0E8);
+        g.drawRect(-32, -62, 64, 52);
+        g.endFill();
+        // Brainstorm lines in state colors
+        g.lineStyle(2, 0x8000ff, 0.2);
+        g.moveTo(-26, -56); g.lineTo(4, -56);
+        g.lineStyle(2, 0x334466, 0.8);
+        g.moveTo(-26, -50); g.lineTo(10, -50);
+        g.moveTo(-26, -42); g.lineTo(20, -42);
+        g.moveTo(-26, -34); g.lineTo(5, -34);
+        g.lineStyle(2, 0x0096ff, 0.2);
+        g.moveTo(-26, -28); g.lineTo(12, -28);
+        g.lineStyle(1.5, 0xcc3333, 0.35);
+        g.drawRect(-10, -44, 20, 16);
+        // Sticky notes
+        g.lineStyle(0);
+        g.beginFill(0x00c864, 0.25);
+        g.drawRect(14, -56, 6, 6);
+        g.endFill();
+        g.beginFill(0xffd700, 0.25);
+        g.drawRect(6, -24, 6, 6);
+        g.endFill();
+        g.beginFill(0xff5050, 0.25);
+        g.drawRect(18, -38, 6, 6);
+        g.endFill();
+        g.lineStyle(0);
+        g.beginFill(0xA0845C);
+        g.drawRect(-32, -10, 64, 6);
+        g.endFill();
 
-            c.addChild(g);
-        }
+        c.addChild(g);
 
         this._placeItem(c, gx, gy, 'whiteboard', true, 'notes');
     }
@@ -382,26 +295,19 @@ export class Furniture extends EventEmitter {
     _addPhone(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.radio) {
-            const sprite = new PIXI.Sprite(Furniture._textures.radio);
-            sprite.anchor.set(0.5, 0.88);
-            sprite.scale.set(0.38);
-            c.addChild(sprite);
-        } else {
-            const g = new PIXI.Graphics();
-            g.beginFill(0xE8E0D4);
-            g.drawRoundedRect(-8, -18, 16, 28, 3);
-            g.endFill();
-            g.beginFill(0x1E2D3D);
-            g.drawRoundedRect(-6, -16, 12, 22, 2);
-            g.endFill();
-            g.beginFill(0xff5050);
-            g.drawCircle(4, -14, 3);
-            g.endFill();
-            g.lineStyle(1, 0xC8C0B4);
-            g.drawCircle(0, 10, 3);
-            c.addChild(g);
-        }
+        const g = new PIXI.Graphics();
+        g.beginFill(0xE8E0D4);
+        g.drawRoundedRect(-8, -18, 16, 28, 3);
+        g.endFill();
+        g.beginFill(0x1E2D3D);
+        g.drawRoundedRect(-6, -16, 12, 22, 2);
+        g.endFill();
+        g.beginFill(0xff5050);
+        g.drawCircle(4, -14, 3);
+        g.endFill();
+        g.lineStyle(1, 0xC8C0B4);
+        g.drawCircle(0, 10, 3);
+        c.addChild(g);
 
         this._placeItem(c, gx, gy, 'phone', true, 'chat');
     }
@@ -409,37 +315,30 @@ export class Furniture extends EventEmitter {
     _addCoffeeMachine(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.coffee) {
-            const sprite = new PIXI.Sprite(Furniture._textures.coffee);
-            sprite.anchor.set(0.5, 0.88);
-            sprite.scale.set(0.50);
-            c.addChild(sprite);
-        } else {
-            const g = new PIXI.Graphics();
+        const g = new PIXI.Graphics();
 
-            g.beginFill(0xD4C5A9);
-            g.drawRoundedRect(-16, -40, 32, 52, 4);
-            g.endFill();
-            g.beginFill(0xC4B599);
-            g.drawRoundedRect(-13, -38, 26, 20, 3);
-            g.endFill();
-            g.beginFill(0xC85A4A, 0.9);
-            g.drawRoundedRect(-10, -52, 20, 16, 3);
-            g.endFill();
-            // Cup
-            g.beginFill(0xffffff);
-            g.drawRect(-7, 8, 14, 14);
-            g.endFill();
-            g.beginFill(0x3a1a00);
-            g.drawRect(-5, 10, 10, 10);
-            g.endFill();
-            // LED
-            g.beginFill(0xC85A4A);
-            g.drawCircle(0, -10, 4);
-            g.endFill();
+        g.beginFill(0xD4C5A9);
+        g.drawRoundedRect(-16, -40, 32, 52, 4);
+        g.endFill();
+        g.beginFill(0xC4B599);
+        g.drawRoundedRect(-13, -38, 26, 20, 3);
+        g.endFill();
+        g.beginFill(0xC85A4A, 0.9);
+        g.drawRoundedRect(-10, -52, 20, 16, 3);
+        g.endFill();
+        // Cup
+        g.beginFill(0xffffff);
+        g.drawRect(-7, 8, 14, 14);
+        g.endFill();
+        g.beginFill(0x3a1a00);
+        g.drawRect(-5, 10, 10, 10);
+        g.endFill();
+        // LED
+        g.beginFill(0xC85A4A);
+        g.drawCircle(0, -10, 4);
+        g.endFill();
 
-            c.addChild(g);
-        }
+        c.addChild(g);
 
         // Warm LED glow on the floor beneath
         const coffeeGlow = new PIXI.Graphics();
@@ -449,7 +348,7 @@ export class Furniture extends EventEmitter {
         c.addChildAt(coffeeGlow, 0);
 
         this._coffeeContainer = c; // track for steam particles
-        this._steamStartY = Furniture._textures?.coffee ? -16 : 5;
+        this._steamStartY = 5;
         this._placeItem(c, gx, gy, 'coffee_machine', true, null);
     }
 
@@ -488,29 +387,22 @@ export class Furniture extends EventEmitter {
     _addSpeaker(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.speaker) {
-            const sprite = new PIXI.Sprite(Furniture._textures.speaker);
-            sprite.anchor.set(0.5, 0.92);
-            sprite.scale.set(0.42);
-            c.addChild(sprite);
-        } else {
-            const g = new PIXI.Graphics();
+        const g = new PIXI.Graphics();
 
-            g.beginFill(0x5C4E3C);
-            g.drawRoundedRect(-10, -24, 20, 36, 3);
-            g.endFill();
-            g.beginFill(0x4A3E30);
-            g.drawCircle(0, -8, 8);
-            g.endFill();
-            g.beginFill(0x3A3228);
-            g.drawCircle(0, -8, 4);
-            g.endFill();
+        g.beginFill(0x5C4E3C);
+        g.drawRoundedRect(-10, -24, 20, 36, 3);
+        g.endFill();
+        g.beginFill(0x4A3E30);
+        g.drawCircle(0, -8, 8);
+        g.endFill();
+        g.beginFill(0x3A3228);
+        g.drawCircle(0, -8, 4);
+        g.endFill();
 
-            c.addChild(g);
-        }
+        c.addChild(g);
 
         // Pulsing power LED
-        const ledY = Furniture._textures?.speaker ? 2 : 8;
+        const ledY = 8;
         this._speakerLED = new PIXI.Graphics();
         this._speakerLED.beginFill(0x50D890);
         this._speakerLED.drawCircle(0, ledY, 2);
@@ -523,51 +415,44 @@ export class Furniture extends EventEmitter {
     _addChair(gx, gy) {
         const c = new PIXI.Container();
 
-        if (Furniture._textures?.chair) {
-            const sprite = new PIXI.Sprite(Furniture._textures.chair);
-            sprite.anchor.set(0.5, 0.90);
-            sprite.scale.set(0.50);
-            c.addChild(sprite);
-        } else {
-            const g = new PIXI.Graphics();
+        const g = new PIXI.Graphics();
 
-            // Seat
-            g.beginFill(0x4A7A8C);
-            g.drawRect(-16, -6, 32, 20);
-            g.endFill();
-            // Chair back
-            g.beginFill(0x4A7A8C);
-            g.drawRect(-14, -28, 28, 24);
-            g.endFill();
-            // Amber accent stripe down center (gaming chair style)
-            g.lineStyle(1, 0xE8A04C, 0.6);
-            g.moveTo(0, -26); g.lineTo(0, -6);
-            // Horizontal support line
-            g.lineStyle(1, 0x3A6A7C, 0.8);
-            g.moveTo(-12, -16); g.lineTo(12, -16);
-            // Headrest
-            g.lineStyle(0);
-            g.beginFill(0x5A8A9C);
-            g.drawRoundedRect(-10, -34, 20, 8, 2);
-            g.endFill();
-            // Armrests
-            g.beginFill(0x3A6A7C);
-            g.drawRect(-20, -10, 6, 4);
-            g.drawRect(14, -10, 6, 4);
-            g.endFill();
-            // Legs
-            g.beginFill(0x3A6A7C);
-            g.drawRect(-14, 14, 6, 16);
-            g.drawRect(8, 14, 6, 16);
-            g.endFill();
-            // Wheels
-            g.beginFill(0x5A8A9C);
-            g.drawCircle(-11, 30, 4);
-            g.drawCircle(11, 30, 4);
-            g.endFill();
+        // Seat
+        g.beginFill(0x4A7A8C);
+        g.drawRect(-16, -6, 32, 20);
+        g.endFill();
+        // Chair back
+        g.beginFill(0x4A7A8C);
+        g.drawRect(-14, -28, 28, 24);
+        g.endFill();
+        // Amber accent stripe down center (gaming chair style)
+        g.lineStyle(1, 0xE8A04C, 0.6);
+        g.moveTo(0, -26); g.lineTo(0, -6);
+        // Horizontal support line
+        g.lineStyle(1, 0x3A6A7C, 0.8);
+        g.moveTo(-12, -16); g.lineTo(12, -16);
+        // Headrest
+        g.lineStyle(0);
+        g.beginFill(0x5A8A9C);
+        g.drawRoundedRect(-10, -34, 20, 8, 2);
+        g.endFill();
+        // Armrests
+        g.beginFill(0x3A6A7C);
+        g.drawRect(-20, -10, 6, 4);
+        g.drawRect(14, -10, 6, 4);
+        g.endFill();
+        // Legs
+        g.beginFill(0x3A6A7C);
+        g.drawRect(-14, 14, 6, 16);
+        g.drawRect(8, 14, 6, 16);
+        g.endFill();
+        // Wheels
+        g.beginFill(0x5A8A9C);
+        g.drawCircle(-11, 30, 4);
+        g.drawCircle(11, 30, 4);
+        g.endFill();
 
-            c.addChild(g);
-        }
+        c.addChild(g);
 
         this._placeItem(c, gx, gy, 'chair', false, null);
     }

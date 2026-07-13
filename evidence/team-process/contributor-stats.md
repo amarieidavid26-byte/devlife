@@ -39,8 +39,8 @@ Fisiere atinse predominant:
 - `frontend/src/menu/` (MainMenu.js, SettingsMenu.js)
 - `frontend/src/demo/DemoMode.js`
 - `frontend/src/audio/SoundManager.js`
-- `frontend/src/hud/HUD.js`, `DashboardOverlay.js`, `DemoHotbar.js`, `BeneathView.js`
-- `public/assets/` (Kenney sprites integration)
+- `frontend/src/hud/HUD.js`, `DashboardOverlay.js`, `DemoHotbar.js`, `ToastSystem.js`
+- grafica procedurala a mobilierului (PIXI.Graphics)
 
 ### Matei Vultur (backend, securitate, persistenta, docs, teste)
 

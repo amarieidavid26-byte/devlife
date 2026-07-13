@@ -50,7 +50,6 @@ export class CafeScene {
         this._recoveryProgress = 0;
         this._elapsed = 0;
         this._timers = [];
-        this._plantTex = null;
         this._onKeyDown = null;
 
         this.onGhostSay = null;
@@ -75,8 +74,6 @@ export class CafeScene {
 
 
     async enter() {
-        this._plantTex = await PIXI.Assets.load('/assets/Isometric/pottedPlant_SE.png').catch(() => null);
-
         this._container = new PIXI.Container();
         this._container.scale.set(GAME_ZOOM);
         this._app.stage.addChild(this._container);
@@ -796,42 +793,33 @@ export class CafeScene {
     }
 
 
-    //  Plant (corner, Kenney sprite with fallback)
+    //  Plant (corner)
 
 
     _drawPlant(gx, gy) {
         const { x, y } = this._gridToScreen(gx, gy);
         const tileCenter = y + TILE_HEIGHT / 2;
 
-        if (this._plantTex) {
-            const sprite = new PIXI.Sprite(this._plantTex);
-            sprite.anchor.set(0.5, 0.92);
-            sprite.scale.set(0.50);
-            sprite.x = x;
-            sprite.y = tileCenter;
-            this._furnitureContainer.addChild(sprite);
-        } else {
-            const g = new PIXI.Graphics();
-            // pot
-            g.beginFill(0xC87A4A);
-            g.moveTo(x - 6, tileCenter - 4);
-            g.lineTo(x + 6, tileCenter - 4);
-            g.lineTo(x + 8, tileCenter + 10);
-            g.lineTo(x - 8, tileCenter + 10);
-            g.closePath();
-            g.endFill();
-            // soil
-            g.beginFill(0x6B4A2A);
-            g.drawEllipse(x, tileCenter - 4, 6, 3);
-            g.endFill();
-            // leaves
-            g.beginFill(0x5BA05C);
-            g.drawEllipse(x - 6, tileCenter - 12, 6, 5);
-            g.drawEllipse(x + 5, tileCenter - 14, 6, 5);
-            g.drawEllipse(x, tileCenter - 20, 5, 4);
-            g.endFill();
-            this._furnitureContainer.addChild(g);
-        }
+        const g = new PIXI.Graphics();
+        // pot
+        g.beginFill(0xC87A4A);
+        g.moveTo(x - 6, tileCenter - 4);
+        g.lineTo(x + 6, tileCenter - 4);
+        g.lineTo(x + 8, tileCenter + 10);
+        g.lineTo(x - 8, tileCenter + 10);
+        g.closePath();
+        g.endFill();
+        // soil
+        g.beginFill(0x6B4A2A);
+        g.drawEllipse(x, tileCenter - 4, 6, 3);
+        g.endFill();
+        // leaves
+        g.beginFill(0x5BA05C);
+        g.drawEllipse(x - 6, tileCenter - 12, 6, 5);
+        g.drawEllipse(x + 5, tileCenter - 14, 6, 5);
+        g.drawEllipse(x, tileCenter - 20, 5, 4);
+        g.endFill();
+        this._furnitureContainer.addChild(g);
     }
 
 

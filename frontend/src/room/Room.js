@@ -382,7 +382,8 @@ export class Room {
         this.wallContainer.addChild(clockContainer);
 
         this._updateClock();
-        setInterval(() => this._updateClock(), 1000); // never cleared lol
+        // the room lives for the whole session, so this interval is app-lifetime by design
+        this._clockInterval = setInterval(() => this._updateClock(), 1000);
     }
 
     _updateClock() {

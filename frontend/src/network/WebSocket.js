@@ -59,7 +59,7 @@ export class GhostSocket {
         try {
             msg = JSON.parse(rawData);
         } catch (e) {
-            console.log('bad json lol');
+            console.warn('[GhostSocket] invalid JSON frame dropped');
             return;
         }
         switch (msg.type) {

@@ -54,7 +54,7 @@ class ScreenCapture:
         """
         current_hash = imagehash.phash(img)
 
-        # first screenshit is always changed 
+        # first screenshot is always changed
         if self.last_hash is None: 
             self.last_hash = current_hash
             return True

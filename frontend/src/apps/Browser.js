@@ -55,7 +55,7 @@ export class BrowserApp {
         this.refreshBtn = null;
         this.blockedDiv = null;
         this.loadTimeout = null;
-        // back/forward history is overkill for a demo lol
+        // back/forward history is intentionally out of scope
         this._history = [];
         this._historyIndex = -1;
         this._navigatingFromHistory = false;

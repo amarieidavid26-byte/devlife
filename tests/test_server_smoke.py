@@ -85,3 +85,14 @@ def test_appstate_wraps_globals():
 def test_get_analyzer_factory_exists():
     import server
     assert callable(getattr(server, "get_analyzer", None)), "get_analyzer() must exist"
+
+
+# /ready must respond regardless of env (it reports missing deps, never crashes)
+def test_ready_endpoint_responds():
+    import server
+    from fastapi.testclient import TestClient
+    client = TestClient(server.app)
+    resp = client.get("/ready")
+    assert resp.status_code in (200, 503)
+    body = resp.json()
+    assert "ready" in body

@@ -1,0 +1,186 @@
+"""Shared runtime state and singletons.
+
+Everything that the loops (loops.py), the game WebSocket handlers (ws_game.py) and
+the HTTP routes (server.py) have in common lives here: the AppState container, the
+engine/brain/analyzer instances, and the broadcast helpers that marshal messages
+from daemon threads onto the asyncio event loop.
+
+server.py re-exports these names so tests can keep patching `server.<attr>`.
+"""
+
+import asyncio
+import logging
+import threading
+import time
+from dataclasses import dataclass, field
+
+from config import (
+    CLAUDE_API_KEY, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET,
+    GAME_MODE, DEMO_OFFLINE,
+)
+
+from content_analyzer import ContentAnalyzer
+try:
+    from screen_capture import ScreenCapture
+    from vision_analyzer import VisionAnalyzer
+    _DESKTOP_AVAILABLE = True
+except ImportError:
+    ScreenCapture = None
+    VisionAnalyzer = None
+    _DESKTOP_AVAILABLE = False
+
+from biometric_engine import BiometricEngine
+from mock_biometrics import MockBiometrics
+from ghost_brain import GhostBrain
+from context_history import ContextTracker
+from inline_completer import InlineCompleter
+
+logger = logging.getLogger(__name__)
+
+# WS payload bounds — keep these aligned with the Pydantic models in server.py so
+# HTTP and WS share the same input contract. Without these a malicious or buggy
+# client could blow up memory or run up Claude token costs.
+WS_MAX_CONTENT_CHARS = 50000
+WS_MAX_ACTION_CHARS = 100
+WS_MAX_KWARG_CHARS = 500
+WS_VALID_APP_TYPES = {"code", "terminal", "browser", "notes", "chat"}
+
+# instances
+content_analyzer = ContentAnalyzer(CLAUDE_API_KEY)
+capture = ScreenCapture() if _DESKTOP_AVAILABLE else None
+vision = VisionAnalyzer(CLAUDE_API_KEY) if _DESKTOP_AVAILABLE else None
+bio = BiometricEngine(WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET)
+mock = MockBiometrics(seeded=DEMO_OFFLINE)
+brain = GhostBrain(CLAUDE_API_KEY)
+tracker = ContextTracker()
+inline_completer = InlineCompleter(CLAUDE_API_KEY)
+
+
+def get_analyzer():
+    return content_analyzer if GAME_MODE else vision
+
+
+@dataclass
+class AppState:
+    connected_clients: list = field(default_factory=list)
+    intervention_history: list = field(default_factory=list)
+    mock_override_until: float = 0.0
+    # manually-selected demo state (keys 1-5): locked label + when the lock expires. While
+    # held, the loop broadcasts this state verbatim instead of re-classifying the (smoothly
+    # transitioning) mock numbers, so the selection never jumps to a neighbouring state.
+    forced_state: object = None
+    forced_until: float = 0.0
+    suppressed_hashes: dict = field(default_factory=dict)
+    intervention_cooldown_until: float = 0.0
+    last_intervention_hash: object = None
+    sleep_mode_active: bool = False
+    sleep_low_hr_count: int = 0
+    last_coding_activity: float = 0.0
+    ghost_running: bool = False
+    main_event_loop: object = None
+    pending_content: dict = field(default_factory=dict)
+    content_lock: threading.Lock = field(default_factory=threading.Lock)
+    last_analyzed_hashes: dict = field(default_factory=dict)
+    pending_patches: dict = field(default_factory=dict)  # hash -> original_text
+    # recovery velocity
+    hr_history: list = field(default_factory=list)
+    last_stress_peak: object = None
+    recovery_velocity: object = None
+    baseline_hr: float = 68.0
+
+
+app_state = AppState()
+
+
+async def broadcast(message: dict):
+    dead = []
+    for client in list(app_state.connected_clients):
+        try:
+            await client.send_json(message)
+        except Exception:
+            dead.append(client)
+    for client in dead:
+        if client in app_state.connected_clients:
+            app_state.connected_clients.remove(client)
+
+
+def broadcast_sync(message: dict):
+    if app_state.main_event_loop is None:
+        return
+    try:
+        asyncio.run_coroutine_threadsafe(broadcast(message), app_state.main_event_loop)
+    except Exception:
+        pass
+
+
+def _degraded_banner(cause: str):
+    broadcast_sync({"type": "degraded_mode", "cause": cause})
+
+
+def build_biometric_msg(data, state):
+    ble_active = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
+    source = "whoop" if bio.access_token and time.time() >= app_state.mock_override_until else "mock"
+    # RMSSD computed live from BLE RR intervals wins over the daily WHOOP summary / mock
+    live_hrv = bio.live_hrv if (time.time() - bio.live_hrv_timestamp < 30) else None
+
+    if len(app_state.hr_history) >= 2:
+        recent = app_state.hr_history[-1][1]
+        prev   = app_state.hr_history[-2][1]
+        hr_trend = "rising" if recent > prev + 1 else "falling" if recent < prev - 1 else "stable"
+    else:
+        hr_trend = "stable"
+
+    return {
+        "type": "biometric_update",
+        "source": "ble" if ble_active else source,
+        # where recovery/HRV/strain come from -- lets the HUD be honest in BLE-only mode
+        "metrics_source": source,
+        "heartRate": round(data["heartRate"]) if data.get("heartRate") else None,
+        "recovery": round(data.get("recovery", 0)),
+        "strain": round(data.get("strain", 0), 1),
+        "state": state,
+        "sleepPerformance": round(data.get("sleepPerformance", 0), 2),
+        "hrv": live_hrv if live_hrv is not None else round(data.get("hrv", 0), 1),
+        "hrv_live": live_hrv is not None,
+        "estimated_stress": round(data.get("estimated_stress", 0), 2),
+        "spo2": round(data.get("spo2", 0), 1),
+        "skinTemp": round(data.get("skinTemp", 0), 1),
+        # real resting HR (distinct from the live BLE pulse) + real sleep breakdown; null when
+        # WHOOP hasn't scored them yet so the UI can honestly show "--" instead of a fake number.
+        "restingHeartRate": round(data["restingHeartRate"]) if data.get("restingHeartRate") else None,
+        "sleepHours": data.get("sleepHours"),
+        "sleepScore": data.get("sleepScore"),
+        "sleepEfficiency": round(data["sleepEfficiency"]) if data.get("sleepEfficiency") is not None else None,
+        "sleepConsistency": round(data["sleepConsistency"]) if data.get("sleepConsistency") is not None else None,
+        "sleepRemPct": data.get("sleepRemPct"),
+        "sleepDeepPct": data.get("sleepDeepPct"),
+        "respiratoryRate": round(data["respiratoryRate"], 1) if data.get("respiratoryRate") is not None else None,
+        "recovery_velocity": round(app_state.recovery_velocity, 1) if app_state.recovery_velocity is not None else None,
+        "baseline_hr": round(app_state.baseline_hr),
+        "hr_trend": hr_trend,
+    }
+
+
+def on_state_change(old_state, new_state):
+    data = mock.get_data() if (not bio.access_token or time.time() < app_state.mock_override_until) else bio.current_data or {}
+    reason = "Biometric data changed"
+    if data.get("strain", 0) > 16:
+        reason = "Strain over 16"
+    elif data.get("recovery", 100) < 40:
+        reason = "Recovery dropped below 40"
+    elif data.get("sleepPerformance", 1) < 0.7:
+        reason = "Poor sleep performance"
+
+    broadcast_sync({
+        "type": "state_change",
+        "from": old_state,
+        "to": new_state,
+        "reason": reason,
+        "estimated_stress": bio.estimated_stress,
+    })
+    if not GAME_MODE and capture:
+        modifiers = bio.get_personality_modifiers(new_state)
+        capture.set_interval(modifiers.get("capture_interval", 3))
+
+
+bio.on_state_change(on_state_change)

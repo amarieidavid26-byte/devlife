@@ -44,7 +44,7 @@ deschide http://localhost:5173 in Chrome.
 
 ### 04 — dashboard biometric (pentru §3.1, §3.6)
 - **ce arata**: HUD complet cu HR, HRV, recovery, strain, sleep, CQI, autonomic balance, ECG procedural
-- **cum**: in scena Room, apasa `TAB` pentru a deschide Dashboard Overlay (BeneathView)
+- **cum**: in scena Room, apasa `TAB` pentru a deschide Dashboard Overlay
 - **focus**: grafic ECG live, valori biometrice, indicatori CQI
 
 ### 05 — FATIGUE FIREWALL in actiune (pentru §3.2) ⭐ CEL MAI IMPORTANT

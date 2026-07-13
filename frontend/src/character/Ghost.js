@@ -482,7 +482,7 @@ export class Ghost {
         }
     }
 
-    // TODO: refactor this massive method lol
+    // builds the full speech bubble DOM (header, message, buttons, biometric footer)
     showSpeechBubble(data) {
         this.dismissBubble(false);
         this._currentData = data;

@@ -1,4 +1,4 @@
-# tracks the shit the user has been doing
+# tracks what the user has been doing
 # how long theyve been workin for
 # rapid app/tab switching
 # what app they have used

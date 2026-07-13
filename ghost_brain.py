@@ -185,7 +185,7 @@ class GhostBrain:
 
         user_msg = f""" Screen analysis:
 - App: {vision_analysis.get('app', 'unknown')}
-- Actiity: {vision_analysis.get('activity', 'unknown')}
+- Activity: {vision_analysis.get('activity', 'unknown')}
 - Stuck probability: {vision_analysis.get('stuck_probability', 0)}
 - Stuck reason: {vision_analysis.get('stuck_reason', 'none')}
 - Mistake detected: {vision_analysis.get('mistake_detected', False)}
@@ -278,7 +278,7 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
         elif reason == "help_opportunity":
             priority = "low"
 
-        #pick appropiate buttons for the UI
+        # pick appropriate buttons for the UI
         buttons = ["Thanks", "Not Now"]
         if vision_analysis.get("suggested_intervention", {}).get("code_suggestion"):
             buttons = ["Apply Fix", "Show More", "Not Now"]
@@ -304,9 +304,8 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
 
         return intervention
 
-    # user feedback trackinggg
     def user_feedback(self, action):
-        # track user's response to a intervention made by ghost
+        # track the user's response to a ghost intervention
 
         if action in ["Thanks", "Apply Fix", "Save Draft", "Show More"]:
             self.accepted_count += 1

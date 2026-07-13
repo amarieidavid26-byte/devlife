@@ -70,6 +70,45 @@ Browser (PixiJS)  <──ws://──>  FastAPI (Python)  <──>  Claude API
                               WHOOP API / BLE mock
 ```
 
+## structura proiectului
+
+```
+devlife/
+├── server.py             # FastAPI app: rute HTTP + endpoint-uri WebSocket (joc + privilegiate)
+├── runtime.py            # AppState partajat, singletons (engine/brain/analyzer), broadcast
+├── loops.py              # thread-urile daemon: biometric_loop (5s) + ghost_loop (1s)
+├── ws_game.py            # handler-ele mesajelor WS de joc (dispatch map, seam de extensie)
+├── biometric_engine.py   # WHOOP OAuth, clasificare stari, RMSSD/HRV live din RR
+├── ghost_brain.py        # decizia de interventie, prompturi per stare, personalitati
+├── content_analyzer.py   # analiza continutului din app-uri + detectie instant comenzi riscante
+├── terminal_pty.py       # sesiune PTY reala + KeystrokeFirewall (firewall server-side)
+├── security.py           # origin check, token per proces, jail pe WORKSPACE_ROOT
+├── file_api.py           # operatii pe fisiere, limitate la workspace
+├── lsp_bridge.py         # punte WebSocket <-> pyright / typescript-language-server
+├── inline_completer.py   # completari inline AI (Claude Haiku), adaptate starii
+├── code_server.py        # lansare code-server ("Open in full VS Code")
+├── fallback_responses.py # replici ghost pre-scrise (RO/EN) cand Claude nu raspunde
+├── apply_fix/            # contract Pydantic + validator + audit pentru patch-uri
+├── persistence/          # SQLite (WAL) + migratii: sesiuni, interventii, replay
+├── tests/                # 93 teste pytest
+├── frontend/
+│   └── src/
+│       ├── main.js       # bootstrap joc + wiring evenimente
+│       ├── theme.js      # paleta per stare (sursa unica)
+│       ├── room/         # camera izometrica procedurala (Room, Furniture, Plant, Atmosphere)
+│       ├── character/    # Player + Ghost
+│       ├── town/         # scenele exterioare (Town, Cafe, Cowork)
+│       ├── apps/         # Monaco editor, terminal xterm, browser, notes, chat + runners
+│       ├── hud/          # HUD biometric, dashboard, toasts, scurtaturi
+│       ├── network/      # WebSocket, BLE (RR intervals), Spotify, sesiune
+│       ├── audio/        # sunete sintetizate procedural (Web Audio)
+│       ├── demo/         # secventa demo cinematica
+│       └── i18n/         # RO/EN (503 chei, paritate garantata)
+├── docs/                 # arhitectura, securitate, demo playbook, pozitionare
+├── evidence/             # teste, licente, screenshots, team-process
+└── scripts/              # setup, dev, run-tests, healthcheck
+```
+
 ## instalare
 
 ```bash

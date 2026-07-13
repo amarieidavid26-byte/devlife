@@ -9,7 +9,7 @@ import json
 import re
 import time
 from anthropic import Anthropic
-from config import CLAUDE_API_KEY, VISION_MODEL, VISION_MAX_TOKENS
+from config import VISION_MODEL, VISION_MAX_TOKENS
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +163,7 @@ Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
         # platform is the chat platform like slack discord whatsapp and all that
         if kwargs.get("platform"):
             user_msg += f"\nPlatform: {kwargs['platform']}"
-        # add context from tracker if that shit is available
+        # add context from tracker if available
         if extra_context:
             user_msg += f"\n\nRecent context: {extra_context}"
 

@@ -4,7 +4,7 @@
 
 | resursa | sursa | licenta | cale |
 |---------|-------|---------|------|
-| Furniture Kit 2.0 (obiecte izometrice) | [Kenney.nl](https://kenney.nl) | CC0 1.0 — domeniu public | `public/assets/` |
+
 
 dovada: `public/assets/License.txt` — CC0 confirmat.
 

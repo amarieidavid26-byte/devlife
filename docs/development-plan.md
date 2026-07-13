@@ -125,7 +125,7 @@ v1.0-rc ──> T14 (hardening) ──> v1.1-hardening (submission)
 | WHOOP token expira mid-demo | medie | mediu | hotbar 1-5 mock states + `DEMO_OFFLINE` |
 | WiFi pica la prezentare | medie | critic | `DEMO_OFFLINE=true` ruleaza identic |
 | memory leak in ghost_loop | scazuta | mare | profiling local: RSS stabil dupa 60 min |
-| copyright pe assets | scazuta | critic | toate assets Kenney CC0 declarate + audio synthesized procedural |
+| copyright pe assets | scazuta | critic | grafica 100% procedurala (PIXI.Graphics) + audio synthesized procedural — zero assets externe |
 | force push pe main pierde munca | scazuta | mare | patches backup-uite local + tags semantice pe stari intermediare |
 
 ## faza 6: stadiul curent

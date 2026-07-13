@@ -18,7 +18,7 @@ Note: `dompurify` (MPL-2.0 OR Apache-2.0 — alegem Apache-2.0), `earcut` (ISC),
 
 | resursă | licență |
 |---------|---------|
-| Kenney isometric assets | CC0 |
+| grafică 100% procedurală (PIXI.Graphics, cod propriu) | — |
 | Fonturi Fredoka, Nunito (self-hosted) | SIL OFL 1.1 |
 | Font JetBrains Mono (self-hosted) | SIL OFL 1.1 |
 | Pyodide (runtime local + CDN fallback) | MPL-2.0 |

@@ -20,7 +20,7 @@ total: 100 puncte. matricea de mai jos mapeaza fiecare sub-criteriu la artefacte
 | **V.1 Distributia rolurilor** | 5 | David: frontend visual + cinematic + WHOOP BLE + scene + code runner; Matei: backend + persistence + security + tests + docs | `docs/authorship.md`, `evidence/team-process/contributor-stats.md` |
 | **V.2 Modul de lucru in echipa** | 5 | git workflow cu branch-uri (`infoeducatie-hardening`, `code-editor-remake`), pair-programming, AI-assisted coding declarat, merge-uri vizibile in graph | `evidence/team-process/branch-strategy.md`, `evidence/team-process/git-graph.txt` |
 | **VI.1 Codul sursa** *(obligatoriu)* | — | cod structurat in module dedicate (apply_fix/, persistence/, frontend/src/{apps,apps/runners,room,town,hud,...}), docstrings unde necesar, type hints, Pydantic models | tot repo-ul, vezi `docs/architecture.md` pentru tour ghidat |
-| **VI.2 Resurse externe** *(obligatoriu)* | — | toate dependintele declarate cu licenta: Kenney CC0, Fredoka/Nunito SIL OFL, FastAPI/PixiJS/Pydantic/Pyodide/etc MIT, Anthropic + WHOOP APIs | `docs/assets-compliance.md` |
+| **VI.2 Resurse externe** *(obligatoriu)* | — | toate dependintele declarate cu licenta: grafica procedurala proprie (fara asset pack-uri), Fredoka/Nunito/JetBrains Mono SIL OFL (self-hosted), FastAPI/PixiJS/Pydantic/Pyodide/etc MIT, Anthropic + WHOOP APIs | `docs/assets-compliance.md` |
 
 ---
 

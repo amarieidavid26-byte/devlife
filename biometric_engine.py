@@ -302,7 +302,6 @@ class BiometricEngine:
         strain = data.get("strain", 8)
         sleep = data.get("sleepPerformance", 0.75)
         hrv = data.get("hrv", 50)
-        rhr = data.get("heartRate", 65)
         old_state = self.current_state
         hrv_ratio = hrv / self.hrv_baseline if self.hrv_baseline > 0 else 1.0
         if hrv_ratio < 0.6:

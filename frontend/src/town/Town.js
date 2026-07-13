@@ -72,8 +72,6 @@ export class Town {
         this._onTownKeyDown = null;
         this._dialogue = null;
 
-        this._benchTex = null;
-        this._plantTex = null;
         this._spawnPoint = null;
         this._meditationOverlay = null;
         this._meditationActive = false;
@@ -94,13 +92,6 @@ export class Town {
     // ---------------------------------------------
 
     async enter() {
-        // Load optional Kenney sprites (fail gracefully)
-        const wallTex = await PIXI.Assets.load('/assets/Isometric/wall_SE.png').catch(() => null);
-        const doorTex = await PIXI.Assets.load('/assets/Isometric/doorway_SE.png').catch(() => null);
-        const windowTex = await PIXI.Assets.load('/assets/Isometric/wallWindow_SE.png').catch(() => null);
-        this._benchTex = await PIXI.Assets.load('/assets/Isometric/benchCushion_SE.png').catch(() => null);
-        this._plantTex = await PIXI.Assets.load('/assets/Isometric/plantSmall1_SE.png').catch(() => null);
-
         this._container = new PIXI.Container();
         this._container.scale.set(GAME_ZOOM);
         this._app.stage.addChild(this._container);
@@ -900,17 +891,6 @@ export class Town {
         }
         g.endFill();
         this._detailContainer.addChild(g);
-
-        // Optional plant sprite next to flowers
-        if (this._plantTex) {
-            const ps = new PIXI.Sprite(this._plantTex);
-            ps.anchor.set(0.5, 0.85);
-            ps.scale.set(0.25);
-            ps.x = x + 8;
-            ps.y = y;
-            ps.alpha = 0.7;
-            this._detailContainer.addChild(ps);
-        }
     }
 
     _drawFlowerPatches() {
