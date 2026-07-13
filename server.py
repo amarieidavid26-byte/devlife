@@ -37,21 +37,6 @@ import file_api
 import lsp_bridge
 import code_server
 
-logger = logging.getLogger(__name__)
-
-limiter = Limiter(key_func=get_remote_address)
-
-
-class MockStateBody(BaseModel):
-    state: int = Field(..., ge=1, le=5)
-
-
-class FeedbackBody(BaseModel):
-    action: str = Field(..., max_length=100)
-
-
-PORT = int(os.environ.get("PORT", _CONFIG_PORT))
-
 import persistence.db as db
 from apply_fix.contract import PatchContract
 from apply_fix.validator import validate_patch
@@ -66,6 +51,20 @@ from runtime import (
 from loops import biometric_loop, ghost_loop
 from ws_game import WS_HANDLERS
 
+logger = logging.getLogger(__name__)
+
+limiter = Limiter(key_func=get_remote_address)
+
+
+class MockStateBody(BaseModel):
+    state: int = Field(..., ge=1, le=5)
+
+
+class FeedbackBody(BaseModel):
+    action: str = Field(..., max_length=100)
+
+
+PORT = int(os.environ.get("PORT", _CONFIG_PORT))
 
 
 @asynccontextmanager

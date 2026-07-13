@@ -9,11 +9,11 @@ import logging
 # alright lets code enough science
 
 import httpx
+import time
+import json
+import os
 
 logger = logging.getLogger(__name__)
-import time
-import json 
-import os 
 
 class BiometricEngine:
     TOKENS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),

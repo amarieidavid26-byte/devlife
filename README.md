@@ -1,5 +1,7 @@
 # DevLife
 
+[![CI](https://github.com/amarieidavid26-byte/devlife/actions/workflows/ci.yml/badge.svg)](https://github.com/amarieidavid26-byte/devlife/actions/workflows/ci.yml)
+
 developerii fac greseli proaste cand sunt obositi. nu un timer. nu un pomodoro app. ceva care iti citeste biometricele in timp real si spune "hey nu da push la productie acum".
 
 DevLife e un companion AI conectat la corpul tau prin WHOOP. citeste heart rate, HRV, recovery, stress - si clasifica starea ta cognitiva. cand esti in deep focus, te lasa in pace. cand esti cooked la 2am, activeaza Fatigue Firewall-ul si blocheaza comenzile periculoase inainte sa faci ceva de care o sa iti para rau.
