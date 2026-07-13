@@ -27,6 +27,7 @@ import { Town } from './town/Town.js';
 import { CafeScene } from './town/CafeScene.js';
 import { CoworkScene } from './town/CoworkScene.js';
 import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
+import { KeystrokeCapture } from './network/KeystrokeCapture.js';
 import { CONFIG } from './config.js';
 import { initSession } from './network/session.js';
 import { OfflineBiometrics } from './network/offlineBiometrics.js';
@@ -109,6 +110,9 @@ async function startGame(enableDemo = false) {
     socket.setToastSystem(toastSystem);
     i18n.onChange((lang) => socket.sendLang(lang));
     window.addEventListener('devlife:personality', (e) => socket.sendPersonality(e.detail));
+
+    const keystrokeCapture = new KeystrokeCapture(socket);
+    keystrokeCapture.start();
 
     // client-side biometric demo when there's no backend; the real backend takes over
     // the moment the WS connects (see the 'connected'/'disconnected' handlers below).

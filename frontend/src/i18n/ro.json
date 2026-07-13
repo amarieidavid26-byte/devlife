@@ -67,6 +67,9 @@
   "hud.badge_bleonly": "Doar BLE",
   "hud.tip_bleonly": "doar pulsul e în timp real (Bluetooth) — recovery/HRV/strain necesită conectarea contului WHOOP",
   "hud.tip_stress": "derivat din abaterea HRV față de valoarea de referință pe 14 zile — nu este o valoare raportată de WHOOP",
+  "hud.typing_signal": "semnal tastare activ",
+  "hud.typing_flow": "flow",
+  "hud.tip_typing": "stres/oboseală estimate din ritmul tastării (doar intervale, niciodată ce tastezi) — funcționează fără niciun wearable",
 
   "apply_fix.preview_title": "Previzualizare modificare",
   "apply_fix.before": "Înainte",

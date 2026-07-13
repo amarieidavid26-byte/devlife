@@ -166,6 +166,10 @@ export class GhostSocket {
         this.send({ type: 'resume_live' });
     }
 
+    sendKeystrokes(events) {
+        this.send({ type: 'keystrokes', events });
+    }
+
     sendAppFocus(appType) {
         this.send({
             type: 'app_focus',

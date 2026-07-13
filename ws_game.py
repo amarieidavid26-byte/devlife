@@ -122,6 +122,14 @@ async def _ws_heart_rate(ws, data):
         bio.add_rr_intervals(rr)
 
 
+async def _ws_keystrokes(ws, data):
+    # batched typing rhythm from KeystrokeCapture.js: [[iki_ms, category], ...]
+    # timings only, never key contents -- see keystroke_dynamics.py
+    events = data.get("events")
+    if isinstance(events, list) and len(events) <= 300:
+        bio.keystrokes.add_events(events)
+
+
 async def _ws_run_error(ws, data):
     # user clicked Run in the desk code editor and got a runtime error
     # bypass the pending_content loop -- this is an explicit, user-initiated event
@@ -185,5 +193,6 @@ WS_HANDLERS = {
     "resume_live": _ws_resume_live,
     "app_focus": _ws_app_focus,
     "heart_rate": _ws_heart_rate,
+    "keystrokes": _ws_keystrokes,
     "run_error": _ws_run_error,
 }

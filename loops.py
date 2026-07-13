@@ -82,7 +82,8 @@ def _check_sleep_mode(data):
 def biometric_loop():
     while app_state.ghost_running:
         is_whoop = False
-        if DEMO_OFFLINE or time.time() < app_state.mock_override_until:
+        demo_locked = DEMO_OFFLINE or time.time() < app_state.mock_override_until
+        if demo_locked:
             data = mock.get_data()
         elif bio.access_token:
             data = bio.fetch_data()
@@ -112,7 +113,7 @@ def biometric_loop():
                 bio.current_state = state
                 bio.estimated_stress = data.get("estimated_stress", bio.estimated_stress)
             else:
-                state = bio.classify(data)
+                state = bio.classify(data, demo_locked=demo_locked)
 
             hr = data.get("heartRate") or 0
             if hr > 0:

@@ -13,6 +13,8 @@ import time
 import json
 import os
 
+from keystroke_dynamics import KeystrokeDynamics
+
 logger = logging.getLogger(__name__)
 
 class BiometricEngine:
@@ -41,6 +43,8 @@ class BiometricEngine:
         self.live_rr = []          # list of (timestamp, rr_ms)
         self.live_hrv = None
         self.live_hrv_timestamp = 0
+        # typing rhythm signal, fed from the WS 'keystrokes' handler
+        self.keystrokes = KeystrokeDynamics()
         self._load_tokens()
 
     RR_WINDOW_SECONDS = 60
@@ -293,7 +297,9 @@ class BiometricEngine:
             logger.error("WHOOP API error: %s", e)
             return None
 
-    def classify(self, data=None):
+    def classify(self, data=None, demo_locked=False):
+        # demo_locked: a demo/mock scenario is scripting the numbers, so the typing
+        # signal must not take over the state (it still refines the stress estimate)
         if data is None:
             data = self.current_data
         if data is None:
@@ -326,6 +332,8 @@ class BiometricEngine:
             else:
                 estimated_stress = 0.5
 
+        typing = self.keystrokes.snapshot()
+
         if live_hr > 0:
             if live_hr > 100:
                 new_state = "STRESSED"
@@ -333,7 +341,7 @@ class BiometricEngine:
             elif live_hr > 95:
                 new_state = "WIRED"
                 estimated_stress = 1.9
-            elif live_hr > 75: 
+            elif live_hr > 75:
                 new_state = "DEEP_FOCUS"
                 estimated_stress = 1.2
             elif live_hr >= 60:
@@ -347,17 +355,37 @@ class BiometricEngine:
                 if recovery < 40 or sleep < 0.7:
                     new_state = "FATIGUED"
                     estimated_stress = max(estimated_stress, 1.8)
+            # typing rhythm refines the stress estimate but never outranks a real pulse
+            if live_hr > 0 and typing["active"]:
+                estimated_stress = round(0.7 * estimated_stress + 0.3 * typing["stress"], 2)
         if live_hr == 0:
-            if recovery < 40 or sleep < 0.7:
-                new_state = "FATIGUED"
-            elif estimated_stress >= 2.0 or strain > 16:
-                new_state = "STRESSED"
-            elif strain > 12 and recovery < 60:
-                new_state = "WIRED"
-            elif 0.9 <= estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
-                new_state = "DEEP_FOCUS"
+            if typing["active"] and not self.access_token and not demo_locked:
+                # no pulse and no WHOOP: the typing rhythm is the only real signal,
+                # so it outranks the mock generator entirely
+                estimated_stress = typing["stress"]
+                if typing["fatigue"] >= 0.65:
+                    new_state = "FATIGUED"
+                elif estimated_stress >= 2.0:
+                    new_state = "STRESSED"
+                elif estimated_stress >= 1.5:
+                    new_state = "WIRED"
+                elif typing["flow"]:
+                    new_state = "DEEP_FOCUS"
+                else:
+                    new_state = "RELAXED"
             else:
-                new_state = "RELAXED"
+                if typing["active"]:
+                    estimated_stress = round(0.6 * estimated_stress + 0.4 * typing["stress"], 2)
+                if recovery < 40 or sleep < 0.7:
+                    new_state = "FATIGUED"
+                elif estimated_stress >= 2.0 or strain > 16:
+                    new_state = "STRESSED"
+                elif strain > 12 and recovery < 60:
+                    new_state = "WIRED"
+                elif 0.9 <= estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
+                    new_state = "DEEP_FOCUS"
+                else:
+                    new_state = "RELAXED"
         self.current_state = new_state
         self.estimated_stress = estimated_stress
         if old_state != new_state and self.on_state_change_callback:

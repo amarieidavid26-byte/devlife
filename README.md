@@ -24,6 +24,7 @@ ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza ac
 - **Open in full VS Code** — buton care lanseaza code-server (VS Code real, 1:1) in iframe pe acelasi workspace, pentru editare „power". local-only.
 - **fatigue firewall** — detecteaza comenzile periculoase si le blocheaza cand starea ta e FATIGUED. **defense in depth**: pe langa interceptarea din UI, serverul mirroreaza tastele in PTY si inghite Enter-ul (inlocuit cu Ctrl-U) — comanda nu ajunge niciodata la shell, chiar daca ocolesti browserul
 - **HRV live (RMSSD)** — cand strapul transmite intervalele RR intre batai (BLE flag bit 4), calculam RMSSD pe fereastra glisanta de 60s, cu filtrare de artefacte. WHOOP iti arata HRV-ul de ieri; noi il calculam in timp real, in mijlocul sesiunii de cod
+- **dinamica tastarii** — stres si oboseala estimate din ritmul tastarii (intervale intre taste, rata de backspace, pauze) fata de baseline-ul tau personal — functioneaza **fara niciun wearable**. confidentialitate: se trimit doar intervale si categorii, niciodata ce tastezi. fuziune: pulsul real > tastare > sumar WHOOP > mock
 - **session replay** — fiecare sesiune e inregistrata in SQLite (sample-uri biometrice + interventii); dashboard-ul are un timeline colorat pe stari prin care poti face scrub: "aici am obosit, aici ghost-ul m-a oprit din force push"
 - **personalitate ghost** — antrenor strict / prieten cald / sarcastic, din Settings; schimba tonul interventiilor AI
 - **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback (buton Revert pe toast)
@@ -81,6 +82,7 @@ devlife/
 ├── loops.py              # thread-urile daemon: biometric_loop (5s) + ghost_loop (1s)
 ├── ws_game.py            # handler-ele mesajelor WS de joc (dispatch map, seam de extensie)
 ├── biometric_engine.py   # WHOOP OAuth, clasificare stari, RMSSD/HRV live din RR
+├── keystroke_dynamics.py # stres/oboseala din ritmul tastarii (semnal zero-hardware)
 ├── ghost_brain.py        # decizia de interventie, prompturi per stare, personalitati
 ├── content_analyzer.py   # analiza continutului din app-uri + detectie instant comenzi riscante
 ├── terminal_pty.py       # sesiune PTY reala + KeystrokeFirewall (firewall server-side)
@@ -128,7 +130,7 @@ vezi `docs/install-runbook.md` pentru setup complet cu .env.
 ./scripts/run-tests.sh    # 92 teste + junit.xml + coverage HTML in evidence/tests/
 ```
 
-unit + integration: clasificator biometric, RMSSD/HRV live, contract Apply Fix, keystroke firewall (PTY), sincronizare pattern-uri firewall frontend/backend, session replay, flux WebSocket end-to-end, security jail. detalii in `evidence/tests/SUMMARY.md`.
+unit + integration: clasificator biometric, RMSSD/HRV live, dinamica tastarii (features + fuziune in clasificator), contract Apply Fix, keystroke firewall (PTY), sincronizare pattern-uri firewall frontend/backend, session replay, flux WebSocket end-to-end, security jail. detalii in `evidence/tests/SUMMARY.md`.
 
 ## conectare WHOOP (date reale)
 

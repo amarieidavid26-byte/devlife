@@ -329,6 +329,10 @@ export class HUD {
         const summaryNote = src === 'whoop'
             ? `<div style="font-size:9px;color:#8a7a5c;margin-bottom:4px;font-style:italic">${i18n.t('hud.morning_summary_note')}</div>`
             : '';
+        // typing rhythm signal (keystroke dynamics) -- real signal even with zero hardware
+        const typingLine = (d.typing && d.typing.active)
+            ? `<div style="font-size:10px;color:#6AD89A;margin-bottom:4px" title="${i18n.t('hud.tip_typing')}">⌨ ${i18n.t('hud.typing_signal')}${d.typing.flow ? ' · ' + i18n.t('hud.typing_flow') : ''}</div>`
+            : '';
 
         this._textEl.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -349,6 +353,7 @@ export class HUD {
             <div style="font-size:11px;color:#B8A88C;margin-bottom:4px" title="${i18n.t('hud.tip_stress')}">
                 ${i18n.t('hud.stress_line', { n: stress.toFixed(1) })}${infoBtn('stress')}
             </div>
+            ${typingLine}
             <div style="background:rgba(255,228,181,0.08);border-radius:4px;height:6px;overflow:hidden">
                 <div style="
                     width:${stressBarWidth}%;

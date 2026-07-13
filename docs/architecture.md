@@ -306,6 +306,34 @@ HRV pe fereastra scurta) **in timp real**, deci `estimated_stress` si Fatigue Fi
 reactioneaza la starea autonoma din momentul respectiv, nu la cea de ieri. Matematica e in
 `biometric_engine.py::compute_live_hrv`, cu teste pe valori calculate de mana (`test_live_hrv.py`).
 
+### scenariu: dinamica tastarii ca semnal biometric (zero hardware)
+
+```mermaid
+sequenceDiagram
+    User->>Browser: tasteaza in Monaco / terminal / notes
+    Browser->>Browser: KeystrokeCapture: [interval_ms, categorie] — NICIODATA continutul tastei
+    Browser->>Backend: WS keystrokes{events} (batch la 5s)
+    Backend->>KeystrokeDynamics: add_events() — fereastra glisanta 90s
+    Note over KeystrokeDynamics: baseline personal (EMA): ritm median + rata backspace
+    KeystrokeDynamics->>BiometricEngine: snapshot{stress, fatigue, flow}
+    Note over BiometricEngine: fuziune la classify() —<br/>puls real > tastare > sumar WHOOP > mock
+    Backend->>Frontend: biometric_update{typing:{active, stress, ...}}
+    Frontend->>User: HUD "⌨ semnal tastare activ"
+```
+
+Fundament: literatura de keystroke dynamics — stresul apare ca tastare mai rapida si cu mai
+multe corecturi fata de propriul baseline (Epp 2011), oboseala ca ritm mai lent, erratic, cu
+pauze lungi (Vizer 2009). Totul e relativ la baseline-ul personal invatat (EMA lent), nu la
+praguri absolute. Reguli de fuziune in `classify()`: un puls real pe BLE nu e niciodata
+depasit de tastare (doar rafineaza stresul estimat); fara puls si fara WHOOP, tastarea devine
+singurul semnal real si **depaseste generatorul mock**; in modurile demo (`demo_locked`)
+tastarea prezentatorului nu poate fura starea scriptata. Confidentialitate: frontend-ul trimite
+doar intervale si categorii (char/backspace/enter/nav) — continutul tastelor nu paraseste
+niciodata browserul. Cod: `keystroke_dynamics.py`, teste pe valori calculate de mana in
+`test_keystroke_dynamics.py` (11 teste). Limitare documentata: baseline-ul se invata din
+prima fereastra de tastare — daca prima sesiune e deja stresata, deviatia se vede abia dupa
+ce EMA converge (calibrarea persistenta e pasul urmator natural).
+
 ### scenariu: firewall server-side in PTY (defense in depth)
 
 Interceptarea din UI (`Terminal.js`) poate fi ocolita de un client care vorbeste direct cu

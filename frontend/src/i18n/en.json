@@ -67,6 +67,9 @@
   "hud.badge_bleonly": "BLE-only",
   "hud.tip_bleonly": "only the heart rate is live (Bluetooth) — recovery/HRV/strain need a WHOOP account connection",
   "hud.tip_stress": "derived from your HRV deviation vs 14-day baseline — not a WHOOP-reported value",
+  "hud.typing_signal": "typing signal active",
+  "hud.typing_flow": "flow",
+  "hud.tip_typing": "stress/fatigue estimated from your typing rhythm (intervals only, never what you type) — works without any wearable",
 
   "apply_fix.preview_title": "Patch preview",
   "apply_fix.before": "Before",

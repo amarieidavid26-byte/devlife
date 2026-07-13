@@ -142,7 +142,9 @@ def build_biometric_msg(data, state):
         "sleepPerformance": round(data.get("sleepPerformance", 0), 2),
         "hrv": live_hrv if live_hrv is not None else round(data.get("hrv", 0), 1),
         "hrv_live": live_hrv is not None,
-        "estimated_stress": round(data.get("estimated_stress", 0), 2),
+        # bio.estimated_stress is what classify() actually decided (incl. typing/HRV fusion);
+        # the raw data value would contradict the state label whenever fusion adjusted it
+        "estimated_stress": round(bio.estimated_stress, 2),
         "spo2": round(data.get("spo2", 0), 1),
         "skinTemp": round(data.get("skinTemp", 0), 1),
         # real resting HR (distinct from the live BLE pulse) + real sleep breakdown; null when
@@ -158,6 +160,9 @@ def build_biometric_msg(data, state):
         "recovery_velocity": round(app_state.recovery_velocity, 1) if app_state.recovery_velocity is not None else None,
         "baseline_hr": round(app_state.baseline_hr),
         "hr_trend": hr_trend,
+        # typing rhythm signal (keystroke_dynamics.py) -- active means enough recent
+        # keystrokes to estimate stress/fatigue from cadence alone
+        "typing": bio.keystrokes.snapshot(),
     }
 
 
