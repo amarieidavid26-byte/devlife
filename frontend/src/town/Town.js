@@ -96,6 +96,12 @@ export class Town {
         this._container.scale.set(GAME_ZOOM);
         this._app.stage.addChild(this._container);
 
+        // frozen per visit: draw-time geometry and live entities must share one origin,
+        // otherwise a window resize (fullscreen toggle) displaces them relative to each
+        // other. snapCamera() handles recentering the view instead.
+        this._originX = (window.innerWidth / GAME_ZOOM) / 2;
+        this._originY = (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2);
+
         this._floorContainer = new PIXI.Container();
         this._buildingContainer = new PIXI.Container();
         this._detailContainer = new PIXI.Container();
@@ -126,8 +132,8 @@ export class Town {
         // Entity container -- viewport offset aligns cartToIso coords with the grid
         this._entityContainer = new PIXI.Container();
         this._entityContainer.sortableChildren = true;
-        this._entityContainer.x = (window.innerWidth / GAME_ZOOM) / 2;
-        this._entityContainer.y = (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2);
+        this._entityContainer.x = this._originX;
+        this._entityContainer.y = this._originY;
         this._container.addChild(this._entityContainer);
 
         // Player -- spawn near the building they exited, or HOME by default
@@ -292,8 +298,8 @@ export class Town {
         const iso = cartToIso(gx, gy);
         // Center the 20x20 grid in viewport (at zoom 1, container handles zoom)
         return {
-            x: iso.x + (window.innerWidth / GAME_ZOOM) / 2,
-            y: iso.y + (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2),
+            x: iso.x + this._originX,
+            y: iso.y + this._originY,
         };
     }
 

@@ -108,6 +108,24 @@ def save_biometric(hr: float, hrv: float, recovery: float, strain: float, source
     conn.commit()
 
 
+# calibration: personal baselines (typing rhythm, HR, HRV) that survive restarts
+
+def get_calibration(key: str, default: float = None) -> Optional[float]:
+    conn = connect()
+    row = conn.execute("SELECT value FROM calibration WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
+def set_calibration(key: str, value: float):
+    conn = connect()
+    conn.execute(
+        "INSERT INTO calibration (key, value, updated_at) VALUES (?, ?, ?) "
+        "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+        (key, float(value), time.time()),
+    )
+    conn.commit()
+
+
 # session replay: the black-box recording of a coding session
 
 def get_session_timeline(session_id: int = None) -> dict:

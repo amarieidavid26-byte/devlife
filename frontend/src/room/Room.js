@@ -21,6 +21,13 @@ export class Room {
         this.container = new PIXI.Container();
         stage.addChild(this.container);
 
+        // frozen at construction: the floor/walls are drawn once with this origin, but the
+        // player/ghost recompute their position every frame -- if this followed the live
+        // window size, a resize (fullscreen toggle) would displace them relative to the
+        // drawn room. the camera in main.js handles recentering instead.
+        this._originX = window.innerWidth / 2;
+        this._originY = window.innerHeight / 2 - (GRID_SIZE * TILE_HEIGHT / 2);
+
         // Sub-containers for layering
         this.floorContainer = new PIXI.Container();
         this.wallContainer  = new PIXI.Container();
@@ -36,8 +43,8 @@ export class Room {
     gridToScreen(gx, gy) {
         const iso = cartToIso(gx, gy);
         return {
-            x: iso.x + window.innerWidth / 2,
-            y: iso.y + window.innerHeight / 2 - (GRID_SIZE * TILE_HEIGHT / 2)
+            x: iso.x + this._originX,
+            y: iso.y + this._originY
         };
     }
 

@@ -60,6 +60,37 @@ def get_analyzer():
     return content_analyzer if GAME_MODE else vision
 
 
+# personal calibration: baselines learned in past sessions are loaded at startup and
+# persisted periodically, so the "relative to YOUR rhythm" logic doesn't restart from
+# scratch (or from the hardcoded defaults) every run
+
+def load_calibration():
+    import persistence.db as db
+    v = db.get_calibration("hrv_baseline")
+    if v:
+        bio.hrv_baseline = v
+    v = db.get_calibration("baseline_hr")
+    if v:
+        app_state.baseline_hr = v
+    v = db.get_calibration("typing_iki")
+    if v:
+        bio.keystrokes.baseline_iki = v
+    v = db.get_calibration("typing_err")
+    if v is not None:
+        bio.keystrokes.baseline_err = v
+    logger.info("calibration loaded: hrv=%.1f hr=%.0f typing_iki=%s",
+                bio.hrv_baseline, app_state.baseline_hr, bio.keystrokes.baseline_iki)
+
+
+def save_calibration():
+    import persistence.db as db
+    db.set_calibration("hrv_baseline", bio.hrv_baseline)
+    db.set_calibration("baseline_hr", app_state.baseline_hr)
+    if bio.keystrokes.baseline_iki is not None:
+        db.set_calibration("typing_iki", bio.keystrokes.baseline_iki)
+        db.set_calibration("typing_err", bio.keystrokes.baseline_err)
+
+
 @dataclass
 class AppState:
     connected_clients: list = field(default_factory=list)
@@ -87,6 +118,9 @@ class AppState:
     last_stress_peak: object = None
     recovery_velocity: object = None
     baseline_hr: float = 68.0
+    # last daily WHOOP HRV seen -- a change means a new morning summary landed,
+    # which is when the personal HRV baseline learns (EMA), not every 5s cycle
+    last_whoop_hrv: object = None
 
 
 app_state = AppState()

@@ -17,7 +17,7 @@ from config import GAME_MODE, DEMO_OFFLINE, CONTENT_MIN_LENGTH, WHOOP_OFF_GRACE_
 from fallback_responses import get_fallback_intervention
 from runtime import (
     app_state, bio, mock, brain, tracker, content_analyzer, capture, vision,
-    broadcast_sync, build_biometric_msg, _degraded_banner,
+    broadcast_sync, build_biometric_msg, _degraded_banner, save_calibration,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,6 +80,7 @@ def _check_sleep_mode(data):
 
 
 def biometric_loop():
+    cycles = 0
     while app_state.ghost_running:
         is_whoop = False
         demo_locked = DEMO_OFFLINE or time.time() < app_state.mock_override_until
@@ -134,6 +135,12 @@ def biometric_loop():
             if is_whoop:
                 src = "ble" if ble_fresh else "whoop"
                 logger.info("WHOOP state=%s rec=%s strain=%s hrv=%s hr=%s src=%s", state, data.get("recovery"), data.get("strain"), data.get("hrv"), data.get("heartRate"), src)
+                # personal HRV baseline learns once per NEW morning summary, not per cycle
+                daily_hrv = data.get("hrv")
+                if daily_hrv and daily_hrv != app_state.last_whoop_hrv:
+                    if app_state.last_whoop_hrv is not None:
+                        bio.hrv_baseline += (daily_hrv - bio.hrv_baseline) * 0.1
+                    app_state.last_whoop_hrv = daily_hrv
 
             # black-box recording: one sample per cycle feeds the session replay
             try:
@@ -155,6 +162,13 @@ def biometric_loop():
         if app_state.last_coding_activity > 0 and time.time() - app_state.last_coding_activity > 60:
             app_state.last_coding_activity = time.time()
             broadcast_sync({"type": "plant_update", "delta": -2})
+
+        cycles += 1
+        if cycles % 12 == 0:  # ~60s
+            try:
+                save_calibration()
+            except Exception as e:
+                logger.warning("calibration persist failed: %s", e)
 
         time.sleep(5)
 

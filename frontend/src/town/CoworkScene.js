@@ -75,8 +75,8 @@ export class CoworkScene {
     _gridToScreen(gx, gy) {
         const iso = cartToIso(gx, gy);
         return {
-            x: iso.x + (window.innerWidth / ZOOM) / 2,
-            y: iso.y + (window.innerHeight / ZOOM) / 2 - (GRID * TILE_HEIGHT / 2),
+            x: iso.x + this._originX,
+            y: iso.y + this._originY,
         };
     }
 
@@ -91,6 +91,11 @@ export class CoworkScene {
         this._container.sortableChildren = true;
         this._app.stage.addChild(this._container);
 
+        // frozen per visit -- see Town.enter(): resize must not split draw-time
+        // geometry from live entity positions
+        this._originX = (window.innerWidth / ZOOM) / 2;
+        this._originY = (window.innerHeight / ZOOM) / 2 - (GRID * TILE_HEIGHT / 2);
+
         this._drawFloor();
         this._drawWalls();
         this._drawWhiteboard();
@@ -102,8 +107,8 @@ export class CoworkScene {
 
         // player lives in an offset sub-container so raw cartToIso aligns with _gridToScreen tiles
         this._playerOffset = new PIXI.Container();
-        this._playerOffset.x = (window.innerWidth / ZOOM) / 2;
-        this._playerOffset.y = (window.innerHeight / ZOOM) / 2 - (GRID * TILE_HEIGHT / 2);
+        this._playerOffset.x = this._originX;
+        this._playerOffset.y = this._originY;
         this._playerOffset.sortableChildren = true;
         this._playerOffset.zIndex = 5000;
         this._container.addChild(this._playerOffset);

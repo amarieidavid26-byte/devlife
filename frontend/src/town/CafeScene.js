@@ -78,6 +78,11 @@ export class CafeScene {
         this._container.scale.set(GAME_ZOOM);
         this._app.stage.addChild(this._container);
 
+        // frozen per visit -- see Town.enter(): resize must not split draw-time
+        // geometry from live entity positions
+        this._originX = (window.innerWidth / GAME_ZOOM) / 2;
+        this._originY = (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2);
+
         this._floorContainer = new PIXI.Container();
         this._wallContainer = new PIXI.Container();
         this._furnitureContainer = new PIXI.Container();
@@ -90,8 +95,8 @@ export class CafeScene {
         // Player layer -- offset so TownPlayer's cartToIso aligns with _gridToScreen.
         // The extra COORD_OFFSET*TILE_HEIGHT compensates for the coordinate shift.
         this._playerLayer = new PIXI.Container();
-        this._playerLayer.x = (window.innerWidth / GAME_ZOOM) / 2;
-        this._playerLayer.y = (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2) - (COORD_OFFSET * TILE_HEIGHT);
+        this._playerLayer.x = this._originX;
+        this._playerLayer.y = this._originY - (COORD_OFFSET * TILE_HEIGHT);
         this._container.addChild(this._playerLayer);
 
         this._container.addChild(this._ambientContainer);
@@ -260,8 +265,8 @@ export class CafeScene {
     _gridToScreen(gx, gy) {
         const iso = cartToIso(gx, gy);
         return {
-            x: iso.x + (window.innerWidth / GAME_ZOOM) / 2,
-            y: iso.y + (window.innerHeight / GAME_ZOOM) / 2 - (GRID_SIZE * TILE_HEIGHT / 2),
+            x: iso.x + this._originX,
+            y: iso.y + this._originY,
         };
     }
 

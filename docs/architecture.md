@@ -330,9 +330,17 @@ singurul semnal real si **depaseste generatorul mock**; in modurile demo (`demo_
 tastarea prezentatorului nu poate fura starea scriptata. Confidentialitate: frontend-ul trimite
 doar intervale si categorii (char/backspace/enter/nav) — continutul tastelor nu paraseste
 niciodata browserul. Cod: `keystroke_dynamics.py`, teste pe valori calculate de mana in
-`test_keystroke_dynamics.py` (11 teste). Limitare documentata: baseline-ul se invata din
-prima fereastra de tastare — daca prima sesiune e deja stresata, deviatia se vede abia dupa
-ce EMA converge (calibrarea persistenta e pasul urmator natural).
+`test_keystroke_dynamics.py` (11 teste).
+
+**Calibrare persistenta:** baseline-urile personale (ritmul de tastare, rata de backspace,
+HR-ul de repaus, HRV-ul de referinta) se salveaza in SQLite (tabelul `calibration`, migratia
+003) — la fiecare ~60s din `biometric_loop` si la shutdown — si se incarca la pornire. Deci
+sistemul nu reinvata de la zero (sau de la valori hardcodate) la fiecare rulare: din a doua
+sesiune, deviatiile se masoara fata de ritmul TAU real. HRV-ul de referinta invata cate putin
+(EMA 0.1) doar cand soseste un sumar WHOOP de dimineata NOU, nu la fiecare ciclu de 5s —
+altfel baseline-ul ar converge la valoarea zilei si raportul ar fi mereu ~1. Cod:
+`persistence/db.py::get/set_calibration`, `runtime.py::load/save_calibration`, teste in
+`test_calibration.py`.
 
 ### scenariu: firewall server-side in PTY (defense in depth)
 

@@ -47,6 +47,7 @@ from runtime import (
     app_state,
     bio, mock, brain, tracker, content_analyzer, capture, inline_completer,
     get_analyzer, broadcast_sync, build_biometric_msg,
+    load_calibration, save_calibration,
 )
 from loops import biometric_loop, ghost_loop
 from ws_game import WS_HANDLERS
@@ -77,6 +78,10 @@ async def lifespan(app: FastAPI):
         mode="game" if GAME_MODE else "desktop",
         whoop_connected=bool(bio.access_token),
     )
+    try:
+        load_calibration()
+    except Exception as e:
+        logger.warning("calibration load failed: %s", e)
 
     if DEMO_OFFLINE:
         logger.info("DEMO_OFFLINE active -- all external calls mocked")
@@ -99,6 +104,10 @@ async def lifespan(app: FastAPI):
     logger.info("running on http://%s:%s", HOST, PORT)
     yield
 
+    try:
+        save_calibration()
+    except Exception as e:
+        logger.warning("calibration save failed: %s", e)
     db.end_session()
     app_state.ghost_running = False
     if not GAME_MODE and capture:
