@@ -12,7 +12,9 @@ export function wireSocketHandlers(deps) {
     socket.on('disconnected', () => { hud.setConnected(false); dashboard.setConnected(false); offlineBio.start(); });
 
     socket.on('intervention', (data) => {
-        ghost.showSpeechBubble(data);
+        // the terminal firewall draws its own banner; a bubble would render behind the
+        // fullscreen terminal where it can't be seen or dismissed
+        if (!data.silent) ghost.showSpeechBubble(data);
         dashboard.addIntervention(data);
         if (data.priority === 'critical' || data.priority === 'warning') {
             soundManager.playGhostAlert();

@@ -265,6 +265,10 @@ export class CodeEditorApp {
         this.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
             if (this._canRunCurrentLang() && !this._isRunning) this.runCode();
         });
+        // Shift+Esc closes; a bare Esc stays with Monaco (autocomplete, find widget)
+        this.editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Escape, () => {
+            if (this.onClose) this.onClose(); else this.close();
+        });
         this.editor.focus();
     }
 

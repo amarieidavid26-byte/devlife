@@ -395,6 +395,25 @@ permis explicit (`security.py::check_origin` — clientii non-browser se bazeaza
 pentru endpoint-urile privilegiate; extensia foloseste doar endpoint-ul de joc, neprivilegiat).
 Asta muta DevLife din "joc cu editor" in "utilitar care functioneaza in editorul tau real".
 
+### subsistem: interventia de firewall si override-ul one-shot
+
+Blocarea unei comenzi riscante e o interventie reala — ghost-ul te-a oprit pe baza
+biometricelor — deci se contorizeaza ca oricare alta. `Terminal.js` trimite
+`firewall_block` pe WS; `ws_game.py::_ws_firewall_block` construieste mesajul din
+sablonul instant al ghost-ului (`_instant_risky_response`, fara apel Claude, ca blocarea
+sa ramana instantanee), incrementeaza `brain.intervention_count`, salveaza in SQLite si
+face broadcast cu `silent: true` — bannerul din terminal e deja UI-ul, iar o bula ghost
+ar aparea in spatele overlay-ului fullscreen. Fara backend, `Terminal.js` emite acelasi
+eveniment local (tiparul din `OfflineBiometrics`), deci dashboard-ul numara si offline.
+
+`Do it anyway` armeaza un override **one-shot** (`{type: "firewall_override"}` pe WS-ul
+terminalului), consumat de `_block_reason` la urmatorul Enter si auditat in SQLite
+(`source="terminal-firewall-override"`). Firewall-ul exista ca sa te faca sa te opresti
+si sa te gandesti, nu ca sa te blocheze din propria masina — dar decizia ramane
+inregistrata, si nu poate deveni un bypass permanent. `Cancel` trimite Ctrl-U (`\x15`),
+singurul kill-line pe care il recunoaste si `KeystrokeFirewall` server-side — Ctrl-A/Ctrl-K
+lasau bufferul serverului cu comanda veche, care otravea urmatoarea comanda tastata.
+
 ### subsistem: chei API din aplicatie (BYOK)
 
 Panoul "Chei API" (accesibil din meniul Settings si din topbar-ul dashboard-ului,

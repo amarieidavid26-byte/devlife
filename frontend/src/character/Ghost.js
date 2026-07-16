@@ -712,11 +712,37 @@ export class Ghost {
     _onButtonClick(label) {
         if (this._onFeedback) this._onFeedback(label);
 
+        if (label === 'Show More' && this._currentData?.code_suggestion) {
+            this._revealSuggestion();
+            return;
+        }
+
         if (label === 'Apply Fix' && this._onApplyFix && this._currentData?.code_suggestion) {
             this._onApplyFix(this._currentData.code_suggestion);
         }
 
         this.dismissBubble(true);
+    }
+
+    // 'Show More' expands the bubble with the proposed code instead of closing it
+    _revealSuggestion() {
+        if (!this._bubble || this._bubble.querySelector('.ghost-suggestion')) return;
+        clearTimeout(this._autoDismissTimer);
+
+        const pre = document.createElement('pre');
+        pre.className = 'ghost-suggestion';
+        pre.textContent = this._currentData.code_suggestion;
+        pre.style.cssText = 'margin:10px 0 0;padding:10px 12px;max-height:220px;overflow:auto;' +
+            'background:rgba(0,0,0,0.35);border:1px solid rgba(0,200,100,0.25);border-radius:6px;' +
+            "font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.5;" +
+            'color:#d6d6e0;white-space:pre;';
+
+        const footer = this._bubble.querySelector('.ghost-bubble-footer');
+        if (footer) this._bubble.insertBefore(pre, footer);
+        else this._bubble.appendChild(pre);
+
+        const btn = this._bubble.querySelector('.ghost-btn[data-label="Show More"]');
+        if (btn) btn.remove();
     }
 
     _removeVignette() {

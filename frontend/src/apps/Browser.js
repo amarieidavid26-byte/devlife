@@ -191,7 +191,8 @@ export class BrowserApp {
         closeBtn.textContent = i18n.t('browser.close');
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
-        closeBtn.addEventListener('click', () => this.close());
+        // route through main.js so the game state is restored (avoids the post-close lockout)
+        closeBtn.addEventListener('click', () => (this.onClose ? this.onClose() : this.close()));
         row1.appendChild(closeBtn);
 
         chrome.appendChild(row1);

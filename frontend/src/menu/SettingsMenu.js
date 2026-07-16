@@ -9,12 +9,15 @@ const KEYBINDS = [
   ['1-5', 'settings.kb_switch_state'],
   ['TAB', 'settings.kb_ghost_vision'],
   ['ESC', 'settings.kb_close_app'],
+  ['Shift+ESC', 'settings.kb_close_editor'],
+  ['O', 'settings.kb_settings'],
 ];
 
 export class SettingsMenu {
   constructor() {
     this._volumeCb = null;
     this._muteCb = null;
+    this._visible = false;
 
     // root overlay
     const root = document.createElement('div');
@@ -267,17 +270,21 @@ export class SettingsMenu {
   // public api
 
   show() {
+    this._visible = true;
     this._root.style.visibility = 'visible';
     void this._root.offsetWidth;
     this._root.style.opacity = '1';
   }
 
   hide() {
+    this._visible = false;
     this._root.style.opacity = '0';
     setTimeout(() => {
       this._root.style.visibility = 'hidden';
     }, 200);
   }
+
+  toggle() { this._visible ? this.hide() : this.show(); }
 
   onVolumeChange(callback) {
     this._volumeCb = callback;

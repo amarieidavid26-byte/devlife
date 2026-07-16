@@ -202,7 +202,7 @@ async function startGame(enableDemo = false) {
         if (!isDemo) socket.resumeLive();
     });
 
-    wireBLEPairing({ socket, hud, demoHotbar, toastSystem });
+    wireBLEPairing({ socket, hud, demoHotbar, toastSystem, offlineBio });
 
     // app overlays
     const apps = {
@@ -230,6 +230,7 @@ async function startGame(enableDemo = false) {
         player.sit();
         hud.setVisible(false);
         demoHotbar.hide();
+        dashboard.hide();   // the dashboard paints above the app overlay; leaving it up traps both
     }
 
     function closeAllApps() {
@@ -317,7 +318,7 @@ async function startGame(enableDemo = false) {
         getActiveApp: () => activeApp,
         getSceneManager: () => sceneManager,
         demoHotbar, toastSystem, applyMockState,
-        shortcutsOverlay, ghost, dashboard, closeAllApps, furniture, player,
+        shortcutsOverlay, ghost, dashboard, closeAllApps, furniture, player, settingsMenu,
     });
 
     // game loop

@@ -4,7 +4,7 @@
 
 | metric | valoare |
 |--------|---------|
-| total teste | 152 (151 pass + 1 skip condiționat) |
+| total teste | 168 (167 pass + 1 skip condiționat) |
 | pass | 145 |
 | fail | 0 |
 | skip | 1 (test dependent de mediu) |

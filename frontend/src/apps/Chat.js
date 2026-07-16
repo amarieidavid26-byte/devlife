@@ -244,7 +244,8 @@ export class ChatApp {
         closeBtn.textContent = i18n.t('chat.close');
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
-        closeBtn.addEventListener('click', () => this.close());
+        // route through main.js so the game state is restored (avoids the post-close lockout)
+        closeBtn.addEventListener('click', () => (this.onClose ? this.onClose() : this.close()));
 
         header.appendChild(headerLeft);
         header.appendChild(closeBtn);

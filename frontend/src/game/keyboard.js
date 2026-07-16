@@ -2,19 +2,29 @@
 // T room<->town, E interact. mutable game state comes in via getters
 
 import { i18n } from '../i18n/index.js';
+import { isApiKeysModalOpen, closeApiKeysModal } from '../hud/ApiKeysModal.js';
 
 export function wireKeyboard(deps) {
     const { getActiveApp, getSceneManager, demoHotbar, toastSystem, applyMockState,
-            shortcutsOverlay, ghost, dashboard, closeAllApps, furniture, player } = deps;
+            shortcutsOverlay, ghost, dashboard, closeAllApps, furniture, player,
+            settingsMenu } = deps;
 
     document.addEventListener('keydown', (e) => {
         const activeApp = getActiveApp();
         // a focused real terminal/editor needs every key (digits, Escape for vim, Tab…) —
         // don't let game shortcuts steal them. The app provides its own close button.
-        if (activeApp && activeApp.capturesKeyboard) return;
+        if (activeApp && activeApp.capturesKeyboard) {
+            // Shift+Esc trebuie sa mearga indiferent de focus: handler-ele din xterm/monaco
+            // se declanseaza doar cand widgetul lor are focus, iar un click pe bara de titlu
+            // sau pe un tab il pierde -- si atunci aplicatia nu se mai putea inchide din taste
+            if (e.key === 'Escape' && e.shiftKey) { e.preventDefault(); closeAllApps(); return; }
+            return;
+        }
 
-        // 1-5: change mock biometric state (disabled when WHOOP BLE is streaming live data)
+        // 1-5: change mock biometric state (disabled when BLE is streaming live data)
         if (e.key >= '1' && e.key <= '5') {
+            const tg = e.target.tagName;
+            if (tg === 'INPUT' || tg === 'TEXTAREA' || e.target.isContentEditable) return;
             e.preventDefault();
             if (!demoHotbar.manualEnabled) {
                 toastSystem.show('warning', '🔒 ' + i18n.t('toast.live_mode_locked_title'), i18n.t('toast.live_mode_locked'), 3000);
@@ -24,11 +34,22 @@ export function wireKeyboard(deps) {
             return;
         }
 
-        // Escape always works (closes apps/bubbles even while typing)
-        if (e.key === 'Escape') {
+        // Escape always works (closes apps/bubbles even while typing). Cascade: inchide
+        // ce e deschis, iar daca nu e nimic deschis se comporta ca un meniu de pauza
+        // !e.shiftKey: Shift+Esc e chordul de inchidere al aplicatiilor. Handler-ul din
+        // xterm/monaco inchide aplicatia si abia apoi evenimentul ajunge aici, cu activeApp
+        // deja null -- fara garda, Shift+Esc inchidea terminalul si deschidea setarile
+        if (e.key === 'Escape' && !e.shiftKey) {
+            if (isApiKeysModalOpen()) { closeApiKeysModal(); return; }
+            if (settingsMenu && settingsMenu._visible) { settingsMenu.hide(); return; }
             if (shortcutsOverlay.visible) { shortcutsOverlay.hide(); return; }
             if (ghost._bubble) { ghost.dismissBubble(true); return; }
+            if (activeApp) { closeAllApps(); return; }
+            if (dashboard._visible) { dashboard.hide(); return; }
+            // closeAllApps si cand nu e nimic deschis: reseteaza player/HUD daca au
+            // ramas agatate (plasa de siguranta care exista dinainte)
             closeAllApps();
+            if (settingsMenu) settingsMenu.show();
             return;
         }
 
@@ -38,6 +59,16 @@ export function wireKeyboard(deps) {
             if (t === 'INPUT' || t === 'TEXTAREA' || e.target.isContentEditable) return;
             e.preventDefault();
             shortcutsOverlay.toggle();
+            return;
+        }
+
+        // O: settings (API keys, language, personality, audio) — the main menu is gone once
+        // the game starts, so this is the only in-game way in
+        if (e.key.toLowerCase() === 'o' && settingsMenu) {
+            const t = e.target.tagName;
+            if (t === 'INPUT' || t === 'TEXTAREA' || e.target.isContentEditable) return;
+            e.preventDefault();
+            settingsMenu.toggle();
             return;
         }
 
@@ -68,7 +99,9 @@ export function wireKeyboard(deps) {
 
         if (e.key.toLowerCase() === 'e') {
             const name = furniture.getNearbyInteractable(player.gridX, player.gridY);
-            if (name) furniture.emit('interact', name);
+            // preventDefault: aplicatia isi pune focusul pe un camp de text (textarea din
+            // whiteboard, monaco), iar actiunea implicita a aceleiasi taste scria 'e' in el
+            if (name) { e.preventDefault(); furniture.emit('interact', name); }
         }
     });
 }

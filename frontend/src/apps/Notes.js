@@ -130,7 +130,8 @@ export class NotesApp {
         closeBtn.textContent = i18n.t('notes.close');
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#e6edf3'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#888'; });
-        closeBtn.addEventListener('click', () => this.close());
+        // route through main.js so the game state is restored (avoids the post-close lockout)
+        closeBtn.addEventListener('click', () => (this.onClose ? this.onClose() : this.close()));
 
         topBar.appendChild(title);
         topBar.appendChild(toolbar);

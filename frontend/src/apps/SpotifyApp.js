@@ -61,7 +61,9 @@ export class SpotifyApp {
         this.socket = socket;
         this.appType = 'spotify';
         this.isOpen = false;
-        this.capturesKeyboard = true;   // so typing a link never triggers game keys (1-5/WASD)
+        // fara capturesKeyboard: 1-5 sunt deja pazite de garda INPUT, iar WASD/E de
+        // `if (activeApp) return` -- flagul doar inghitea ESC, ca overlay-ul nu poate
+        // primi focus, deci handler-ul local de mai jos nu era in calea evenimentului
         this.overlay = null;
         this.onClose = null;            // set by main.js -> closeAllApps (restores game state)
         this._controller = null;
@@ -182,7 +184,8 @@ export class SpotifyApp {
 
         this._initEmbed(embedTarget);
 
-        // capturesKeyboard bypasses the global Escape handler, so handle Escape locally
+        // doar pentru cazul in care focusul e in campul de link: opreste propagarea ca sa
+        // nu se inchida de doua ori. Cand focusul e in alta parte, ESC vine din cascada
         this._onKeyDown = (e) => {
             if (e.key === 'Escape') { e.stopPropagation(); this._requestClose(); }
         };

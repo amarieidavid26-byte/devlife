@@ -652,7 +652,21 @@ async def terminal_ws(ws: WebSocket):
 
     # defense in depth: even if the browser-side firewall is bypassed (direct WS client),
     # risky commands typed while FATIGUED/STRESSED never reach the shell
+    # "Do it anyway" in the UI arms this for exactly one command. The firewall exists to make
+    # you stop and think, not to lock you out of your own machine -- but every override is
+    # audited, and it is consumed immediately so it can never become a standing bypass.
+    override = {"armed": False}
+
     def _block_reason(line):
+        if override["armed"]:
+            override["armed"] = False
+            logger.info("firewall override used (state %s): %s", bio.current_state, line[:60])
+            db.save_intervention(
+                state=bio.current_state,
+                source="terminal-firewall-override",
+                claude_text=f"user override: {line[:120]}",
+            )
+            return None
         if bio.current_state not in ("FATIGUED", "STRESSED"):
             return None
         risky, desc = content_analyzer.detect_risky_commands(line)
@@ -692,6 +706,8 @@ async def terminal_ws(ws: WebSocket):
                     ctrl = None
                 if isinstance(ctrl, dict) and ctrl.get("type") == "resize":
                     session.resize(int(ctrl.get("rows", 24)), int(ctrl.get("cols", 80)))
+                elif isinstance(ctrl, dict) and ctrl.get("type") == "firewall_override":
+                    override["armed"] = True
                 else:
                     # same firewall on the text path -- it's the obvious bypass vector
                     passthrough, blocked = firewall.filter(text.encode())

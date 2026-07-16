@@ -8,6 +8,8 @@ const BINDS = [
     ['1-5', 'settings.kb_switch_state'],
     ['TAB', 'settings.kb_ghost_vision'],
     ['ESC', 'settings.kb_close_app'],
+    ['Shift+ESC', 'settings.kb_close_editor'],
+    ['O', 'settings.kb_settings'],
     ['?', 'shortcuts.this_panel'],
 ];
 

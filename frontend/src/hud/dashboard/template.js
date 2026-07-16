@@ -20,7 +20,7 @@ export function buildDashboardDOM() {
                style="color:#B8A88C;text-decoration:none;border:1px solid rgba(255,228,181,0.2);border-radius:4px;padding:3px 8px">
                &#10515; <span data-i18n="dashboard.export_report">Export report</span></a>
             <span class="session-dot" id="dov-session-dot"></span>
-            <span id="dov-session-label" data-i18n="dashboard.offline" style="color:#8A7E6A">OFFLINE</span>
+            <span id="dov-session-label" data-i18n="dashboard.offline" style="color:#8A7E6A">BACKEND OFFLINE</span>
             <span id="dov-session-timer" style="color:#8A7E6A">00:00:00</span>
             <span class="tab-hint">&nbsp;&middot;&nbsp;<span data-i18n="dashboard.tab_to_close">TAB to close</span></span>
         </div>

@@ -178,6 +178,16 @@ function close() {
     _el.style.display = 'none';
 }
 
+// modalul sta peste meniul de setari (z-index 10005 vs 10001), deci ESC trebuie sa il
+// inchida primul -- altfel se inchide setarile de dedesubt si modalul ramane orfan
+export function isApiKeysModalOpen() {
+    return !!_el && _el.style.display !== 'none';
+}
+
+export function closeApiKeysModal() {
+    if (_el) close();
+}
+
 export function openApiKeysModal() {
     if (!_el) build();
     localize();

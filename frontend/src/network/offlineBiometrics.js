@@ -25,9 +25,14 @@ export class OfflineBiometrics {
         this._timer = null;
         this._active = false;
         this._prevHr = PRESETS[4].heartRate;
+        this._liveHr = null;
     }
 
     isActive() { return this._active; }
+
+    // a paired BLE strap outranks the simulated pulse: the state stays simulated (there's no
+    // classifier without the backend) but the bpm on screen is the real one
+    setLiveHR(bpm) { this._liveHr = bpm || null; }
 
     start() {
         if (this._active) return;
@@ -60,7 +65,7 @@ export class OfflineBiometrics {
         for (const k of NUMERIC) {
             this.cur[k] = this.cur[k] + (this.target[k] - this.cur[k]) * 0.25; // ease toward target
         }
-        const hr = Math.round(this.cur.heartRate + (Math.random() * 4 - 2));
+        const hr = this._liveHr || Math.round(this.cur.heartRate + (Math.random() * 4 - 2));
         const trend = hr > this._prevHr + 1 ? 'rising' : hr < this._prevHr - 1 ? 'falling' : 'stable';
         this._prevHr = hr;
         this.socket.emit('biometric_update', {

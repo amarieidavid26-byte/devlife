@@ -114,6 +114,15 @@ export class TerminalApp {
         this.term.open(host);
         this.fit.fit();
 
+        // Shift+Esc closes; a bare Esc must stay a raw byte for vim and other TUIs
+        this.term.attachCustomKeyEventHandler((e) => {
+            if (e.type === 'keydown' && e.key === 'Escape' && e.shiftKey) {
+                if (this.onClose) this.onClose(); else this.close();
+                return false;
+            }
+            return true;
+        });
+
         this._connect();
 
         this._resizeObserver = new ResizeObserver(() => this._fitAndNotify());
@@ -147,6 +156,32 @@ export class TerminalApp {
 
     _send(d) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(ENC.encode(d));
+    }
+
+    _sendCtrl(obj) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(obj));
+    }
+
+    // a firewall block is a real intervention -- the ghost stopped you on your biometrics --
+    // so it must be counted in the dashboard like any other. The backend records + broadcasts
+    // it; with no backend we emit the same event locally (as OfflineBiometrics does).
+    _reportBlock(cmd, desc) {
+        if (this.socket && this.socket.isConnected) {
+            this.socket.send({ type: 'firewall_block', command: cmd, description: desc });
+            return;
+        }
+        const state = (this._bio && this._bio.state) || 'RELAXED';
+        const critical = state === 'FATIGUED' || state === 'STRESSED' || state === 'WIRED';
+        this.socket && this.socket.emit && this.socket.emit('intervention', {
+            type: 'intervention',
+            message: i18n.t('firewall.blocked_line', { cmd }),
+            priority: critical ? 'critical' : 'high',
+            reason: state === 'FATIGUED' ? 'fatigue_firewall' : 'stress_firewall',
+            state,
+            buttons: [],
+            source: 'terminal_firewall',
+            silent: true,
+        });
     }
 
     _matchRisky(cmd) {
@@ -194,6 +229,7 @@ export class TerminalApp {
 
     _showFirewall(cmd, desc) {
         this._dismissFirewall();
+        this._reportBlock(cmd, desc);
         const b = this._bio || {};
         const rec = (b.recovery != null) ? b.recovery : '—';
         const hrv = (b.hrv != null) ? Math.round(b.hrv) : '—';
@@ -230,7 +266,9 @@ export class TerminalApp {
             `</div>`;
         el.addEventListener('click', (e) => e.stopPropagation());
         el.querySelector('[data-act="cancel"]').addEventListener('click', () => {
-            this._send('\x01\x0b');        // clear the typed line in the shell (Ctrl+A, Ctrl+K)
+            // Ctrl+U: the one line-kill the server-side firewall also recognises, so both
+            // its buffer and ours drop the command (Ctrl+A/Ctrl+K would desync them)
+            this._send('\x15');
             this._lineBuf = '';
             this._dismissFirewall();
             this.term && this.term.focus();
@@ -238,7 +276,10 @@ export class TerminalApp {
         el.querySelector('[data-act="anyway"]').addEventListener('click', () => {
             this._lineBuf = '';
             this._dismissFirewall();
-            this._send('\r');              // run what's already typed — user explicitly overrides
+            // the server firewall would swallow this Enter too; arm a one-shot override so the
+            // user's explicit override actually runs (it is audited server-side)
+            this._sendCtrl({ type: 'firewall_override' });
+            this._send('\r');
             this.term && this.term.focus();
         });
         this.overlay.appendChild(el);

@@ -184,6 +184,63 @@ async def _ws_run_error(ws, data):
         logger.info("run_error intervention (%s): %s...", state, intervention["message"][:80])
 
 
+async def _ws_firewall_block(ws, data):
+    """The terminal firewall stopped a risky command. That IS an intervention -- the ghost
+    acted on your biometrics -- so it gets counted, recorded and shown in the log like any
+    other. No Claude call: the firewall response is a template (same as the ghost loop does
+    for risky commands), so blocking stays instant."""
+    command = data.get("command", "")
+    if not isinstance(command, str) or not command or len(command) > WS_MAX_ACTION_CHARS:
+        return
+    description = data.get("description", "")
+    if not isinstance(description, str) or len(description) > WS_MAX_KWARG_CHARS:
+        return
+
+    state = bio.current_state
+    if state == "FATIGUED":
+        reason = "fatigue_firewall"
+    elif state in ("STRESSED", "WIRED"):
+        reason = "stress_firewall"
+    else:
+        reason = "risky_action_detected"
+
+    modifiers = bio.get_personality_modifiers(state)
+    message = brain._instant_risky_response(
+        reason, {"risky_description": description or command}, state, modifiers
+    )
+    brain.intervention_count += 1
+    brain.last_intervention_time = time.time()
+
+    bio_data = mock.get_data() if (not bio.access_token or time.time() < app_state.mock_override_until) else (bio.current_data or {})
+    intervention = {
+        "type": "intervention",
+        "message": message,
+        "priority": "critical" if reason != "risky_action_detected" else "high",
+        "reason": reason,
+        "state": state,
+        "buttons": [],
+        "context": command,
+        "app_type": "terminal",
+        "source": "terminal_firewall",
+        "silent": True,   # the terminal already renders its own banner
+        "biometric": build_biometric_msg(bio_data, state),
+    }
+    await broadcast(intervention)
+    app_state.intervention_history.append(intervention)
+    if len(app_state.intervention_history) > 50:
+        app_state.intervention_history.pop(0)
+    try:
+        db.save_intervention(
+            state=state,
+            source="terminal_firewall",
+            claude_text=message,
+            content_hash=None,
+        )
+    except Exception as e:
+        logger.warning("db.save_intervention failed: %s", e)
+    logger.info("firewall intervention (%s/%s): %s", state, reason, command[:60])
+
+
 WS_HANDLERS = {
     "feedback": _ws_feedback,
     "content_update": _ws_content_update,
@@ -195,4 +252,5 @@ WS_HANDLERS = {
     "heart_rate": _ws_heart_rate,
     "keystrokes": _ws_keystrokes,
     "run_error": _ws_run_error,
+    "firewall_block": _ws_firewall_block,
 }
