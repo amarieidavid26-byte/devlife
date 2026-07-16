@@ -371,6 +371,30 @@ deseneaza: polilinia HR colorata dupa starea cognitiva, tick-uri rosii pentru in
 scrub cu mouse-ul pentru valori punctuale. Rezultatul: demo-ul nu mai e o simulare, e o
 **dovada pe date reale** ("aici am obosit, aici ghost-ul m-a oprit din force push").
 
+### subsistem: raport de sesiune exportabil
+
+`db.get_session_report()` agrega o sesiune (distributia starilor din sample-uri — fiecare
+sample ≈ un ciclu de 5s, deci numaratoarea pe stare ≈ timp petrecut; min/max/mediu pe puls
+si HRV; lista interventiilor), iar `session_report.py::build_report_html` o randeaza intr-un
+singur fisier HTML **self-contained** (CSS si SVG inline, zero dependinte externe) care se
+deschide offline si se poate trimite pe mail. Timeline-ul SVG coloreaza segmentele de puls
+dupa starea cognitiva si marcheaza interventiile cu tick-uri. Culorile sunt o copie
+server-side a `frontend/src/theme.js`, tinuta sincron printr-un test anti-drift care
+parseaza theme.js (`test_session_report.py`). Endpoints: `GET /api/session/report` (JSON,
+pentru UI) si `GET /api/session/report/html?lang=ro|en` (documentul exportabil).
+
+### subsistem: extensia VS Code (DevLife Bridge)
+
+`vscode-extension/` vorbeste exact acelasi protocol WebSocket ca jocul — nicio linie de
+backend in plus. `onDidChangeTextDocument` trimite snapshot-uri `content_update` (debounce
+1.5s) cu codul REAL din editor, iar schimbarile de text se transforma in aceleasi perechi
+(interval, categorie) pentru `keystroke_dynamics.py`. Interventiile ghost-ului sosesc ca
+notificari VS Code cu butoanele originale (feedback-ul se intoarce in bucla de invatare),
+iar starea cognitiva + pulsul stau in status bar. Handshake-ul WS fara header Origin e
+permis explicit (`security.py::check_origin` — clientii non-browser se bazeaza pe token
+pentru endpoint-urile privilegiate; extensia foloseste doar endpoint-ul de joc, neprivilegiat).
+Asta muta DevLife din "joc cu editor" in "utilitar care functioneaza in editorul tau real".
+
 ## decizii arhitecturale cheie
 
 | decizie | alternativa | motiv ales |

@@ -1,3 +1,11 @@
+// bootstrap + game orchestration. module map:
+// game/socketHandlers.js -- WS message -> UI wiring
+// game/keyboard.js       -- global keyboard shortcuts
+// game/scenes.js         -- room/town/cafe/cowork scene graph
+// game/blePairing.js     -- WHOOP Web Bluetooth pairing
+// game/applyFixFlow.js   -- apply-fix preview/confirm/rollback flow
+// this file -- PIXI app, world containers, in-room interactions, game loop ticker
+
 import * as PIXI from 'pixi.js';
 import { i18n } from './i18n/index.js';
 import { GhostSocket } from './network/WebSocket.js';
@@ -22,16 +30,16 @@ import { DemoMode } from './demo/DemoMode.js';
 import { ToastSystem } from './hud/ToastSystem.js';
 import { ShortcutsOverlay } from './hud/ShortcutsOverlay.js';
 import { SettingsMenu } from './menu/SettingsMenu.js';
-import { SceneManager } from './scenes/SceneManager.js';
-import { Town } from './town/Town.js';
-import { CafeScene } from './town/CafeScene.js';
-import { CoworkScene } from './town/CoworkScene.js';
-import { WHOOPBluetooth } from './network/WHOOPBluetooth.js';
 import { KeystrokeCapture } from './network/KeystrokeCapture.js';
 import { CONFIG } from './config.js';
 import { initSession } from './network/session.js';
 import { OfflineBiometrics } from './network/offlineBiometrics.js';
 import { Spotify } from './network/Spotify.js';
+import { wireSocketHandlers } from './game/socketHandlers.js';
+import { wireKeyboard } from './game/keyboard.js';
+import { setupScenes } from './game/scenes.js';
+import { wireBLEPairing } from './game/blePairing.js';
+import { createApplyFixHandler } from './game/applyFixFlow.js';
 
 const pixiApp = new PIXI.Application({
     width: window.innerWidth,
@@ -53,7 +61,6 @@ let player = null;
 let soundManager = null;
 let demoMode = null;
 let toastSystem = null;
-let sceneManager = null;
 
 window.addEventListener('resize', () => {
     pixiApp.renderer.resize(window.innerWidth, window.innerHeight);
@@ -101,12 +108,13 @@ async function startGame(enableDemo = false) {
         // silent — code editor surfaces the error on first Run if pyodide missing
     });
 
-    let socket, room, furniture, ghost, atmosphere, hud, dashboard, demoHotbar, apps, activeApp, ePrompt;
-    let currentGameScene = 'room';
+    let activeApp = null;
+    let sceneManager = null;
+    let town = null;
     let coffeeCount = 0;
-    let _lastRecVel = null;
+    const sceneState = { current: 'room' };
 
-    socket = new GhostSocket(CONFIG.WS_URL);
+    const socket = new GhostSocket(CONFIG.WS_URL);
     socket.setToastSystem(toastSystem);
     i18n.onChange((lang) => socket.sendLang(lang));
     window.addEventListener('devlife:personality', (e) => socket.sendPersonality(e.detail));
@@ -115,7 +123,7 @@ async function startGame(enableDemo = false) {
     keystrokeCapture.start();
 
     // client-side biometric demo when there's no backend; the real backend takes over
-    // the moment the WS connects (see the 'connected'/'disconnected' handlers below).
+    // the moment the WS connects (see game/socketHandlers.js).
     const offlineBio = new OfflineBiometrics(socket);
     offlineBio.start();
     const applyMockState = (key) => {
@@ -123,11 +131,11 @@ async function startGame(enableDemo = false) {
         else socket.sendMockState(key);
     };
 
-    room = new Room(pixiApp.stage);
-    furniture = new Furniture(pixiApp.stage, room);
+    const room = new Room(pixiApp.stage);
+    const furniture = new Furniture(pixiApp.stage, room);
     player = new Player(pixiApp.stage, room, furniture);
-    ghost = new Ghost(pixiApp.stage);
-    atmosphere = new Atmosphere(pixiApp.stage);
+    const ghost = new Ghost(pixiApp.stage);
+    const atmosphere = new Atmosphere(pixiApp.stage);
 
     // world container for z-sorting
     const worldContainer = new PIXI.Container();
@@ -158,7 +166,7 @@ async function startGame(enableDemo = false) {
     gameContainer.y = Math.round(window.innerHeight / 2 * (1 - GAME_ZOOM));
 
     // [E] prompt above interactable
-    ePrompt = new PIXI.Text('[E]', {
+    const ePrompt = new PIXI.Text('[E]', {
         fontFamily: 'monospace',
         fontSize: 13,
         fill: 0xe94560,
@@ -178,13 +186,13 @@ async function startGame(enableDemo = false) {
     ghost.setAtmosphere(atmosphere);
 
     const shortcutsOverlay = new ShortcutsOverlay();
-    hud = new HUD();
+    const hud = new HUD();
     // real "last night" sleep arrives via biometric_update (WHOOP sleep endpoint) — no placeholder
-    dashboard = new DashboardOverlay();
-    demoHotbar = new DemoHotbar();
+    const dashboard = new DashboardOverlay();
+    const demoHotbar = new DemoHotbar();
     demoHotbar.setClickHandler((key) => {
         if (!demoHotbar.manualEnabled) {
-            toastSystem.show('warning', '\uD83D\uDD12 ' + i18n.t('toast.live_mode_locked_title'), i18n.t('toast.live_mode_locked'), 3000);
+            toastSystem.show('warning', '🔒 ' + i18n.t('toast.live_mode_locked_title'), i18n.t('toast.live_mode_locked'), 3000);
             return;
         }
         applyMockState(key);
@@ -194,43 +202,10 @@ async function startGame(enableDemo = false) {
         if (!isDemo) socket.resumeLive();
     });
 
-    // WHOOP BLE pairing - connects the PAIR WHOOP button to the Web Bluetooth API
-    const whoop = new WHOOPBluetooth();
-    window.connectWHOOP = async () => {
-        const res = await whoop.connect();
-        if (res.ok) {
-            demoHotbar.setBLEConnected(true);
-            toastSystem.show('info', '\u2764\uFE0F ' + i18n.t('ble.connected'), i18n.t('ble.connected_body'), 2500);
-            return;
-        }
-        // user cancelled the browser picker -- silent, expected
-        if (res.errorName === 'NotFoundError') return;
-        if (res.errorName === 'SecurityError') {
-            toastSystem.show('warning', '\uD83D\uDD12 ' + i18n.t('ble.pair_failed_https'), '', 6000);
-        } else if (res.errorName === 'NotSupportedError') {
-            toastSystem.show('warning', '\u26A0\uFE0F ' + i18n.t('ble.pair_failed_not_supported'), '', 6000);
-        } else {
-            toastSystem.show('warning', '\uD83D\uDCE1 ' + i18n.t('ble.pair_failed_generic', { err: res.errorMessage }), '', 5000);
-        }
-    };
-    whoop.onUpdate((bpm, connected, rr) => {
-        demoHotbar.setBLEConnected(connected);
-        if (connected && bpm > 0) {
-            // rr = inter-beat intervals (ms) when the strap broadcasts them (flag bit 4);
-            // the backend computes live RMSSD-HRV from these
-            socket.send(rr && rr.length ? { type: 'heart_rate', bpm, rr } : { type: 'heart_rate', bpm });
-            hud.update({ heartRate: bpm });
-        }
-        if (!connected) {
-            toastSystem.show('warning', '\uD83D\uDCF4 ' + i18n.t('ble.disconnected'), i18n.t('ble.disconnected_body'), 4000);
-        }
-    });
-    whoop.onGiveUp(() => {
-        toastSystem.show('warning', '\uD83D\uDCF4 ' + i18n.t('ble.reconnect_giveup'), i18n.t('ble.reconnect_giveup_body'), 8000);
-    });
+    wireBLEPairing({ socket, hud, demoHotbar, toastSystem });
 
     // app overlays
-    apps = {
+    const apps = {
         desk_computer: new CodeEditorApp(socket),
         desk_terminal: new TerminalApp(socket),
         second_monitor: new BrowserApp(socket),
@@ -238,8 +213,6 @@ async function startGame(enableDemo = false) {
         phone: new ChatApp(socket),
         speaker: new SpotifyApp(socket),
     };
-
-    activeApp = null;
 
     // wire each app's in-app close button to the FULL game-state reset, so closing via
     // the ✕ never leaves the game locked (pointer-events off / activeApp dangling).
@@ -270,33 +243,16 @@ async function startGame(enableDemo = false) {
         demoHotbar.show();
     }
 
-    // ambient music — procedural pad synthesized in SoundManager (no audio file needed,
-    // so it can't silently break when an asset is missing).
-    let musicPlaying = false;
-
-    function toggleMusic() {
-        soundManager.resume(); // the speaker click is the user gesture that unlocks audio
-        if (musicPlaying) {
-            soundManager.stopMusic();
-            musicPlaying = false;
-        } else {
-            soundManager.startMusic();
-            musicPlaying = true;
-        }
-        try { localStorage.setItem('devlife_music', musicPlaying ? '1' : '0'); } catch (_) {}
-    }
-
     // furniture interactions
     // door -> town transition
     furniture.onDoorInteract = () => {
         if (sceneManager && sceneManager.getCurrentScene() === 'room') {
             town.setSpawnPoint(7, 7);
-            currentGameScene = 'town';
+            sceneState.current = 'town';
             sceneManager.transitionTo('town', { duration: 800 });
         }
     };
 
-    // furniture interactions
     furniture.on('interact', (name) => {
         if (name === 'coffee_machine') {
             coffeeCount++;
@@ -350,240 +306,25 @@ async function startGame(enableDemo = false) {
     });
 
     // apply fix handler — goes through preview + backend validation before applying
-    ghost.setApplyFixHandler(async (code, rationale) => {
-        const editor = apps.desk_computer;
-        if (!editor || !editor.isOpen || !code) return;
+    ghost.setApplyFixHandler(createApplyFixHandler({ apps, socket, toastSystem }));
 
-        const originalText = editor.editor ? editor.editor.getValue() : '';
-        const lang = editor.currentLang || 'python';
-
-        // backend validation first
-        const patchBody = {
-            file: `demo.${lang === 'javascript' ? 'js' : lang}`,
-            language: lang,
-            range: { start_line: 1, end_line: (originalText.split('\n').length) },
-            replacement_text: code,
-            rationale: rationale || 'ghost suggestion',
-            severity: 'medium',
-            original_text: originalText,
-        };
-
-        let patchHash = null;
-        try {
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/apply-fix/preview`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(patchBody),
-            });
-            const json = await res.json();
-            if (!res.ok || !json.valid) {
-                toastSystem.show('warning', i18n.t('toast.fix_rejected'), json.reason || i18n.t('apply_fix.validation_failed'), 4000);
-                return;
-            }
-            patchHash = json.patch_hash;
-        } catch (e) {
-            toastSystem.show('warning', i18n.t('toast.fix_rejected'), i18n.t('toast.whoop_unavailable'), 3000);
-            return;
-        }
-
-        // show preview — user must confirm
-        const confirmed = await editor.showPatchPreview(originalText, code, rationale);
-        if (!confirmed) {
-            toastSystem.show('info', i18n.t('toast.fix_cancelled'), i18n.t('toast.fix_cancelled_body'), 2000);
-            return;
-        }
-
-        // confirm with backend and apply
-        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/apply-fix/confirm`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ patch_hash: patchHash }),
-        });
-
-        editor.replaceContent(code);
-        socket.sendFeedback('Apply Fix');
-
-        toastSystem.show('ghost', i18n.t('toast.fix_applied'), i18n.t('toast.fix_applied_body'), 8000, {
-            label: i18n.t('toast.revert'),
-            onClick: async () => {
-                try {
-                    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/apply-fix/rollback`, {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ patch_hash: patchHash }),
-                    });
-                    const json = await res.json();
-                    if (res.ok && json.original_text != null) {
-                        editor.replaceContent(json.original_text);
-                        toastSystem.show('info', i18n.t('toast.fix_reverted'), '', 3000);
-                    }
-                } catch (e) {
-                    editor.replaceContent(originalText);
-                    toastSystem.show('info', i18n.t('toast.fix_reverted'), '', 3000);
-                }
-            },
-        });
+    wireSocketHandlers({
+        socket, offlineBio, hud, dashboard, demoHotbar, atmosphere,
+        ghost, player, furniture, soundManager, toastSystem, apps,
     });
 
-    socket.on('connected', () => { hud.setConnected(true); dashboard.setConnected(true); offlineBio.stop(); });
-    socket.on('disconnected', () => { hud.setConnected(false); dashboard.setConnected(false); offlineBio.start(); });
-
-    socket.on('intervention', (data) => {
-        ghost.showSpeechBubble(data);
-        dashboard.ddIntervention(data);
-        if (data.priority === 'critical' || data.priority === 'warning') {
-            soundManager.playGhostAlert();
-        } else {
-            soundManager.playGhostSpeak();
-        }
-        if (data.priority === 'critical') {
-            toastSystem.triggerAchievement('firewall_blocked');
-        }
-    });
-
-    socket.on('biometric_update', (data) => {
-        hud.update(data);
-        dashboard.update(data);
-        demoHotbar.setActive(data.state);
-        atmosphere.setState(data.state);
-        ghost.setStateTint(data.state);
-        ghost.setBiometrics(data);
-        furniture.setMonitorState(data.state);
-        soundManager.setState(data.state);
-        soundManager.setHeartbeat(data.heartRate, data.state === 'FATIGUED' || data.state === 'STRESSED');
-        if (apps && apps.desk_computer && apps.desk_computer.isOpen) {
-            apps.desk_computer.setBiometricState(data.state); // biometric Cursor indicator
-        }
-
-        // real "last night" sleep from WHOOP's sleep endpoint (null until it's scored)
-        if (data.sleepHours != null && data.sleepScore != null) {
-            hud.setSleepData({
-                hours: data.sleepHours,
-                efficiency: data.sleepEfficiency ?? 0,
-                rem_pct: data.sleepRemPct ?? 0,
-                deep_pct: data.sleepDeepPct ?? 0,
-                score: data.sleepScore,
-            });
-        }
-
-        // CQI - weighted composite of recovery, HRV, and inverse stress
-        const recovery = data.recovery || 50;
-        const hrv = data.hrv || 40;
-        const stress = data.estimated_stress || 0;
-        const cqi = Math.round((Math.min(recovery / 100, 1) * 0.4 + Math.min(hrv / 80, 1) * 0.35 + Math.max(0, 1 - stress / 3) * 0.25) * 100);
-        hud.updateCQI(cqi);
-
-        // dont spam this
-        if (data.recovery_velocity && data.recovery_velocity > 0) {
-            if (_lastRecVel !== data.recovery_velocity) {
-                _lastRecVel = data.recovery_velocity;
-                const mins = (data.recovery_velocity / 60).toFixed(1);
-                toastSystem.show('info', '💓 ' + i18n.t('toast.recovery_complete'), i18n.t('toast.recovery_complete_body', { mins }), 4000);
-            }
-        } else {
-            _lastRecVel = null;
-        }
-    });
-
-    socket.on('state_change', (data) => {
-        demoHotbar.setActive(data.to);
-        atmosphere.transition(data.from, data.to);
-        ghost.setStateTint(data.to);
-        furniture.setMonitorState(data.to);
-        soundManager.setState(data.to);
-        toastSystem.show('state', i18n.t('toast.state_prefix') + i18n.t('state.' + data.to), i18n.t('toast.state_change_body', { state: i18n.t('state.' + data.to) }));
-        if (data.to === 'DEEP_FOCUS') {
-            toastSystem.triggerAchievement('first_flow');
-        }
-    });
-
-    // Plant health from backend: clean code heals it, ignored interventions wither it
-    socket.on('plant_update', (data) => {
-        if (furniture && typeof data.delta === 'number') {
-            furniture.adjustPlantHealth(data.delta);
-        }
-    });
-
-    // Sleep mode from backend: WHOOP taken off the wrist (live pulse stopped) or a very low
-    // resting HR. The character and the ghost both fall asleep, and we stop trusting the
-    // resting-HR fallback as a live reading.
-    socket.on('sleep_mode', (data) => {
-        if (ghost) ghost.setSleepMode(data.active);
-        if (player) player.setSleepMode(data.active);
-        const offWrist = data.reason && data.reason.indexOf('off wrist') !== -1;
-        if (data.active && offWrist) {
-            toastSystem.show('info', '💤 ' + i18n.t('sleep.whoop_off_title'), i18n.t('sleep.whoop_off_body'), 4000);
-        } else if (!data.active) {
-            toastSystem.show('info', '❤️ ' + i18n.t('sleep.awake_title'), i18n.t('sleep.awake_body'), 2500);
-        }
-    });
-
-    // keyboard
-    document.addEventListener('keydown', (e) => {
-        // a focused real terminal/editor needs every key (digits, Escape for vim, Tab…) —
-        // don't let game shortcuts steal them. The app provides its own close button.
-        if (activeApp && activeApp.capturesKeyboard) return;
-
-        // 1-5: change mock biometric state (disabled when WHOOP BLE is streaming live data)
-        if (e.key >= '1' && e.key <= '5') {
-            e.preventDefault();
-            if (!demoHotbar.manualEnabled) {
-                toastSystem.show('warning', '\uD83D\uDD12 ' + i18n.t('toast.live_mode_locked_title'), i18n.t('toast.live_mode_locked'), 3000);
-                return;
-            }
-            applyMockState(parseInt(e.key));
-            return;
-        }
-
-        // Escape always works (closes apps/bubbles even while typing)
-        if (e.key === 'Escape') {
-            if (shortcutsOverlay.visible) { shortcutsOverlay.hide(); return; }
-            if (ghost._bubble) { ghost.dismissBubble(true); return; }
-            closeAllApps();
-            return;
-        }
-
-        // ?: keyboard shortcuts overlay
-        if (e.key === '?') {
-            const t = e.target.tagName;
-            if (t === 'INPUT' || t === 'TEXTAREA' || e.target.isContentEditable) return;
-            e.preventDefault();
-            shortcutsOverlay.toggle();
-            return;
-        }
-
-        // TAB: toggle Beneath the Surface overlay (only when no app is open)
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            if (!activeApp) dashboard.toggle();
-            return;
-        }
-
-        // Don't capture WASD/E when an app overlay is open - let the app handle them
-        if (activeApp) return;
-
-        // Skip game shortcuts while typing in an input field (e.g. HUD search)
-        const tag = e.target.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
-
-        if (e.key.toLowerCase() === 't') {
-            if (sceneManager) {
-                sceneManager.transitionTo(
-                    sceneManager.getCurrentScene() === 'room' ? 'town' : 'room',
-                    { duration: 800 }
-                );
-            }
-            return;
-        }
-
-        if (e.key.toLowerCase() === 'e') {
-            const name = furniture.getNearbyInteractable(player.gridX, player.gridY);
-            if (name) furniture.emit('interact', name);
-        }
+    wireKeyboard({
+        getActiveApp: () => activeApp,
+        getSceneManager: () => sceneManager,
+        demoHotbar, toastSystem, applyMockState,
+        shortcutsOverlay, ghost, dashboard, closeAllApps, furniture, player,
     });
 
     // game loop
     pixiApp.ticker.add((delta) => {
         if (sceneManager) sceneManager.update(delta);
 
-        if (currentGameScene !== 'room') return;
+        if (sceneState.current !== 'room') return;
 
         player.update(delta);
         ghost.update(delta, player.position);
@@ -600,7 +341,7 @@ async function startGame(enableDemo = false) {
         // Screen shake (critical interventions - Fatigue Firewall)
         atmosphere.applyScreenShake(gameContainer);
 
-        // Beneath the Surface: feed screen-space positions for rings + particles
+        // dashboard overlay: feed screen-space positions for rings + particles
         if (dashboard._visible) {
             dashboard.setPositions(
                 {
@@ -663,71 +404,8 @@ async function startGame(enableDemo = false) {
         console.log('[DevLife] Demo mode started - looping through all states');
     }
 
-    // Scene Manager
-    sceneManager = new SceneManager(pixiApp);
-
-    const roomScene = {
-        enter() {
-            pixiApp.stage.addChild(gameContainer);
-            pixiApp.stage.addChild(atmosphere.container);
-            if (hud._el) hud._el.style.display = '';
-            if (demoHotbar._el) demoHotbar._el.style.display = '';
-            currentGameScene = 'room';
-        },
-        exit() {
-            pixiApp.stage.removeChild(gameContainer);
-            pixiApp.stage.removeChild(atmosphere.container);
-            if (hud._el) hud._el.style.display = 'none';
-            if (demoHotbar._el) demoHotbar._el.style.display = 'none';
-            currentGameScene = null;
-        },
-        update(delta) {
-            // Room updates happen in the main ticker
-        },
-    };
-
-    const town = new Town(pixiApp);
-
-    // snap town camera on resize so player doesnt end up in the void
-    window.addEventListener('resize', () => {
-        if (currentGameScene === 'town' && town._player) town.snapCamera();
-    });
-
-    town.onEnterHome = () => {
-        sceneManager.transitionTo('room', { duration: 800 });
-    };
-    town.onEnterCafe = () => {
-        currentGameScene = 'cafe';
-        sceneManager.transitionTo('cafe', { duration: 800 });
-    };
-    town.onEnterCowork = () => {
-        currentGameScene = 'cowork';
-        sceneManager.transitionTo('cowork', { duration: 800 });
-    };
-
-    const cafeScene = new CafeScene(pixiApp);
-    cafeScene.onGhostSay = (msg) => ghost.showSpeechBubble?.({
-        message: msg, priority: 'low', state: ghost._state, buttons: [i18n.t('ghost.btn_nice')], biometric: {},
-    }) || console.log('[ghost]', msg);
-    cafeScene.onExit = () => {
-        town.setSpawnPoint(16, 7);
-        currentGameScene = 'town';
-        sceneManager.transitionTo('town', { duration: 800 });
-    };
-
-    const coworkScene = new CoworkScene(pixiApp);
-    coworkScene.onGhostSay = (msg) => ghost.showSpeechBubble?.({
-        message: msg, priority: 'low', state: ghost._state, buttons: [i18n.t('ghost.btn_nice')], biometric: {},
-    }) || console.log('[ghost]', msg);
-    coworkScene.onExit = () => {
-        town.setSpawnPoint(7, 16);
-        currentGameScene = 'town';
-        sceneManager.transitionTo('town', { duration: 800 });
-    };
-
-    sceneManager.registerScene('room', roomScene);
-    sceneManager.registerScene('town', town);
-    sceneManager.registerScene('cafe', cafeScene);
-    sceneManager.registerScene('cowork', coworkScene);
-    sceneManager.transitionTo('room', { duration: 0 });
+    // Scene Manager (room/town/cafe/cowork) -- see game/scenes.js
+    const scenes = setupScenes({ pixiApp, gameContainer, atmosphere, hud, demoHotbar, ghost, sceneState });
+    sceneManager = scenes.sceneManager;
+    town = scenes.town;
 }

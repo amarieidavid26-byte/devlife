@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Header, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -38,6 +38,7 @@ import lsp_bridge
 import code_server
 
 import persistence.db as db
+from session_report import build_report_html
 from apply_fix.contract import PatchContract
 from apply_fix.validator import validate_patch
 from apply_fix.audit import make_patch_hash, record as audit_record
@@ -353,6 +354,25 @@ async def apply_fix_rollback(body: PatchHashBody):
 async def session_replay(session_id: int = None):
     # the black box: biometric samples + interventions of a session on one timeline
     return db.get_session_timeline(session_id)
+
+
+@app.get("/api/session/report")
+async def session_report(session_id: int = None):
+    # aggregated stats for a session (defaults to the current/latest one)
+    report = db.get_session_report(session_id)
+    if report is None:
+        return JSONResponse(status_code=404, content={"error": "no session found"})
+    return report
+
+
+@app.get("/api/session/report/html")
+async def session_report_html(session_id: int = None, lang: str = "ro"):
+    # self-contained exportable HTML report (inline CSS/SVG, opens offline)
+    report = db.get_session_report(session_id)
+    if report is None:
+        return JSONResponse(status_code=404, content={"error": "no session found"})
+    page = build_report_html(report, lang if lang in ("ro", "en") else "ro")
+    return HTMLResponse(content=page)
 
 
 @app.get("/api/history")

@@ -103,7 +103,7 @@ puncte de mentionat:
 sau arata rapid: `pytest tests/ -v`
 
 puncte:
-- 137 teste, coverage 69% (unit + integration + WS flow + HRV live/RMSSD + dinamica tastarii + calibrare + ghost brain/analyzer cu client Claude stub-uit + session replay + keystroke firewall + firewall anti-drift)
+- 146 teste, coverage 69% (unit + integration + WS flow + HRV live/RMSSD + dinamica tastarii + calibrare + ghost brain/analyzer cu client Claude stub-uit + session replay + keystroke firewall + firewall anti-drift)
 - test_biometric_classifier: clasele de stare cognitive
 - test_apply_fix: contract, validator, lifecycle complet
 - test_ws_flow: conexiune WebSocket end-to-end + handler heart_rate

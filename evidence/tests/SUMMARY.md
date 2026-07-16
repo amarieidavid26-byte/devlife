@@ -4,8 +4,8 @@
 
 | metric | valoare |
 |--------|---------|
-| total teste | 137 (136 pass + 1 skip condiționat) |
-| pass | 136 |
+| total teste | 146 (145 pass + 1 skip condiționat) |
+| pass | 145 |
 | fail | 0 |
 | skip | 1 (test dependent de mediu) |
 | durata totală | ~2s |
@@ -45,6 +45,7 @@
 | `tests/test_keystroke_firewall.py` | 6 | firewall server-side în PTY: Enter înghițit + Ctrl-U pe comenzi riscante, editare cu backspace, Ctrl-C abandon, gate pe stare, paste multi-comandă |
 | `tests/test_firewall_sync.py` | 3 | anti-drift: pattern-urile din Terminal.js trebuie să existe identic în content_analyzer; 10 comenzi periculoase declanșează AMBELE părți |
 | `tests/test_session_replay.py` | 3 | timeline gol pe DB nou, samples + interventions per sesiune, endpoint /api/session/replay |
+| `tests/test_session_report.py` | 9 | agregare (state shares, min/max/avg, fallback la ultima sesiune), HTML RO/EN + escaping XSS, endpoints JSON/HTML + 404, anti-drift culori vs theme.js |
 | `tests/test_fallback.py` | 8 | fallback responses pentru fiecare stare, mock biometrics seed determinist, endpoint /health, /api/biometric/mock, /api/history |
 | `tests/test_server_smoke.py` | 8 | WHOOP callback happy path + error, /ready, port env var, AppState dataclass, get_analyzer factory |
 | `tests/test_ws_flow.py` | 8 | WebSocket connect + first biometric_update, mock_state, invalid JSON ignored, content_update accepted, feedback accepted, heart_rate accepted/out-of-range/wrong-type |

@@ -1,0 +1,30 @@
+{
+  "name": "devlife-bridge",
+  "displayName": "DevLife Bridge",
+  "description": "Streams real editor context to the DevLife biometric ghost -- interventions land as VS Code notifications, your cognitive state lives in the status bar",
+  "version": "0.1.0",
+  "publisher": "devlife",
+  "license": "MIT",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "DevLife",
+      "properties": {
+        "devlife.backendUrl": {
+          "type": "string",
+          "default": "ws://localhost:8000/ws",
+          "description": "WebSocket URL of the DevLife backend"
+        }
+      }
+    },
+    "commands": [
+      { "command": "devlife.reconnect", "title": "DevLife: Reconnect" }
+    ]
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

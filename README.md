@@ -27,11 +27,13 @@ ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza ac
 - **dinamica tastarii** — stres si oboseala estimate din ritmul tastarii (intervale intre taste, rata de backspace, pauze) fata de baseline-ul tau personal — functioneaza **fara niciun wearable**. confidentialitate: se trimit doar intervale si categorii, niciodata ce tastezi. fuziune: pulsul real > tastare > sumar WHOOP > mock
 - **calibrare personala persistenta** — baseline-urile tale (ritm de tastare, HR de repaus, HRV de referinta) se salveaza in SQLite si se incarca la pornire; din a doua sesiune sistemul te compara cu TINE, nu cu valori hardcodate
 - **session replay** — fiecare sesiune e inregistrata in SQLite (sample-uri biometrice + interventii); dashboard-ul are un timeline colorat pe stari prin care poti face scrub: "aici am obosit, aici ghost-ul m-a oprit din force push"
+- **raport de sesiune exportabil** — `GET /api/session/report/html` genereaza un raport HTML self-contained (CSS + SVG inline, se deschide offline): distributia starilor, puls min/max/mediu, timeline colorat pe stare cu tick-uri pe interventii, tabelul interventiilor. RO/EN prin `?lang=`
 - **personalitate ghost** — antrenor strict / prieten cald / sarcastic, din Settings; schimba tonul interventiilor AI
 - **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback (buton Revert pe toast)
 - **desk code runner** — butonul Run executa Python (Pyodide) si JavaScript (Web Worker) in sandbox; runtime errors merg la ghost prin flow-ul apply-fix. detalii in `docs/desk-code-runner.md`
 - **sleep mode** — dai jos wearable-ul si camera se intuneca automat
 - **demo offline** — fara backend, biometricele sunt simulate client-side: starile (1-5), HUD-ul, ghost-ul si ECG-ul functioneaza complet (doar replicile AI ale ghost-ului au nevoie de backend)
+- **extensie VS Code (DevLife Bridge)** — acelasi protocol WS, dar cu contextul REAL din editorul tau: ghost-ul analizeaza codul pe care il scrii efectiv, interventiile apar ca notificari VS Code, starea cognitiva sta in status bar. DevLife devine utilitar real, nu doar joc. detalii in `vscode-extension/README.md`
 
 ## public tinta
 
@@ -84,6 +86,7 @@ devlife/
 ├── ws_game.py            # handler-ele mesajelor WS de joc (dispatch map, seam de extensie)
 ├── biometric_engine.py   # WHOOP OAuth, clasificare stari, RMSSD/HRV live din RR
 ├── keystroke_dynamics.py # stres/oboseala din ritmul tastarii (semnal zero-hardware)
+├── session_report.py     # raport HTML de sesiune, self-contained (CSS+SVG inline)
 ├── ghost_brain.py        # decizia de interventie, prompturi per stare, personalitati
 ├── content_analyzer.py   # analiza continutului din app-uri + detectie instant comenzi riscante
 ├── terminal_pty.py       # sesiune PTY reala + KeystrokeFirewall (firewall server-side)
@@ -95,20 +98,22 @@ devlife/
 ├── fallback_responses.py # replici ghost pre-scrise (RO/EN) cand Claude nu raspunde
 ├── apply_fix/            # contract Pydantic + validator + audit pentru patch-uri
 ├── persistence/          # SQLite (WAL) + migratii: sesiuni, interventii, replay
-├── tests/                # 137 teste pytest
+├── tests/                # 146 teste pytest
 ├── frontend/
 │   └── src/
-│       ├── main.js       # bootstrap joc + wiring evenimente
+│       ├── main.js       # bootstrap PIXI + lumea camerei + game loop
+│       ├── game/         # wiring: socketHandlers, keyboard, scenes, BLE, apply-fix flow
 │       ├── theme.js      # paleta per stare (sursa unica)
 │       ├── room/         # camera izometrica procedurala (Room, Furniture, Plant, Atmosphere)
 │       ├── character/    # Player + Ghost
 │       ├── town/         # scenele exterioare (Town, Cafe, Cowork)
 │       ├── apps/         # Monaco editor, terminal xterm, browser, notes, chat + runners
-│       ├── hud/          # HUD biometric, dashboard, toasts, scurtaturi
-│       ├── network/      # WebSocket, BLE (RR intervals), Spotify, sesiune
+│       ├── hud/          # HUD biometric, dashboard/ (ECG, sparkline, replay), toasts
+│       ├── network/      # WebSocket, BLE (RR intervals), KeystrokeCapture, Spotify
 │       ├── audio/        # sunete sintetizate procedural (Web Audio)
 │       ├── demo/         # secventa demo cinematica
-│       └── i18n/         # RO/EN (503 chei, paritate garantata)
+│       └── i18n/         # RO/EN (524 chei, paritate garantata)
+├── vscode-extension/     # DevLife Bridge: contextul real din VS Code -> acelasi backend
 ├── docs/                 # arhitectura, securitate, demo playbook, pozitionare
 ├── evidence/             # teste, licente, screenshots, team-process
 └── scripts/              # setup, dev, run-tests, healthcheck
@@ -128,7 +133,7 @@ vezi `docs/install-runbook.md` pentru setup complet cu .env.
 ## teste
 
 ```bash
-./scripts/run-tests.sh    # 137 teste + junit.xml + coverage HTML in evidence/tests/
+./scripts/run-tests.sh    # 146 teste + junit.xml + coverage HTML in evidence/tests/
 ```
 
 unit + integration: clasificator biometric, RMSSD/HRV live, dinamica tastarii (features + fuziune in clasificator), contract Apply Fix, keystroke firewall (PTY), sincronizare pattern-uri firewall frontend/backend, session replay, flux WebSocket end-to-end, security jail. detalii in `evidence/tests/SUMMARY.md`.

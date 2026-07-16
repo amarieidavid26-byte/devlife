@@ -108,6 +108,63 @@ def save_biometric(hr: float, hrv: float, recovery: float, strain: float, source
     conn.commit()
 
 
+# session report: aggregated stats for one session (consumed by /api/session/report
+# and the exportable HTML report)
+
+def get_session_report(session_id: int = None) -> Optional[dict]:
+    conn = connect()
+    sid = session_id or _current_session_id
+    if sid is None:
+        row = conn.execute("SELECT id FROM sessions ORDER BY id DESC LIMIT 1").fetchone()
+        if row is None:
+            return None
+        sid = row["id"]
+
+    session = conn.execute("SELECT * FROM sessions WHERE id = ?", (sid,)).fetchone()
+    if session is None:
+        return None
+
+    samples = conn.execute(
+        "SELECT ts, hr, hrv, recovery, strain, source, state FROM biometric_samples "
+        "WHERE session_id = ? ORDER BY ts", (sid,)).fetchall()
+    interventions = conn.execute(
+        "SELECT ts, state, source, claude_text, fallback_used FROM interventions "
+        "WHERE session_id = ? ORDER BY ts", (sid,)).fetchall()
+
+    # each sample is one ~5s loop cycle, so counting samples per state ~ time share
+    states, sources = {}, {}
+    hrs, hrvs = [], []
+    for s in samples:
+        if s["state"]:
+            states[s["state"]] = states.get(s["state"], 0) + 1
+        if s["source"]:
+            sources[s["source"]] = sources.get(s["source"], 0) + 1
+        if s["hr"]:
+            hrs.append(s["hr"])
+        if s["hrv"]:
+            hrvs.append(s["hrv"])
+
+    ended = session["ended_at"] or (samples[-1]["ts"] if samples else session["started_at"])
+    total = len(samples)
+    return {
+        "session_id": sid,
+        "started_at": session["started_at"],
+        "ended_at": session["ended_at"],
+        "duration_min": round((ended - session["started_at"]) / 60, 1),
+        "mode": session["mode"],
+        "whoop_connected": bool(session["whoop_connected"]),
+        "samples_count": total,
+        "state_shares": {k: round(v / total, 3) for k, v in states.items()} if total else {},
+        "sources": sources,
+        "hr": {"min": round(min(hrs)), "max": round(max(hrs)),
+               "avg": round(sum(hrs) / len(hrs))} if hrs else None,
+        "hrv": {"min": round(min(hrvs), 1), "max": round(max(hrvs), 1),
+                "avg": round(sum(hrvs) / len(hrvs), 1)} if hrvs else None,
+        "interventions": [dict(i) for i in interventions],
+        "timeline": [{"ts": s["ts"], "hr": s["hr"], "state": s["state"]} for s in samples],
+    }
+
+
 # calibration: personal baselines (typing rhythm, HR, HRV) that survive restarts
 
 def get_calibration(key: str, default: float = None) -> Optional[float]:
