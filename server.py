@@ -25,7 +25,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
 from config import (
-    CLAUDE_API_KEY, HOST, PORT as _CONFIG_PORT,
+    HOST, PORT as _CONFIG_PORT,
     GAME_MODE, WHOOP_REDIRECT_URI, ALLOWED_ORIGINS, DEMO_OFFLINE,
     WORKSPACE_ROOT, TERMINAL_ENABLED, FILES_ENABLED, LSP_ENABLED, INLINE_AI_ENABLED,
     CODE_SERVER_ENABLED,
@@ -49,6 +49,7 @@ from runtime import (
     bio, mock, brain, tracker, content_analyzer, capture, inline_completer,
     get_analyzer, broadcast_sync, build_biometric_msg,
     load_calibration, save_calibration,
+    apply_settings, effective_setting, setting_source, SETTINGS_ENV_DEFAULTS,
 )
 from loops import biometric_loop, ghost_loop
 from ws_game import WS_HANDLERS
@@ -60,6 +61,13 @@ limiter = Limiter(key_func=get_remote_address)
 
 class MockStateBody(BaseModel):
     state: int = Field(..., ge=1, le=5)
+
+
+class SettingsBody(BaseModel):
+    # None = leave untouched, "" = clear (fall back to .env), value = set
+    claude_api_key: str = Field(None, max_length=500)
+    whoop_client_id: str = Field(None, max_length=200)
+    whoop_client_secret: str = Field(None, max_length=500)
 
 
 class FeedbackBody(BaseModel):
@@ -79,6 +87,10 @@ async def lifespan(app: FastAPI):
         mode="game" if GAME_MODE else "desktop",
         whoop_connected=bool(bio.access_token),
     )
+    try:
+        apply_settings()
+    except Exception as e:
+        logger.warning("settings load failed: %s", e)
     try:
         load_calibration()
     except Exception as e:
@@ -261,7 +273,7 @@ async def health():
 @app.get("/ready")
 async def ready():
     reasons = []
-    if not CLAUDE_API_KEY and not DEMO_OFFLINE:
+    if not effective_setting("claude_api_key") and not DEMO_OFFLINE:
         reasons.append("CLAUDE_API_KEY missing")
     try:
         from persistence.db import connect
@@ -373,6 +385,40 @@ async def session_report_html(session_id: int = None, lang: str = "ro"):
         return JSONResponse(status_code=404, content={"error": "no session found"})
     page = build_report_html(report, lang if lang in ("ro", "en") else "ro")
     return HTMLResponse(content=page)
+
+
+def _settings_status():
+    # masked view only: source + last 4 chars, the full value never leaves the backend
+    out = {}
+    for key in SETTINGS_ENV_DEFAULTS:
+        value = effective_setting(key)
+        out[key] = {
+            "configured": bool(value),
+            "source": setting_source(key),
+            "hint": ("…" + value[-4:]) if len(value) >= 8 else None,
+        }
+    return out
+
+
+@app.get("/api/settings", dependencies=[Depends(require_token)])
+async def get_settings():
+    return _settings_status()
+
+
+@app.post("/api/settings", dependencies=[Depends(require_token)])
+async def post_settings(body: SettingsBody):
+    for key in SETTINGS_ENV_DEFAULTS:
+        value = getattr(body, key)
+        if value is None:
+            continue
+        value = value.strip()
+        if value:
+            db.set_setting(key, value)
+        else:
+            db.delete_setting(key)
+    apply_settings()
+    logger.info("settings updated via api")
+    return _settings_status()
 
 
 @app.get("/api/history")

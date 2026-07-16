@@ -51,6 +51,9 @@ class GhostBrain:
         self.ignored_count = 0
         self.accepted_count = 0
 
+    def set_api_key(self, api_key):
+        self.client = anthropic.Anthropic(api_key=api_key, timeout=self.CLAUDE_TIMEOUT_SECONDS)
+
     # system prompts for each bio state
     # i wrote these based on what i learned about HRV and stress from the whoop docs
     # and some papers i found (yerkes-dodson, flow state research etc)

@@ -1,5 +1,6 @@
 import { i18n } from '../i18n/index.js';
 import { Spotify } from '../network/Spotify.js';
+import { openApiKeysModal } from '../hud/ApiKeysModal.js';
 
 const KEYBINDS = [
   ['WASD', 'settings.kb_move'],
@@ -119,6 +120,26 @@ export class SettingsMenu {
       this._renderSpotifyRow();
       this._spotifyUnsub = Spotify.onChange(() => this._renderSpotifyRow());
     }
+
+    // API keys (BYOK) section — opens the shared modal, same one as the dashboard topbar
+    panel.appendChild(this._sectionLabel(i18n.t('apikeys.title')));
+    const keysRow = this._row();
+    keysRow.style.gap = '12px';
+    const keysNote = document.createElement('div');
+    keysNote.textContent = i18n.t('apikeys.privacy');
+    keysNote.style.cssText = "flex:1; font-family:'Nunito',sans-serif; font-size:11px; color:#888; line-height:1.5;";
+    const keysBtn = document.createElement('button');
+    keysBtn.textContent = i18n.t('apikeys.manage');
+    keysBtn.style.cssText = `padding:8px 16px;background:rgba(255,255,255,0.05);
+      color:#00c864;border:1px solid #00c864;border-radius:4px;cursor:pointer;
+      font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;flex-shrink:0;
+      transition:background 0.15s;`;
+    keysBtn.addEventListener('mouseenter', () => { keysBtn.style.background = 'rgba(0,200,100,0.13)'; });
+    keysBtn.addEventListener('mouseleave', () => { keysBtn.style.background = 'rgba(255,255,255,0.05)'; });
+    keysBtn.addEventListener('click', () => openApiKeysModal());
+    keysRow.appendChild(keysNote);
+    keysRow.appendChild(keysBtn);
+    panel.appendChild(keysRow);
 
     // language section
     panel.appendChild(this._sectionLabel(i18n.t('settings.language')));

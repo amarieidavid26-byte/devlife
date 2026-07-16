@@ -395,6 +395,22 @@ permis explicit (`security.py::check_origin` — clientii non-browser se bazeaza
 pentru endpoint-urile privilegiate; extensia foloseste doar endpoint-ul de joc, neprivilegiat).
 Asta muta DevLife din "joc cu editor" in "utilitar care functioneaza in editorul tau real".
 
+### subsistem: chei API din aplicatie (BYOK)
+
+Panoul "Chei API" (accesibil din meniul Settings si din topbar-ul dashboard-ului,
+componenta partajata `ApiKeysModal.js`) scrie in tabelul `settings` (migratia 004) prin
+`POST /api/settings`; utilizatorul isi aduce propria cheie Claude si credentialele WHOOP
+fara sa editeze `.env`. Precedenta: valoarea din aplicatie > `.env`, iar stergerea unei
+valori revine automat la `.env`. `runtime.apply_settings()` re-aplica cheile pe clientii
+deja construiti (`set_api_key` pe GhostBrain / ContentAnalyzer / InlineCompleter /
+VisionAnalyzer + credentialele pe BiometricEngine), deci schimbarea are efect instant,
+fara restart. Securitate: ambele endpoint-uri cer session token-ul per-proces
+(`X-DevLife-Token`), raspunsurile sunt mascate (sursa + ultimele 4 caractere, valoarea
+completa nu paraseste niciodata backend-ul), valorile nu se logheaza, iar stocarea e
+SQLite-ul local — cheile raman pe masina utilizatorului. Asta pastreaza povestea
+local-first si pregateste terenul pentru multi-user (roadmap): acelasi panou devine
+profilul utilizatorului cand apar conturi.
+
 ## decizii arhitecturale cheie
 
 | decizie | alternativa | motiv ales |

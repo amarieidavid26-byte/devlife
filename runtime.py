@@ -91,6 +91,49 @@ def save_calibration():
         db.set_calibration("typing_err", bio.keystrokes.baseline_err)
 
 
+# in-app settings: API keys pasted in the dashboard override .env, live in the local
+# SQLite only, and are re-applied to the already-constructed clients without a restart
+
+SETTINGS_ENV_DEFAULTS = {
+    "claude_api_key": CLAUDE_API_KEY,
+    "whoop_client_id": WHOOP_CLIENT_ID,
+    "whoop_client_secret": WHOOP_CLIENT_SECRET,
+}
+
+_effective_settings = dict(SETTINGS_ENV_DEFAULTS)
+
+
+def effective_setting(key):
+    return _effective_settings.get(key, "")
+
+
+def setting_source(key):
+    import persistence.db as db
+    if db.get_setting(key):
+        return "app"
+    if SETTINGS_ENV_DEFAULTS.get(key):
+        return "env"
+    return None
+
+
+def apply_settings():
+    import persistence.db as db
+    for key, env_val in SETTINGS_ENV_DEFAULTS.items():
+        _effective_settings[key] = db.get_setting(key) or env_val
+
+    claude_key = _effective_settings["claude_api_key"]
+    content_analyzer.set_api_key(claude_key)
+    brain.set_api_key(claude_key)
+    inline_completer.set_api_key(claude_key)
+    if vision:
+        vision.set_api_key(claude_key)
+    bio.client_id = _effective_settings["whoop_client_id"]
+    bio.client_secret = _effective_settings["whoop_client_secret"]
+    logger.info("settings applied: claude_key=%s whoop_creds=%s",
+                "set" if claude_key else "missing",
+                "set" if bio.client_id else "missing")
+
+
 @dataclass
 class AppState:
     connected_clients: list = field(default_factory=list)

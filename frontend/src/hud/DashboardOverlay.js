@@ -10,6 +10,7 @@ import { ensureInfoPanel } from './InfoPanel.js';
 import { i18n } from '../i18n/index.js';
 import { STATE_COLORS_CSS as STATE_COLORS } from '../theme.js';
 import { CONFIG } from '../config.js';
+import { openApiKeysModal } from './ApiKeysModal.js';
 import { injectStyles } from './dashboard/styles.js';
 import { buildDashboardDOM } from './dashboard/template.js';
 import { ECGRenderer } from './dashboard/ECGRenderer.js';
@@ -77,6 +78,7 @@ export class DashboardOverlay {
         this._spark = new SparklineRenderer($.sparkCanvas);
         this._replay = new ReplayPanel($.replayCanvas, $.replayReadout);
         this._setExportLink();
+        this._wireSettings();
 
         this._ecg.resize();
         this._spark.resize();
@@ -358,4 +360,12 @@ export class DashboardOverlay {
     }
 
     _escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+    // "API keys" shortcut in the topbar — the modal itself is shared with the settings menu
+    _wireSettings() {
+        this._$.settingsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openApiKeysModal();
+        });
+    }
 }

@@ -183,6 +183,30 @@ def set_calibration(key: str, value: float):
     conn.commit()
 
 
+# settings: API keys configured in-app; values never leave the local db
+
+def get_setting(key: str, default: str = None) -> Optional[str]:
+    conn = connect()
+    row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
+def set_setting(key: str, value: str):
+    conn = connect()
+    conn.execute(
+        "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) "
+        "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+        (key, str(value), time.time()),
+    )
+    conn.commit()
+
+
+def delete_setting(key: str):
+    conn = connect()
+    conn.execute("DELETE FROM settings WHERE key = ?", (key,))
+    conn.commit()
+
+
 # session replay: the black-box recording of a coding session
 
 def get_session_timeline(session_id: int = None) -> dict:

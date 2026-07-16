@@ -54,6 +54,10 @@ class InlineCompleter:
         self.enabled = bool(key)
         self.client = anthropic.AsyncAnthropic(api_key=key, timeout=INLINE_TIMEOUT) if self.enabled else None
 
+    def set_api_key(self, api_key):
+        self.enabled = bool(api_key)
+        self.client = anthropic.AsyncAnthropic(api_key=api_key, timeout=INLINE_TIMEOUT) if self.enabled else None
+
     async def stream(self, prefix: str, suffix: str, language: str, path: str = "",
                      state: str = "RELAXED", estimated_stress: float = 0.0):
         """Yield completion text chunks, tuned to the developer's cognitive state.

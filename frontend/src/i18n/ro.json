@@ -555,5 +555,22 @@
   "firewall.blocked_line": "blocat: {cmd}",
   "firewall.do_anyway": "Rulează oricum",
   "firewall.cancel": "Anulează",
-  "firewall.cancelled": "Comandă blocată de firewall-ul ghost."
+  "firewall.cancelled": "Comandă blocată de firewall-ul ghost.",
+
+  "apikeys.button": "Chei API",
+  "apikeys.manage": "Configurează cheile",
+  "apikeys.title": "Chei API",
+  "apikeys.privacy": "Cheile se salvează local în SQLite și se aplică instant — nu părăsesc niciodată mașina ta.",
+  "apikeys.claude_key": "Cheie API Claude",
+  "apikeys.whoop_id": "WHOOP Client ID",
+  "apikeys.whoop_secret": "WHOOP Client Secret",
+  "apikeys.keep_hint": "Lasă un câmp gol ca să păstrezi valoarea curentă.",
+  "apikeys.save": "Salvează",
+  "apikeys.close": "Închide",
+  "apikeys.saved": "Salvat — aplicat instant, fără restart.",
+  "apikeys.error": "Salvarea a eșuat — rulează backend-ul?",
+  "apikeys.source_env": "din .env",
+  "apikeys.source_app": "setată în aplicație",
+  "apikeys.not_set": "nesetată",
+  "apikeys.clear": "Șterge cheia salvată în aplicație (revine la .env)"
 }

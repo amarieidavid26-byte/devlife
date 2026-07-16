@@ -101,6 +101,9 @@ Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
         self.last_analysis_time = 0
         self.content_history = {}
 
+    def set_api_key(self, api_key):
+        self.client = Anthropic(api_key=api_key, timeout=self.CLAUDE_TIMEOUT_SECONDS)
+
     def detect_risky_commands(self, content):
         # check if content has any dangerous commands, returns before hitting the api
         for pattern, description in RISKY_COMMAND_PATTERNS:

@@ -555,5 +555,22 @@
   "firewall.blocked_line": "blocked: {cmd}",
   "firewall.do_anyway": "Do it anyway",
   "firewall.cancel": "Cancel",
-  "firewall.cancelled": "Command blocked by the ghost firewall."
+  "firewall.cancelled": "Command blocked by the ghost firewall.",
+
+  "apikeys.button": "API keys",
+  "apikeys.manage": "Manage keys",
+  "apikeys.title": "API keys",
+  "apikeys.privacy": "Keys are stored locally in SQLite and applied instantly — they never leave your machine.",
+  "apikeys.claude_key": "Claude API key",
+  "apikeys.whoop_id": "WHOOP Client ID",
+  "apikeys.whoop_secret": "WHOOP Client Secret",
+  "apikeys.keep_hint": "Leave a field empty to keep its current value.",
+  "apikeys.save": "Save",
+  "apikeys.close": "Close",
+  "apikeys.saved": "Saved — applied instantly, no restart needed.",
+  "apikeys.error": "Save failed — is the backend running?",
+  "apikeys.source_env": "from .env",
+  "apikeys.source_app": "set in app",
+  "apikeys.not_set": "not set",
+  "apikeys.clear": "Remove the key saved in app (falls back to .env)"
 }

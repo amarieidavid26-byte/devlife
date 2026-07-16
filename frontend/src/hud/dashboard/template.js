@@ -13,6 +13,9 @@ export function buildDashboardDOM() {
         <div class="topbar-logo">DEVLIFE <span id="dov-topbar-accent">&times;</span> GHOST</div>
         <div class="topbar-clock" id="dov-clock">--:--:--</div>
         <div class="topbar-right">
+            <a id="dov-settings-btn" href="#"
+               style="color:#B8A88C;text-decoration:none;border:1px solid rgba(255,228,181,0.2);border-radius:4px;padding:3px 8px">
+               &#9881; <span data-i18n="apikeys.button">API keys</span></a>
             <a id="dov-export" href="#" target="_blank" rel="noopener"
                style="color:#B8A88C;text-decoration:none;border:1px solid rgba(255,228,181,0.2);border-radius:4px;padding:3px 8px">
                &#10515; <span data-i18n="dashboard.export_report">Export report</span></a>
@@ -186,6 +189,7 @@ export function buildDashboardDOM() {
         dash:         root.querySelector('#dov-dash'),
         clock:        root.querySelector('#dov-clock'),
         exportBtn:    root.querySelector('#dov-export'),
+        settingsBtn:  root.querySelector('#dov-settings-btn'),
         sessionDot:   root.querySelector('#dov-session-dot'),
         sessionLabel: root.querySelector('#dov-session-label'),
         sessionTimer: root.querySelector('#dov-session-timer'),

@@ -28,6 +28,7 @@ ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza ac
 - **calibrare personala persistenta** — baseline-urile tale (ritm de tastare, HR de repaus, HRV de referinta) se salveaza in SQLite si se incarca la pornire; din a doua sesiune sistemul te compara cu TINE, nu cu valori hardcodate
 - **session replay** — fiecare sesiune e inregistrata in SQLite (sample-uri biometrice + interventii); dashboard-ul are un timeline colorat pe stari prin care poti face scrub: "aici am obosit, aici ghost-ul m-a oprit din force push"
 - **raport de sesiune exportabil** — `GET /api/session/report/html` genereaza un raport HTML self-contained (CSS + SVG inline, se deschide offline): distributia starilor, puls min/max/mediu, timeline colorat pe stare cu tick-uri pe interventii, tabelul interventiilor. RO/EN prin `?lang=`
+- **chei API din aplicatie (BYOK)** — panoul "Chei API" din dashboard: iti pui cheia Claude si credentialele WHOOP direct din UI, fara sa editezi `.env`; se salveaza in SQLite-ul local (niciodata pe alt server), se aplica instant fara restart, iar API-ul returneaza doar ultimele 4 caractere (endpoint protejat cu session token)
 - **personalitate ghost** — antrenor strict / prieten cald / sarcastic, din Settings; schimba tonul interventiilor AI
 - **apply fix** — ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback (buton Revert pe toast)
 - **desk code runner** — butonul Run executa Python (Pyodide) si JavaScript (Web Worker) in sandbox; runtime errors merg la ghost prin flow-ul apply-fix. detalii in `docs/desk-code-runner.md`
@@ -98,7 +99,7 @@ devlife/
 ├── fallback_responses.py # replici ghost pre-scrise (RO/EN) cand Claude nu raspunde
 ├── apply_fix/            # contract Pydantic + validator + audit pentru patch-uri
 ├── persistence/          # SQLite (WAL) + migratii: sesiuni, interventii, replay
-├── tests/                # 146 teste pytest
+├── tests/                # 151 teste pytest
 ├── frontend/
 │   └── src/
 │       ├── main.js       # bootstrap PIXI + lumea camerei + game loop
@@ -133,7 +134,7 @@ vezi `docs/install-runbook.md` pentru setup complet cu .env.
 ## teste
 
 ```bash
-./scripts/run-tests.sh    # 146 teste + junit.xml + coverage HTML in evidence/tests/
+./scripts/run-tests.sh    # 151 teste + junit.xml + coverage HTML in evidence/tests/
 ```
 
 unit + integration: clasificator biometric, RMSSD/HRV live, dinamica tastarii (features + fuziune in clasificator), contract Apply Fix, keystroke firewall (PTY), sincronizare pattern-uri firewall frontend/backend, session replay, flux WebSocket end-to-end, security jail. detalii in `evidence/tests/SUMMARY.md`.

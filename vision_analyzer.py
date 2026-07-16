@@ -58,6 +58,9 @@ class VisionAnalyzer:
     def __init__(self, api_key):
         self.client = anthropic.Anthropic(api_key = api_key)
         self.last_analysis = None
+
+    def set_api_key(self, api_key):
+        self.client = anthropic.Anthropic(api_key = api_key)
     
     def analyze(self, screenshots_b64, context_history = None):
         """
