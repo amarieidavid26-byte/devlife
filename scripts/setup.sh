@@ -7,7 +7,7 @@ if [ ! -d "venv" ]; then
     python3 -m venv venv
 fi
 source venv/bin/activate
-pip install -r requirements.txt -q
+python3 -m pip install -r requirements.txt -q
 
 echo "[setup] frontend deps..."
 cd frontend && npm install --silent && cd ..

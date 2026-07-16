@@ -215,10 +215,11 @@ Generate a Ghost intervention. Be concise. Match the personality for {biometric_
                 model = VISION_MODEL,
                 max_tokens = modifiers.get("max_tokens", GHOST_MAX_TOKENS_DEFAULT),
                 system = system,
+                thinking = {"type": "disabled"},
                 messages = [{"role": "user", "content": user_msg}]
             )
 
-            return response.content[0].text
+            return next((b.text for b in response.content if b.type == "text"), None)
         except Exception as e:
             logger.error("Claude API error: %s", e)
             return None

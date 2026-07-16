@@ -189,10 +189,11 @@ Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
                 model = VISION_MODEL,
                 max_tokens = VISION_MAX_TOKENS,
                 system = system_prompt,
+                thinking = {"type": "disabled"},
                 messages = [{"role": "user", "content": user_msg}]
             )
 
-            text = response.content[0].text
+            text = next(b.text for b in response.content if b.type == "text")
             if text.startswith("```"):
                 text = text.split("\n", 1)[1]
                 if text.endswith("```"):

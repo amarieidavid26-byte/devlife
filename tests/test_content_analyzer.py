@@ -25,7 +25,7 @@ class _StubMessages:
         self.calls.append(kwargs)
         if self._exc:
             raise self._exc
-        return SimpleNamespace(content=[SimpleNamespace(text=self._text)])
+        return SimpleNamespace(content=[SimpleNamespace(type="text", text=self._text)])
 
 
 def _analyzer(text=json.dumps(VALID), exc=None):

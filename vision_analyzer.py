@@ -104,12 +104,13 @@ class VisionAnalyzer:
         response = self.client.messages.create(
             model = VISION_MODEL,
             max_tokens = VISION_MAX_TOKENS,
-            system = VISION_SYSTEM_PROMPT, 
+            system = VISION_SYSTEM_PROMPT,
+            thinking = {"type": "disabled"},
             messages =  [{"role": "user", "content": content}]
         )
 
-        try: 
-            text = response.content[0].text.strip()
+        try:
+            text = next((b.text for b in response.content if b.type == "text"), "").strip()
 
             if text.startswith("```"):
                 text = text.split("\n", 1)[1].rsplit("```", 1)[0]

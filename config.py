@@ -32,7 +32,7 @@ HASH_THRESHOLD = 5
 
 # ghost iq
 INTERVENTION_COOLDOWN = 30
-VISION_MODEL = "claude-sonnet-4-20250514"
+VISION_MODEL = "claude-sonnet-5"
 # Big enough that code_suggestion can carry the COMPLETE corrected file (Apply Fix replaces the
 # whole file). At 500 the JSON truncated on full-file fixes -> parse failed -> no Apply Fix button.
 VISION_MAX_TOKENS = 2048
