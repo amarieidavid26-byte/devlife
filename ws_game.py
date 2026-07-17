@@ -133,8 +133,11 @@ async def _ws_keystrokes(ws, data):
 async def _ws_run_error(ws, data):
     # user clicked Run in the desk code editor and got a runtime error
     # bypass the pending_content loop -- this is an explicit, user-initiated event
-    code = (data.get("code") or "")[:50000]
-    error = (data.get("error") or "")[:50000]
+    code = data.get("code")
+    error = data.get("error")
+    if not isinstance(code, str) or not isinstance(error, str):
+        return
+    code, error = code[:50000], error[:50000]
     lang = data.get("language") or "python"
     if not isinstance(lang, str) or len(lang) > 50:
         lang = "python"

@@ -4,6 +4,8 @@
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from content_analyzer import ContentAnalyzer
 
 
@@ -70,19 +72,27 @@ def test_invalid_json_returns_safe_default():
     assert out["suggested_intervention"] is None
 
 
-def test_api_error_returns_last_analysis():
+def test_api_error_raises_instead_of_faking_all_clear():
+    """A dead Claude API must fail LOUD. It used to return a benign 'nothing is wrong'
+    dict, so the ghost went silent, the loops.py fallback handler was unreachable, and
+    the plant GREW (+10) -- the UI signalled health while the AI brain was dead. The
+    caller (loops.py / ws_game.py) is wrapped and turns the raise into a fallback line."""
     a = _analyzer()
-    first = a.analyze("code", "x = 1")
+    a.analyze("code", "x = 1")                       # one good analysis in history
     a.client.messages._exc = RuntimeError("api down")
-    out = a.analyze("code", "y = 2")
-    assert out == first
+    with pytest.raises(RuntimeError):
+        a.analyze("code", "y = 2")
 
 
-def test_api_error_without_history_returns_default():
-    a = _analyzer(exc=RuntimeError("api down"))
-    out = a.analyze("chat", "hello team")
-    assert out["app"] == "chat"
-    assert out["activity"] == "unknown"
+def test_api_error_does_not_replay_a_stale_analysis():
+    """`return self.last_analysis or {...}` would replay a real prior verdict about
+    DIFFERENT content -- potentially re-firing a stale intervention. Raising prevents it."""
+    a = _analyzer(text=json.dumps({"app": "code", "risky_action": True,
+                                   "risky_description": "force push"}))
+    a.analyze("code", "git push --force")            # a real risky verdict is now cached
+    a.client.messages._exc = RuntimeError("api down")
+    with pytest.raises(RuntimeError):
+        a.analyze("code", "totally different safe content")
 
 
 def test_unchanged_content_flags_stuck_in_prompt():

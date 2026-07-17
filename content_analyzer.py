@@ -223,17 +223,11 @@ Risky = rm -rf, sudo rm, force push, DROP TABLE, chmod 777""",
             }
             return self.last_analysis
         except Exception as e:
+            # NU inghiti esecul API-ului intr-un verdict "totul e bine". Pana acum, cand
+            # Claude pica (model retras -> 404, 401, 429, retea), analyze() returna un dict
+            # benign, apelantul din loops.py nu prindea nicio exceptie, ghost-ul tacea si
+            # planta CRESTEA (+10) -- UI-ul spunea "merge grozav" cu creierul AI mort, iar
+            # handler-ul de fallback dinadins scris pentru asta era cod mort. Ridicam
+            # exceptia ca sa ruleze fallback-ul (replica pregatita + fara crestere planta).
             logger.warning("analysis failed: %s", e)
-            return self.last_analysis or {
-                "app": app_type,
-                "activity": "unknown",
-                "stuck_probability": 0.0,
-                "stuck_reason": None,
-                "mistake_detected": False,
-                "mistake_description": None,
-                "help_opportunity": None,
-                "risky_action": False,
-                "risky_description": None,
-                "suggested_intervention": None,
-                "context_summary": f"User is using {app_type}"
-            }
+            raise

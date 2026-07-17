@@ -63,6 +63,17 @@ async def test_history_endpoint_returns_list():
 
 
 @pytest.mark.asyncio
+async def test_history_negative_limit_does_not_dump_the_whole_table():
+    """limit=-1 became SQLite LIMIT -1 (unbounded) -- a client could pull every
+    intervention ever recorded in one request."""
+    import server
+    async with AsyncClient(transport=ASGITransport(app=server.app), base_url="http://test") as client:
+        resp = await client.get("/api/history", params={"limit": -1})
+    assert resp.status_code == 200
+    assert len(resp.json()["interventions"]) <= 200
+
+
+@pytest.mark.asyncio
 async def test_mock_state_endpoint_validates_range():
     import server
     async with AsyncClient(transport=ASGITransport(app=server.app), base_url="http://test") as client:

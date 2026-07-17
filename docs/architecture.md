@@ -359,8 +359,21 @@ tastele utilizatorului ──WS──> KeystrokeFirewall (terminal_pty.py)
 
 Cele doua straturi sunt tinute sincron printr-un test anti-drift (`test_firewall_sync.py`)
 care parseaza pattern-urile din `Terminal.js` si le compara cu `content_analyzer.py`.
-Limitare documentata: comenzile rechemate din istoricul shell-ului (sageata sus) sosesc ca
-secvente escape, nu ca taste — mirror-ul se reseteaza pe ESC ca sa evite match-uri false.
+
+**Oglinda nu poate reproduce complet line editor-ul shell-ului, deci refuza sa ghiceasca.**
+`KeystrokeFirewall` parseaza secventele escape in loc sa se reseteze pe ESC:
+
+| gest | ce face oglinda | de ce |
+|---|---|---|
+| sageti / Home / End (`ESC [ C`, `ESC [ D`, …) | pastreaza linia | cursorul se muta, textul nu se schimba |
+| paste in paranteze (`ESC [ 200~ … ESC [ 201~`) | baga continutul in oglinda | textul lipit **este** cunoscut, deci se inspecteaza normal |
+| istoric (sageata sus/jos, Ctrl-R), yank (Ctrl-Y), completare (Tab) | marcheaza linia ca neinspectabila | shell-ul inlocuieste linia cu text pe care nu l-am vazut niciodata |
+| Ctrl-C / Ctrl-U | reseteaza si linia, si flagul | linia e abandonata, urmatoarea porneste curata |
+
+Pe Enter cu oglinda neinspectabila, `_block_reason(..., unknown=True)` blocheaza in
+FATIGUED/STRESSED — **fail closed**. Varianta veche (reset pe ESC) esua *deschis*: o
+sageata stanga stergea oglinda in timp ce comanda riscanta ramanea pe linia shell-ului,
+iar Enter-ul trecea. Override-ul one-shot ramane portita constienta a utilizatorului.
 
 ### subsistem: session replay ("cutia neagra")
 

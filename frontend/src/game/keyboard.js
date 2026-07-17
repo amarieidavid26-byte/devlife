@@ -9,6 +9,14 @@ export function wireKeyboard(deps) {
             shortcutsOverlay, ghost, dashboard, closeAllApps, furniture, player,
             settingsMenu } = deps;
 
+    // orasul/cafeneaua/coworkingul isi inregistreaza propriile handlere de E si Escape,
+    // insa abia la tranzitie -- deci ale noastre ruleaza primele si stopPropagation-ul
+    // lor nu ne-ar opri. Garda trebuie sa fie aici.
+    const inRoom = () => {
+        const sm = getSceneManager();
+        return !sm || sm.getCurrentScene() === 'room';
+    };
+
     document.addEventListener('keydown', (e) => {
         const activeApp = getActiveApp();
         // a focused real terminal/editor needs every key (digits, Escape for vim, Tab…) —
@@ -49,7 +57,9 @@ export function wireKeyboard(deps) {
             // closeAllApps si cand nu e nimic deschis: reseteaza player/HUD daca au
             // ramas agatate (plasa de siguranta care exista dinainte)
             closeAllApps();
-            if (settingsMenu) settingsMenu.show();
+            // meniul de pauza doar in camera: in oras/cafenea/coworking Escape apartine
+            // scenei (iesire din meditatie, inchidere panou) si s-ar fi intamplat ambele
+            if (settingsMenu && inRoom()) settingsMenu.show();
             return;
         }
 
@@ -98,6 +108,12 @@ export function wireKeyboard(deps) {
         }
 
         if (e.key.toLowerCase() === 'e') {
+            // doar in camera: `furniture` si `player` sunt instantele camerei, iar
+            // main.js nu mai cheama player.update() in alte scene, deci gridX/gridY
+            // raman inghetate unde a stat ultima oara -- fara garda, E in oras
+            // deschidea aplicatii ale camerei peste scena curenta (orasul/cafeneaua
+            // isi au propriile handlere de E)
+            if (!inRoom()) return;
             const name = furniture.getNearbyInteractable(player.gridX, player.gridY);
             // preventDefault: aplicatia isi pune focusul pe un camp de text (textarea din
             // whiteboard, monaco), iar actiunea implicita a aceleiasi taste scria 'e' in el

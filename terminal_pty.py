@@ -17,6 +17,7 @@ import shutil
 import signal
 import struct
 import termios
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -28,29 +29,93 @@ class KeystrokeFirewall:
     key BEFORE it reaches the shell and replaces it with Ctrl-U (kill-line), so the
     command never executes.
 
-    Limitation (documented): commands recalled via shell history (up-arrow) arrive as
-    escape sequences, not plain keystrokes, so the mirror resets on ESC to avoid
-    false matches.
+    You cannot fully mirror a shell's line editor from the byte stream, so the mirror
+    tracks what it can and refuses to guess at the rest:
+
+    - cursor moves (arrows/Home/End) do not change the text, so the mirror is kept as-is.
+      Clearing on a bare ESC used to hand over a complete bypass: an arrow is `ESC [ D`,
+      the ESC wiped the mirror while the shell only moved the cursor, and the risky
+      command still on the line then sailed through Enter.
+    - bracketed paste content IS knowable, so it goes into the mirror.
+    - history recall (up/down, Ctrl-R), yank (Ctrl-Y) and completion (Tab) replace the
+      line with text we never saw. The mirror is marked untrusted and the check is asked
+      to decide with unknown=True -- fail closed, never fail open.
     """
 
     ENTER = (0x0D, 0x0A)
     BACKSPACE = (0x7F, 0x08)
     CTRL_C, CTRL_U, ESC = 0x03, 0x15, 0x1B
+    TAB, CTRL_R, CTRL_Y = 0x09, 0x12, 0x19
+    CURSOR_FINALS = (0x43, 0x44, 0x48, 0x46)  # C, D, H, F -- right/left/home/end
+    PASTE_START, PASTE_END = b"\x1b[200~", b"\x1b[201~"
 
     def __init__(self, block_reason_fn):
-        # block_reason_fn(line) -> reason string if the line must be blocked, else None
+        # block_reason_fn(line, unknown=False) -> reason string to block, else None
         self._blocked_check = block_reason_fn
         self._buf = bytearray()
+        self._unknown = False   # the mirror no longer reflects the shell's real line
+        self._esc = None        # bytes of the escape sequence currently being parsed
+        self._paste = False
+
+    def _reset_line(self):
+        self._buf.clear()
+        self._unknown = False
+
+    def _esc_complete(self):
+        e = self._esc
+        if len(e) < 2:
+            return False
+        if e[1] == 0x5B:                      # '[' CSI: ends on a final byte 0x40-0x7E
+            return len(e) > 2 and 0x40 <= e[-1] <= 0x7E
+        if e[1] == 0x4F:                      # 'O' SS3: one byte follows
+            return len(e) >= 3
+        return True                           # ESC + a single byte
+
+    def _classify_esc(self, seq: bytes):
+        if seq == self.PASTE_START:
+            self._paste = True
+            return
+        if seq == self.PASTE_END:
+            self._paste = False
+            return
+        if len(seq) >= 3 and seq[1] in (0x5B, 0x4F) and seq[-1] in self.CURSOR_FINALS:
+            return                            # cursor only -- the text is unchanged
+        self._unknown = True                  # up/down history, or anything we don't model
 
     def filter(self, data: bytes):
         """Returns (bytes_to_write_to_pty, list_of_block_reasons)."""
         out = bytearray()
         blocked = []
         for b in data:
+            if self._esc is not None:
+                self._esc.append(b)
+                if self._esc_complete():
+                    self._classify_esc(bytes(self._esc))
+                    self._esc = None
+                out.append(b)
+                continue
+
+            if b == self.ESC:
+                self._esc = bytearray([b])
+                out.append(b)
+                continue
+
+            if self._paste:
+                # a newline inside a bracketed paste is inserted, not executed
+                if 32 <= b < 127:
+                    self._buf.append(b)
+                out.append(b)
+                continue
+
             if b in self.ENTER:
                 line = self._buf.decode(errors="ignore").strip()
-                self._buf.clear()
-                reason = self._blocked_check(line) if line else None
+                unknown = self._unknown
+                self._reset_line()
+                reason = None
+                if unknown:
+                    reason = self._blocked_check(line, unknown=True)
+                elif line:
+                    reason = self._blocked_check(line)
                 if reason:
                     out.append(self.CTRL_U)  # clear the shell's pending line instead of running it
                     blocked.append(reason)
@@ -61,10 +126,10 @@ class KeystrokeFirewall:
                     self._buf.pop()
                 out.append(b)
             elif b in (self.CTRL_C, self.CTRL_U):
-                self._buf.clear()
+                self._reset_line()
                 out.append(b)
-            elif b == self.ESC:
-                self._buf.clear()
+            elif b in (self.TAB, self.CTRL_R, self.CTRL_Y):
+                self._unknown = True
                 out.append(b)
             elif 32 <= b < 127:
                 self._buf.append(b)
@@ -148,11 +213,20 @@ class PtySession:
         except OSError:
             pass
 
-    def resize(self, rows: int, cols: int):
+    def resize(self, rows, cols):
         if self.fd is None:
             return
+        # client-controlled: "abc"/None/dict ar arunca la int(), iar >65535 ar arunca
+        # struct.error (nu OSError) -> ambele omorau sesiunea PTY. Coerceste si limiteaza.
         try:
-            winsize = struct.pack("HHHH", max(1, rows), max(1, cols), 0, 0)
+            rows = int(rows)
+            cols = int(cols)
+        except (TypeError, ValueError):
+            return
+        rows = max(1, min(rows, 5000))
+        cols = max(1, min(cols, 5000))
+        try:
+            winsize = struct.pack("HHHH", rows, cols, 0, 0)
             fcntl.ioctl(self.fd, termios.TIOCSWINSZ, winsize)
         except OSError:
             pass
@@ -178,8 +252,31 @@ class PtySession:
                 os.kill(self.pid, signal.SIGHUP)
             except OSError:
                 pass
-            try:
-                os.waitpid(self.pid, os.WNOHANG)
-            except OSError:
-                pass
+            self._reap()
             self.pid = None
+
+    def _reap(self):
+        """Asteapta copilul si il culege.
+
+        `waitpid(WNOHANG)` chemat imediat dupa SIGHUP returneaza aproape mereu (0, 0) --
+        copilul nu a apucat sa moara -- deci nu culegea nimic si fiecare sesiune de
+        terminal lasa in urma un zombie. Serverul e long-running: PID-urile se termina.
+        """
+        deadline = time.monotonic() + 0.2
+        while time.monotonic() < deadline:
+            try:
+                pid, _ = os.waitpid(self.pid, os.WNOHANG)
+                if pid:
+                    return
+            except ChildProcessError:
+                return                      # deja cules
+            except OSError:
+                return
+            time.sleep(0.005)
+        # nu a murit la SIGHUP; SIGKILL nu poate fi ignorat, deci waitpid-ul blocant
+        # de dupa el e garantat scurt
+        try:
+            os.kill(self.pid, signal.SIGKILL)
+            os.waitpid(self.pid, 0)
+        except OSError:
+            pass

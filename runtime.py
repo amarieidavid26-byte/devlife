@@ -69,6 +69,7 @@ def load_calibration():
     v = db.get_calibration("hrv_baseline")
     if v:
         bio.hrv_baseline = v
+        bio._hrv_calibrated = True   # a real baseline exists; don't let the first poll snap over it
     v = db.get_calibration("baseline_hr")
     if v:
         app_state.baseline_hr = v

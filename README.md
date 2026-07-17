@@ -99,7 +99,7 @@ devlife/
 ├── fallback_responses.py # replici ghost pre-scrise (RO/EN) cand Claude nu raspunde
 ├── apply_fix/            # contract Pydantic + validator + audit pentru patch-uri
 ├── persistence/          # SQLite (WAL) + migratii: sesiuni, interventii, replay
-├── tests/                # 167 teste pytest
+├── tests/                # 212 teste pytest
 ├── frontend/
 │   └── src/
 │       ├── main.js       # bootstrap PIXI + lumea camerei + game loop
@@ -134,7 +134,7 @@ vezi `docs/install-runbook.md` pentru setup complet cu .env.
 ## teste
 
 ```bash
-./scripts/run-tests.sh    # 167 teste + junit.xml + coverage HTML in evidence/tests/
+./scripts/run-tests.sh    # 212 teste + junit.xml + coverage HTML in evidence/tests/
 ```
 
 unit + integration: clasificator biometric, RMSSD/HRV live, dinamica tastarii (features + fuziune in clasificator), contract Apply Fix, keystroke firewall (PTY), sincronizare pattern-uri firewall frontend/backend, session replay, flux WebSocket end-to-end, security jail. detalii in `evidence/tests/SUMMARY.md`.

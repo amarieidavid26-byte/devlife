@@ -76,9 +76,17 @@ class KeystrokeDynamics:
         if self.baseline_iki is None:
             self.baseline_iki = f["iki_median"]
             self.baseline_err = f["backspace_ratio"]
-        else:
-            self.baseline_iki += (f["iki_median"] - self.baseline_iki) * BASELINE_ALPHA
-            self.baseline_err += (f["backspace_ratio"] - self.baseline_err) * BASELINE_ALPHA
+            return
+        # don't let the baseline chase the deviation we're trying to detect. The EMA ran on
+        # every batch, so sustained fast typing (stress) or slow typing (fatigue) dragged the
+        # baseline toward itself over ~2 min until speed_ratio read ~1.0 and the signal erased
+        # itself. Adapt ONLY while typing looks neutral -- freeze it during stress/fatigue.
+        speed_ratio = self.baseline_iki / f["iki_median"] if f["iki_median"] > 0 else 1.0
+        elevated_err = self.baseline_err is not None and f["backspace_ratio"] > self.baseline_err + 0.04
+        if speed_ratio > 1.05 or speed_ratio < 0.85 or elevated_err:
+            return
+        self.baseline_iki += (f["iki_median"] - self.baseline_iki) * BASELINE_ALPHA
+        self.baseline_err += (f["backspace_ratio"] - self.baseline_err) * BASELINE_ALPHA
 
     def snapshot(self):
         # the one consumer-facing method: classify() and build_biometric_msg read this

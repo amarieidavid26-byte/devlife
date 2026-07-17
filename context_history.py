@@ -71,7 +71,7 @@ class ContextTracker:
 
         if self.stuck_duration > 10:
             summary += f"Currently stuck for {int(self.stuck_duration)} seconds."
-            return summary
+        return summary
 
     def get_rapid_switching(self):
         if len(self.history) < 6:

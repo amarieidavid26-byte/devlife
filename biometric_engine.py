@@ -17,6 +17,8 @@ from keystroke_dynamics import KeystrokeDynamics
 
 logger = logging.getLogger(__name__)
 
+HRV_BASELINE_ALPHA = 0.1   # slow day-over-day drift of the personal HRV baseline
+
 class BiometricEngine:
     TOKENS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
         ".whoop_tokens.json")
@@ -29,8 +31,9 @@ class BiometricEngine:
         self.current_state = "RELAXED"
         self.on_state_change_callback = None
         self.polling = False
-        self.hrv_history = []
         self.hrv_baseline = 50.0
+        self._last_hrv_cycle = None    # WHOOP cycle of the last folded reading (daily dedup)
+        self._hrv_calibrated = False   # True once a real baseline is loaded or first seen
         self.estimated_stress = 0.0
         self.rhr_baseline = 65.0
         # token refresh
@@ -164,12 +167,20 @@ class BiometricEngine:
             return self.refresh_access_token()
         return self.access_token is not None
 
-    def update_baseline(self, hrv_value):
-        self.hrv_history.append(hrv_value)
-        if len(self.hrv_history) > 14:
-            self.hrv_history.pop(0)
-        if self.hrv_history:
-            self.hrv_baseline = sum(self.hrv_history) / len(self.hrv_history)
+    def update_baseline(self, hrv_value, cycle_id=None):
+        # WHOOP HRV is a once-daily recovery value, but fetch_data polls every 5s. Feeding
+        # it unconditionally filled the window with copies of today -> baseline == today
+        # -> hrv_ratio ~1.0 always -> the HRV stress signal erased itself within ~70s. Fold
+        # in only a genuinely new daily reading (distinct cycle_id) and drift the baseline
+        # slowly, so today's value can still deviate from the personal norm.
+        if cycle_id is not None and cycle_id == self._last_hrv_cycle:
+            return
+        self._last_hrv_cycle = cycle_id
+        if not self._hrv_calibrated:
+            self.hrv_baseline = hrv_value          # cold start: snap to the first real reading
+            self._hrv_calibrated = True
+        else:
+            self.hrv_baseline += (hrv_value - self.hrv_baseline) * HRV_BASELINE_ALPHA
 
     def fetch_data(self, _retry=True):
         if not self.access_token:
@@ -237,6 +248,7 @@ class BiometricEngine:
             data = dict(self.current_data) if self.current_data else {}
 
             rec_score, rec_state = _scored(recovery_data)
+            rec_cycle = (recovery_data.get("records") or [{}])[0].get("cycle_id")
             if rec_score:
                 data["recovery"] = rec_score.get("recovery_score")
                 data["hrv"] = rec_score.get("hrv_rmssd_milli")            # WHOOP returns ms despite the name
@@ -285,7 +297,7 @@ class BiometricEngine:
             self.current_data = data
             hrv_value = data.get("hrv")
             if hrv_value:
-                self.update_baseline(hrv_value)
+                self.update_baseline(hrv_value, rec_cycle)
 
             logger.info(
                 "WHOOP data: rec=%s strain=%s rhr=%s hrv=%sms sleep=%s%%",

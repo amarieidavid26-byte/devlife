@@ -13,6 +13,18 @@ export class WHOOPBluetooth {
         this._giveUp = false;
         this._onGiveUp = null;
         this._visibilityWired = false;
+        // referinte stabile: addEventListener ignora un (tip, listener) deja inregistrat
+        // doar daca functia e aceeasi. Cu cate un arrow nou la fiecare resubscriere,
+        // fiecare reconectare mai adauga un listener pe aceeasi caracteristica, iar un
+        // cadru BLE ajungea de N ori in RMSSD -- diferentele dintre duplicate sunt 0,
+        // deci HRV-ul afisat scadea artificial dupa fiecare reconectare
+        this._onHeartRateBound = (event) => this._onHeartRate(event);
+        this._onGattDisconnectedBound = () => {
+            console.log('[whoop-ble] disconnected');
+            this.connected = false;
+            this._notifyListeners(0, false);
+            this._tryReconnect();
+        };
     }
 
     // web bluetooth API - only works in chrome/edge
@@ -26,12 +38,7 @@ export class WHOOPBluetooth {
                 optionalServices: ['heart_rate']
             });
 
-            this.device.addEventListener('gattserverdisconnected', () => {
-                console.log('[whoop-ble] disconnected');
-                this.connected = false;
-                this._notifyListeners(0, false);
-                this._tryReconnect();
-            });
+            this.device.addEventListener('gattserverdisconnected', this._onGattDisconnectedBound);
 
             const server = await this.device.gatt.connect();
             await this._subscribeToHeartRate(server);
@@ -60,9 +67,7 @@ export class WHOOPBluetooth {
         const service = await server.getPrimaryService('heart_rate');
         this.heartRateChar = await service.getCharacteristic('heart_rate_measurement');
         await this.heartRateChar.startNotifications();
-        this.heartRateChar.addEventListener('characteristicvaluechanged', (event) => {
-            this._onHeartRate(event);
-        });
+        this.heartRateChar.addEventListener('characteristicvaluechanged', this._onHeartRateBound);
     }
 
     _onHeartRate(event) {

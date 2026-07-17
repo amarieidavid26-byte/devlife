@@ -423,7 +423,10 @@ async def post_settings(body: SettingsBody):
 
 @app.get("/api/history")
 async def get_history(since: float = 0.0, limit: int = 50):
-    rows = db.get_interventions(since=since, limit=min(limit, 200))
+    # clamp: un limit negativ devenea SQLite LIMIT -1 = nelimitat (toata tabela), iar
+    # intervention_history[-(-1):] taia gresit lista din memorie
+    limit = max(1, min(limit, 200))
+    rows = db.get_interventions(since=since, limit=limit)
     if not rows:
         rows = app_state.intervention_history[-limit:]
     return {"interventions": rows}
@@ -487,9 +490,18 @@ async def websocket_endpoint(ws: WebSocket):
                 continue
             handler = WS_HANDLERS.get(data.get("type"))
             if handler:
-                await handler(ws, data)
+                try:
+                    await handler(ws, data)
+                except Exception:
+                    # un mesaj malformat nu are voie sa doboare socketul: pana acum orice
+                    # exceptie dintr-un handler iesea din endpoint si omora sesiunea
+                    logger.exception("ws handler failed for type=%r", data.get("type"))
 
     except WebSocketDisconnect:
+        pass
+    finally:
+        # cleanup-ul statea doar pe ramura de disconnect, deci orice alta iesire lasa
+        # un client mort in lista partajata
         if ws in app_state.connected_clients:
             app_state.connected_clients.remove(ws)
         logger.info("ws client offline (%d total)", len(app_state.connected_clients))
@@ -657,7 +669,7 @@ async def terminal_ws(ws: WebSocket):
     # audited, and it is consumed immediately so it can never become a standing bypass.
     override = {"armed": False}
 
-    def _block_reason(line):
+    def _block_reason(line, unknown=False):
         if override["armed"]:
             override["armed"] = False
             logger.info("firewall override used (state %s): %s", bio.current_state, line[:60])
@@ -669,6 +681,10 @@ async def terminal_ws(ws: WebSocket):
             return None
         if bio.current_state not in ("FATIGUED", "STRESSED"):
             return None
+        if unknown:
+            # istoric/yank/completare: linia reala nu e cea din oglinda, deci nu putem
+            # spune ca e sigura -- singurul raspuns onest e sa blocam si sa oferim override
+            return "recalled or completed line — the firewall cannot inspect it"
         risky, desc = content_analyzer.detect_risky_commands(line)
         return desc if risky else None
 
@@ -705,7 +721,7 @@ async def terminal_ws(ws: WebSocket):
                 except (json.JSONDecodeError, TypeError):
                     ctrl = None
                 if isinstance(ctrl, dict) and ctrl.get("type") == "resize":
-                    session.resize(int(ctrl.get("rows", 24)), int(ctrl.get("cols", 80)))
+                    session.resize(ctrl.get("rows", 24), ctrl.get("cols", 80))
                 elif isinstance(ctrl, dict) and ctrl.get("type") == "firewall_override":
                     override["armed"] = True
                 else:

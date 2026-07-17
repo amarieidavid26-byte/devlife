@@ -80,13 +80,34 @@ def test_stale_signal_goes_inactive():
     assert ks.snapshot()["active"] is False
 
 
-def test_baseline_learns_slowly():
+def test_baseline_learns_slowly_during_neutral_typing():
     ks = KeystrokeDynamics()
     _fill(ks, 200, 60)
     assert ks.baseline_iki == 200.0
-    _fill(ks, 100, 60)
-    # EMA with alpha 0.05 must move a little, not jump to the new rhythm
-    assert 150 < ks.baseline_iki < 200
+    _fill(ks, 195, 60)             # a small, neutral drift (within the +-5% band)
+    # EMA nudges toward the new rhythm but does not jump to it
+    assert 199 < ks.baseline_iki < 200
+
+
+def test_baseline_freezes_during_stress_so_the_signal_persists():
+    """The EMA ran on every batch, so sustained fast typing dragged the baseline down
+    toward the stressed rhythm until speed_ratio read ~1.0 and the stress signal erased
+    itself. The baseline must NOT chase a deviation it is supposed to be detecting."""
+    ks = KeystrokeDynamics()
+    _fill(ks, 200, 60)
+    for _ in range(30):            # ~2.5 min of sustained stress: 2x faster than baseline
+        _fill(ks, 100, 60)
+    assert ks.baseline_iki == 200.0, "baseline chased the stressed rhythm -- signal erased"
+    assert ks.snapshot()["stress"] > 0.5, "stress signal faded under sustained stress"
+
+
+def test_baseline_freezes_during_fatigue():
+    """Symmetric: sustained slow typing (fatigue) must not drag the baseline up."""
+    ks = KeystrokeDynamics()
+    _fill(ks, 200, 60)
+    for _ in range(30):            # much slower than baseline
+        _fill(ks, 320, 60)
+    assert ks.baseline_iki == 200.0, "baseline chased the fatigued rhythm"
 
 
 def test_classify_typing_only_drives_state():

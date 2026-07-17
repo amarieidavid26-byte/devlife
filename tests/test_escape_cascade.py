@@ -114,6 +114,38 @@ def test_interact_key_does_not_type_itself_into_the_app():
         "E must preventDefault or it types itself into the app it just opened"
 
 
+def test_interact_key_is_scoped_to_the_room():
+    """`furniture` and `player` are the ROOM's instances, and main.js stops calling
+    player.update() outside the room -- so gridX/gridY freeze at the last room position
+    and E in the town resolved a room object, opening its app over the town scene."""
+    src = KEYBOARD_JS.read_text()
+    m = re.search(r"if \(e\.key\.toLowerCase\(\) === 'e'\) \{(.*?)\n        \}", src, re.S)
+    assert m, "the E interact branch moved"
+    assert "inRoom()" in m.group(1), "E must be scoped to the room scene"
+    assert m.group(1).index("inRoom()") < m.group(1).index("getNearbyInteractable"), \
+        "the scene guard must run before resolving room furniture"
+
+
+def test_pause_menu_is_scoped_to_the_room(esc_branch):
+    """Town/cafe/cowork own Escape (exit meditation, close panel). Their handlers are
+    registered later than wireKeyboard, so ours runs first and their stopPropagation
+    cannot save us -- without this guard Escape in the cafe closed the panel AND opened
+    the settings menu."""
+    assert "inRoom()" in esc_branch, "the pause menu must not open outside the room"
+    open_at = esc_branch.index("settingsMenu.show()")
+    guard_at = esc_branch.rindex("inRoom()")
+    assert guard_at < open_at + 40, "the inRoom() guard must gate settingsMenu.show()"
+
+
+def test_scene_guard_uses_the_live_scene():
+    """A cached scene value would go stale across transitions."""
+    src = KEYBOARD_JS.read_text()
+    m = re.search(r"const inRoom = \(\) => \{(.*?)\};", src, re.S)
+    assert m, "inRoom helper missing"
+    assert "getSceneManager()" in m.group(1) and "getCurrentScene()" in m.group(1), \
+        "inRoom must read the scene live, not a captured value"
+
+
 def test_o_shortcut_still_exists():
     """ESC is the discoverable path; O stays as the explicit one."""
     src = KEYBOARD_JS.read_text()

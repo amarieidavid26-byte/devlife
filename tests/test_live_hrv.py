@@ -58,3 +58,36 @@ def test_live_hrv_drives_estimated_stress_in_classify():
     bio.live_hr_timestamp = time.time()
     bio.classify({"recovery": 70, "strain": 8, "sleepPerformance": 0.8, "hrv": 40, "heartRate": 70})
     assert bio.estimated_stress is not None
+
+
+def test_hrv_baseline_survives_repeated_same_day_polls():
+    """WHOOP HRV is a once-daily value but fetch_data polls every 5s. update_baseline used
+    to append every poll, so the 14-slot window filled with copies of today and the baseline
+    collapsed to today's value -> hrv_ratio ~1.0 -> the HRV stress signal erased itself."""
+    bio = _bio()
+    bio.hrv_baseline = 65.0
+    bio._hrv_calibrated = True          # a real 2-week baseline is loaded
+    for _ in range(30):                 # same daily reading re-polled 30 times
+        bio.update_baseline(40.0, cycle_id=1001)
+    # a low-recovery day (40 vs 65) must still read as depressed, not collapse to ratio 1.0
+    assert bio.hrv_baseline > 55.0, "baseline collapsed toward today's value"
+    assert 40.0 / bio.hrv_baseline < 0.85, "HRV stress signal was erased"
+
+
+def test_hrv_baseline_drifts_slowly_across_days():
+    bio = _bio()
+    bio.hrv_baseline = 60.0
+    bio._hrv_calibrated = True
+    bio.update_baseline(40.0, cycle_id=1)   # new day, low reading
+    after_one = bio.hrv_baseline
+    assert 55.0 < after_one < 60.0, "a new day should nudge the baseline, not snap to it"
+    bio.update_baseline(40.0, cycle_id=1)   # same day again -> no change
+    assert bio.hrv_baseline == after_one
+
+
+def test_hrv_cold_start_snaps_to_first_real_reading():
+    bio = _bio()                            # no calibration loaded
+    assert not bio._hrv_calibrated
+    bio.update_baseline(48.0, cycle_id=7)
+    assert bio.hrv_baseline == 48.0         # snap once, then EMA from here
+    assert bio._hrv_calibrated
