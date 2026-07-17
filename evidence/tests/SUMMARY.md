@@ -4,8 +4,8 @@
 
 | metric | valoare |
 |--------|---------|
-| total teste | 212 (211 pass + 1 skip condiționat) |
-| pass | 211 |
+| total teste | 216 (215 pass + 1 skip condiționat) |
+| pass | 215 |
 | fail | 0 |
 | skip | 1 (test dependent de mediu) |
 | durata totală | ~5s |
@@ -38,6 +38,7 @@
 | `tests/test_apply_fix.py` | 8 | contract Pydantic, validator (shell metacharacters, max lines, empty rationale), lifecycle preview→confirm→rollback |
 | `tests/test_biometric_classifier.py` | 10 | toate 5 stările cognitive, callback on_state_change, personality modifiers, default RELAXED când lipsesc date |
 | `tests/test_live_hrv.py` | 9 | RMSSD cu valoare calculată de mână, filtrare artefacte (300–2000ms), fereastră glisantă 60s, minim de sample-uri, integrare cu classify(), baseline HRV pliat o singură dată per ciclu WHOOP |
+| `tests/test_biometric_loop_resilience.py` | 4 | câmpuri de senzor null (spo2/skin temp) nu mai arunca la rotunjire, valorile reale se rotunjesc in continuare, iar corpul buclei de biometrie e protejat ca in ghost_loop |
 | `tests/test_ble_listeners.py` | 4 | anti-drift peste WHOOPBluetooth.js: handlerele de HR și de deconectare sunt referințe stabile, deci reconectările nu stivuiesc listeneri și nu dublează intervalele RR în RMSSD |
 | `tests/test_keystroke_dynamics.py` | 13 | features din ritmul tastării, scoring stres (rapid+corecturi) / oboseală (lent+erratic+pauze), flow, baseline EMA înghețat cât timp tastarea e deviată (nu-și mai anulează semnalul), fuziune în classify() (typing-only / demo_locked / puls real câștigă) |
 | `tests/test_ghost_brain.py` | 19 | should_intervene (firewalls, cooldown adaptiv, protecting_flow), template-uri instant EN+RO fără apel API, prompt shaping (personalitate+limbă), fallback la eroare API, feedback counters |

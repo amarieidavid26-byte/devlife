@@ -164,7 +164,17 @@ async def _ws_run_error(ws, data):
 
     state = bio.current_state
     modifiers = bio.get_personality_modifiers(state)
-    intervention = brain.process(analysis, state, modifiers)
+    # tot pe executor, ca analiza de mai sus: process() ajunge la clientul sincron Anthropic
+    # (timeout 15s), iar aici suntem pe event loop -- un Run cu eroare bloca broadcast-urile
+    # tuturor clientilor. In ghost_loop acelasi apel e deja pe alt fir, deci e tiparul stabilit
+    try:
+        intervention = await loop.run_in_executor(
+            None,
+            lambda: brain.process(analysis, state, modifiers),
+        )
+    except Exception as e:
+        logger.warning("run_error intervention failed: %s", e)
+        return
     if intervention:
         app_state.intervention_cooldown_until = time.time() + 8
         bio_data = mock.get_data() if (not bio.access_token or time.time() < app_state.mock_override_until) else (bio.current_data or {})

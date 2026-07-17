@@ -82,94 +82,100 @@ def _check_sleep_mode(data):
 def biometric_loop():
     cycles = 0
     while app_state.ghost_running:
-        is_whoop = False
-        demo_locked = DEMO_OFFLINE or time.time() < app_state.mock_override_until
-        if demo_locked:
-            data = mock.get_data()
-        elif bio.access_token:
-            data = bio.fetch_data()
-            if data is None:
+        # o exceptie aici omora firul de biometrie definitiv: e daemon, nu are supervizor
+        # si nimic nu-l reporneste, deci HUD-ul ingheata pana la restart. Un ciclu prost
+        # se sare, ca in ghost_loop
+        try:
+            is_whoop = False
+            demo_locked = DEMO_OFFLINE or time.time() < app_state.mock_override_until
+            if demo_locked:
                 data = mock.get_data()
-                _degraded_banner("WHOOP API unavailable")
+            elif bio.access_token:
+                data = bio.fetch_data()
+                if data is None:
+                    data = mock.get_data()
+                    _degraded_banner("WHOOP API unavailable")
+                else:
+                    is_whoop = True
             else:
-                is_whoop = True
-        else:
-            data = mock.get_data()
+                data = mock.get_data()
 
-        if data:
-            ble_fresh = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
-            if ble_fresh:
-                data["heartRate"] = bio.live_heart_rate
-            elif bio.live_hr_timestamp > 0:
-                # a band streamed a live pulse and it stopped -> WHOOP is off the wrist. Don't
-                # pass the API resting HR off as a live heartbeat; null it so the HUD honestly
-                # shows "--" and the character can fall asleep (see _check_sleep_mode).
-                data["heartRate"] = None
-            # else: pure WHOOP-API mode (no band ever paired) -> keep the real resting HR from
-            # fetch_data. We never synthesize a fake live pulse.
-            if app_state.forced_state and time.time() < app_state.forced_until:
-                # A demo state is locked (keys 1-5). Hold it verbatim -- don't re-classify the
-                # transitioning mock numbers, which would briefly read as neighbouring states.
-                state = app_state.forced_state
-                bio.current_state = state
-                bio.estimated_stress = data.get("estimated_stress", bio.estimated_stress)
-            else:
-                state = bio.classify(data, demo_locked=demo_locked)
+            if data:
+                ble_fresh = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
+                if ble_fresh:
+                    data["heartRate"] = bio.live_heart_rate
+                elif bio.live_hr_timestamp > 0:
+                    # a band streamed a live pulse and it stopped -> WHOOP is off the wrist. Don't
+                    # pass the API resting HR off as a live heartbeat; null it so the HUD honestly
+                    # shows "--" and the character can fall asleep (see _check_sleep_mode).
+                    data["heartRate"] = None
+                # else: pure WHOOP-API mode (no band ever paired) -> keep the real resting HR from
+                # fetch_data. We never synthesize a fake live pulse.
+                if app_state.forced_state and time.time() < app_state.forced_until:
+                    # A demo state is locked (keys 1-5). Hold it verbatim -- don't re-classify the
+                    # transitioning mock numbers, which would briefly read as neighbouring states.
+                    state = app_state.forced_state
+                    bio.current_state = state
+                    bio.estimated_stress = data.get("estimated_stress", bio.estimated_stress)
+                else:
+                    state = bio.classify(data, demo_locked=demo_locked)
 
-            hr = data.get("heartRate") or 0
-            if hr > 0:
-                app_state.hr_history.append((time.time(), hr))
-                if len(app_state.hr_history) > 120:
-                    del app_state.hr_history[:-120]
+                hr = data.get("heartRate") or 0
+                if hr > 0:
+                    app_state.hr_history.append((time.time(), hr))
+                    if len(app_state.hr_history) > 120:
+                        del app_state.hr_history[:-120]
 
-                if len(app_state.hr_history) >= 5:
-                    sorted_hrs = sorted(h for _, h in app_state.hr_history)
-                    low_count = max(1, len(sorted_hrs) // 5)
-                    _update_baseline(sum(sorted_hrs[:low_count]) / low_count)
+                    if len(app_state.hr_history) >= 5:
+                        sorted_hrs = sorted(h for _, h in app_state.hr_history)
+                        low_count = max(1, len(sorted_hrs) // 5)
+                        _update_baseline(sum(sorted_hrs[:low_count]) / low_count)
 
-                if hr > app_state.baseline_hr + 20 and app_state.last_stress_peak is None:
-                    _mark_stress_peak()
-                if app_state.last_stress_peak is not None and hr < app_state.baseline_hr + 5:
-                    _mark_recovery()
+                    if hr > app_state.baseline_hr + 20 and app_state.last_stress_peak is None:
+                        _mark_stress_peak()
+                    if app_state.last_stress_peak is not None and hr < app_state.baseline_hr + 5:
+                        _mark_recovery()
 
-            if is_whoop:
-                src = "ble" if ble_fresh else "whoop"
-                logger.info("WHOOP state=%s rec=%s strain=%s hrv=%s hr=%s src=%s", state, data.get("recovery"), data.get("strain"), data.get("hrv"), data.get("heartRate"), src)
-                # personal HRV baseline learns once per NEW morning summary, not per cycle
-                daily_hrv = data.get("hrv")
-                if daily_hrv and daily_hrv != app_state.last_whoop_hrv:
-                    if app_state.last_whoop_hrv is not None:
-                        bio.hrv_baseline += (daily_hrv - bio.hrv_baseline) * 0.1
-                    app_state.last_whoop_hrv = daily_hrv
+                if is_whoop:
+                    src = "ble" if ble_fresh else "whoop"
+                    logger.info("WHOOP state=%s rec=%s strain=%s hrv=%s hr=%s src=%s", state, data.get("recovery"), data.get("strain"), data.get("hrv"), data.get("heartRate"), src)
+                    # personal HRV baseline learns once per NEW morning summary, not per cycle
+                    daily_hrv = data.get("hrv")
+                    if daily_hrv and daily_hrv != app_state.last_whoop_hrv:
+                        if app_state.last_whoop_hrv is not None:
+                            bio.hrv_baseline += (daily_hrv - bio.hrv_baseline) * 0.1
+                        app_state.last_whoop_hrv = daily_hrv
 
-            # black-box recording: one sample per cycle feeds the session replay
-            try:
-                live_hrv = bio.live_hrv if (time.time() - bio.live_hrv_timestamp < 30) else None
-                db.save_biometric(
-                    hr=data.get("heartRate") or 0,
-                    hrv=live_hrv if live_hrv is not None else data.get("hrv", 0),
-                    recovery=data.get("recovery", 0),
-                    strain=data.get("strain", 0),
-                    source="ble" if ble_fresh else ("whoop" if is_whoop else "mock"),
-                    state=state,
-                )
-            except Exception as e:
-                logger.warning("biometric sample persist failed: %s", e)
+                # black-box recording: one sample per cycle feeds the session replay
+                try:
+                    live_hrv = bio.live_hrv if (time.time() - bio.live_hrv_timestamp < 30) else None
+                    db.save_biometric(
+                        hr=data.get("heartRate") or 0,
+                        hrv=live_hrv if live_hrv is not None else data.get("hrv", 0),
+                        recovery=data.get("recovery", 0),
+                        strain=data.get("strain", 0),
+                        source="ble" if ble_fresh else ("whoop" if is_whoop else "mock"),
+                        state=state,
+                    )
+                except Exception as e:
+                    logger.warning("biometric sample persist failed: %s", e)
 
-            broadcast_sync(build_biometric_msg(data, state))
+                broadcast_sync(build_biometric_msg(data, state))
 
-        _check_sleep_mode(data)
-        if app_state.last_coding_activity > 0 and time.time() - app_state.last_coding_activity > 60:
-            app_state.last_coding_activity = time.time()
-            broadcast_sync({"type": "plant_update", "delta": -2})
+            _check_sleep_mode(data)
+            if app_state.last_coding_activity > 0 and time.time() - app_state.last_coding_activity > 60:
+                app_state.last_coding_activity = time.time()
+                broadcast_sync({"type": "plant_update", "delta": -2})
 
-        cycles += 1
-        if cycles % 12 == 0:  # ~60s
-            try:
-                save_calibration()
-            except Exception as e:
-                logger.warning("calibration persist failed: %s", e)
+            cycles += 1
+            if cycles % 12 == 0:  # ~60s
+                try:
+                    save_calibration()
+                except Exception as e:
+                    logger.warning("calibration persist failed: %s", e)
 
+        except Exception as e:
+            logger.exception("biometric_loop error: %s", e)
         time.sleep(5)
 
 

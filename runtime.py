@@ -214,17 +214,19 @@ def build_biometric_msg(data, state):
         # where recovery/HRV/strain come from -- lets the HUD be honest in BLE-only mode
         "metrics_source": source,
         "heartRate": round(data["heartRate"]) if data.get("heartRate") else None,
-        "recovery": round(data.get("recovery", 0)),
-        "strain": round(data.get("strain", 0), 1),
+        # `or 0`, nu `get(k, 0)`: WHOOP scrie cheia cu None cand strapul nu are senzorul,
+        # iar default-ul din get() se aplica doar cand cheia lipseste -- round(None) arunca
+        "recovery": round(data.get("recovery") or 0),
+        "strain": round(data.get("strain") or 0, 1),
         "state": state,
-        "sleepPerformance": round(data.get("sleepPerformance", 0), 2),
-        "hrv": live_hrv if live_hrv is not None else round(data.get("hrv", 0), 1),
+        "sleepPerformance": round(data.get("sleepPerformance") or 0, 2),
+        "hrv": live_hrv if live_hrv is not None else round(data.get("hrv") or 0, 1),
         "hrv_live": live_hrv is not None,
         # bio.estimated_stress is what classify() actually decided (incl. typing/HRV fusion);
         # the raw data value would contradict the state label whenever fusion adjusted it
         "estimated_stress": round(bio.estimated_stress, 2),
-        "spo2": round(data.get("spo2", 0), 1),
-        "skinTemp": round(data.get("skinTemp", 0), 1),
+        "spo2": round(data["spo2"], 1) if data.get("spo2") is not None else None,
+        "skinTemp": round(data["skinTemp"], 1) if data.get("skinTemp") is not None else None,
         # real resting HR (distinct from the live BLE pulse) + real sleep breakdown; null when
         # WHOOP hasn't scored them yet so the UI can honestly show "--" instead of a fake number.
         "restingHeartRate": round(data["restingHeartRate"]) if data.get("restingHeartRate") else None,
