@@ -92,7 +92,9 @@ export function wireSocketHandlers(deps) {
     // Sleep mode from backend: WHOOP taken off the wrist (live pulse stopped) or a very low
     // resting HR. The character and the ghost both fall asleep, and we stop trusting the
     // resting-HR fallback as a live reading.
+    let _asleep = false;
     socket.on('sleep_mode', (data) => {
+        _asleep = data.active;
         if (ghost) ghost.setSleepMode(data.active);
         if (player) player.setSleepMode(data.active);
         const offWrist = data.reason && data.reason.indexOf('off wrist') !== -1;
@@ -101,5 +103,20 @@ export function wireSocketHandlers(deps) {
         } else if (!data.active) {
             toastSystem.show('info', '❤️ ' + i18n.t('sleep.awake_title'), i18n.t('sleep.awake_body'), 2500);
         }
+    });
+
+    // miscarea trezeste personajul. Sleep-ul blocheaza update()-ul de miscare din Player,
+    // deci tasta de miscare nu poate porni singura mersul cat timp doarme -- o prindem aici,
+    // trezim instant (local) si anuntam serverul ca sa nu re-adoarma. WASD, sageti si E
+    const WAKE_KEYS = new Set(['w', 'a', 's', 'd', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
+    window.addEventListener('keydown', (ev) => {
+        if (!_asleep) return;
+        const tag = ev.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || ev.target.isContentEditable) return;
+        if (!WAKE_KEYS.has(ev.key.toLowerCase())) return;
+        _asleep = false;
+        if (ghost) ghost.setSleepMode(false);
+        if (player) player.setSleepMode(false);
+        socket.send({ type: 'wake' });
     });
 }

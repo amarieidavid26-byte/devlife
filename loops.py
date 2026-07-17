@@ -49,6 +49,16 @@ def _check_sleep_mode(data):
     # HR here -- that value persists for hours after the band is removed, so it can't tell us
     # whether the band is on the wrist right now.
     now = time.time()
+
+    # Manual activity -- a demo state key (mock_override_until) OR movement (manual_awake_until)
+    # -- is an explicit "I'm awake and driving" signal and must win over off-wrist inference.
+    # Without this, once the band disconnects (unplugged, or a page refresh kills the BLE link)
+    # there is no live pulse left to ever reach the wake branch below, so the character latches
+    # asleep with no escape but a server restart.
+    if now < app_state.mock_override_until or now < app_state.manual_awake_until:
+        app_state.sleep_low_hr_count = 0
+        _set_sleep_mode(False, "manual activity")
+        return
     had_ble = bio.live_hr_timestamp > 0          # the band has streamed at least once this session
     age = now - bio.live_hr_timestamp
     ble_fresh = bio.live_heart_rate > 0 and age < 5

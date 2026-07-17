@@ -41,7 +41,14 @@ if missing_ro or missing_en:
 print(f"i18n ok: {len(en_keys)} chei, paritate completa")
 EOF
 
-echo "[check] 4/4 vite build..."
+echo "[check] 4/5 teste BLE (node)..."
+if command -v node >/dev/null 2>&1; then
+    node frontend/test/ble-autoreconnect.test.mjs
+else
+    echo "  node lipseste -- sar peste testele BLE"
+fi
+
+echo "[check] 5/5 vite build..."
 (cd frontend && npx vite build --logLevel error)
 
 echo ""

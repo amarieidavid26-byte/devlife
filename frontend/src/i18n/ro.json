@@ -101,7 +101,7 @@
   "ble.connected": "Senzor de puls conectat",
   "ble.connected_body": "Pulsul în timp real se vede în HUD",
   "sleep.whoop_off_title": "Senzor scos de pe încheietură",
-  "sleep.whoop_off_body": "Fără puls în timp real — personajul doarme. Banda trebuie repusă pe încheietură pentru trezire.",
+  "sleep.whoop_off_body": "Fără puls în timp real — personajul doarme. Mișcă-te (WASD) sau apasă 1-5 pentru trezire, ori repune banda pe încheietură.",
   "sleep.awake_title": "Puls în timp real restabilit",
   "sleep.awake_body": "Senzorul este din nou pe încheietură — personajul se trezește.",
   "ble.disconnected": "Senzor de puls deconectat",
@@ -111,6 +111,8 @@
   "ble.pair_failed_generic": "Împerechere eșuată: {err}",
   "ble.reconnect_giveup": "Senzor de puls indisponibil",
   "ble.reconnect_giveup_body": "Apasă din nou Împerechere când banda este pregătită.",
+  "ble.reconnected": "Senzor de puls reconectat",
+  "ble.reconnected_body": "Banda a fost reluată automat, fără împerechere",
 
   "toast.reconnecting": "Reconectare...",
   "toast.reconnecting_body": "Backend indisponibil. Reîncercare în {s}s (încercarea {n})",

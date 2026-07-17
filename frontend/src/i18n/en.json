@@ -101,7 +101,7 @@
   "ble.connected": "Heart rate sensor connected",
   "ble.connected_body": "Live BPM showing in HUD",
   "sleep.whoop_off_title": "Sensor off the wrist",
-  "sleep.whoop_off_body": "No live pulse — the character is sleeping. Put the band back on to wake up.",
+  "sleep.whoop_off_body": "No live pulse — the character is sleeping. Move (WASD) or press 1-5 to wake up, or put the band back on.",
   "sleep.awake_title": "Live pulse restored",
   "sleep.awake_body": "The sensor is back on — waking up.",
   "ble.disconnected": "Heart rate sensor disconnected",
@@ -111,6 +111,8 @@
   "ble.pair_failed_generic": "Pairing failed: {err}",
   "ble.reconnect_giveup": "Heart rate sensor unavailable",
   "ble.reconnect_giveup_body": "Click Pair again when the strap is ready.",
+  "ble.reconnected": "Heart rate sensor reconnected",
+  "ble.reconnected_body": "Strap picked back up automatically, no pairing needed",
 
   "toast.reconnecting": "Reconnecting...",
   "toast.reconnecting_body": "Backend unreachable. Retrying in {s}s (attempt {n})",

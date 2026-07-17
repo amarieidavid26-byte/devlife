@@ -19,6 +19,48 @@ verifica:
 
 daca ceva nu merge: `curl http://localhost:8000/health` → daca returneaza `alive`, backend-ul e ok, problema e frontend-ul.
 
+### ordinea de pornire — banda BLE se conecteaza ULTIMA
+
+O conexiune Web Bluetooth traieste exact cat pagina: orice reincarcare o rupe, si
+re-imperecherea cere din nou selectorul din browser. Doua actiuni din aplicatie reincarca
+pagina, deci trebuie facute **inainte** de a conecta banda:
+
+1. **alege limba** (RO/EN) — schimbarea limbii reincarca pagina (`SettingsMenu.js`)
+2. **conecteaza Spotify**, daca il arati — autorizarea navigheaza la Spotify si revine pe o
+   pagina noua (`Spotify.js`)
+3. **abia acum** conecteaza banda BLE
+4. dupa pas 3, nu mai schimba limba si nu mai atinge Spotify
+
+Reteaua NU e o problema: Bluetooth-ul e o legatura radio locala, iar WebSocket-ul se
+reconecteaza singur, cu backoff, fara sa reincarce pagina. Internet prost inseamna
+reconectare tacuta, nu pierderea pulsului.
+
+### dupa un refresh, banda BLE se re-imperecheaza cu UN click
+
+Regula robusta: **nu reincarca pagina dupa ce ai conectat banda.** Ordinea de mai sus (limba
+si Spotify inainte de banda) evita singurele reincarcari pe care le face aplicatia, deci in
+demo-ul rulat corect problema nu apare deloc. Nu cere niciun flag.
+
+Daca totusi pagina se reincarca (Cmd-R accidental), **apasa din nou butonul Pair** -- o
+singura data, banda revine. Pe macOS asta e singura cale sigura.
+
+Nota tehnica (de ce nu se reconecteaza singura pe Mac): aplicatia incearca o reconectare
+tacuta prin `navigator.bluetooth.getDevices()`, dar pe macOS/CoreBluetooth un dispozitiv
+intors de `getDevices()` nu e conectabil direct -- trebuie re-descoperit printr-un scan
+(`watchAdvertisements`), iar un ceas deja bonded la nivel de sistem (ex: Huawei) adesea nu
+mai emite reclamele pe care le-ar astepta scanul. In plus metoda e in spatele flag-ului
+`chrome://flags/#enable-web-bluetooth-new-permissions-backend`. Concluzia, verificata pe
+specificatie si pe platforma: reconectarea complet automata nu poate fi facuta sigura pe
+macOS Chrome azi. Codul incearca (cu timeout de 6s ca sa nu blocheze niciodata pornirea) si,
+cand nu reuseste, cade curat pe butonul Pair. Pe alt sistem sau cu flag-ul activat poate
+reusi, dar nu te baza pe asta in demo -- bazeaza-te pe ordinea de pornire.
+
+### banda BLE care se deconecteaza -> personajul adoarme
+
+Cand banda tace (scoasa, deconectata sau dupa un refresh), personajul intra in sleep mode.
+**Iesire: apasa orice tasta de stare 1-5** -- controlul manual il trezeste imediat si il tine
+treaz. (Repunerea benzii pe incheietura il trezeste si ea, cand pulsul live revine.)
+
 ---
 
 ## 1. introducere — problema (1 min)
@@ -140,6 +182,8 @@ puncte:
 | apply fix nu apare | continut prea scurt (`< 10 chars`) | scrie mai mult cod in editor |
 | WHOOP token expirat | token WHOOP dureaza 1h | apasa `DEMO MODE` pe hotbar |
 | WebSocket deconectat | backend restart | toast "Reconectare..." apare automat cu backoff; retry continua in fundal la nesfarsit |
+| banda BLE s-a deconectat, pulsul a disparut | pagina s-a reincarcat (schimbare de limba, autorizare Spotify, refresh) | reconecteaza banda; daca nu ai timp, treci pe `DEMO MODE` din hotbar si continua — starea se forteaza cu tastele 1-5. Nu schimba limba dupa ce ai conectat banda |
+| pulsul se opreste dar pagina nu s-a reincarcat | banda a iesit din raza sau de pe incheietura | HUD-ul arata `--` dupa 5s; aplicatia reincearca singura, cu backoff, ~2 min. Nu apasa nimic |
 | pagina deschisa inaintea backend-ului | ordinea de pornire | nimic de facut — socket-ul reincearca singur si preia cand backend-ul e sus |
 | Claude API cade in timpul demo-ului | timeout / cheie / retea | ghost-ul trece automat pe replici fallback pre-scrise (RO/EN) — demo-ul continua |
 | fara internet in sala | WiFi cazut | fonturile sunt self-hosted, Pyodide e local, demo offline complet functional; doar replicile AI si Spotify pica |

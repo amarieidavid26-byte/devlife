@@ -43,5 +43,18 @@ export function wireBLEPairing({ socket, hud, demoHotbar, toastSystem, offlineBi
     whoop.onGiveUp(() => {
         toastSystem.show('warning', '📴 ' + i18n.t('ble.reconnect_giveup'), i18n.t('ble.reconnect_giveup_body'), 8000);
     });
+
+    // Reconectare tacuta dupa un refresh: pagina reincarcata rupe intotdeauna legatura BLE,
+    // dar permisiunea pe origine ramane, deci banda poate fi reluata fara selector.
+    // Nu se asteapta (fara await): pornirea jocului nu are voie sa depinda de radio.
+    whoop.autoReconnect().then((res) => {
+        if (!res.ok) return;   // orice esec: tacere, utilizatorul apasa Pair ca inainte
+        // aceleasi efecte ca la Pair manual -- fara resumeLive() backend-ul ramane blocat
+        // pe starea de demo si classify() nu se mai misca desi banda transmite
+        socket.resumeLive();
+        demoHotbar.setBLEConnected(true);
+        toastSystem.show('info', '❤️ ' + i18n.t('ble.reconnected'), i18n.t('ble.reconnected_body'), 2500);
+    });
+
     return whoop;
 }

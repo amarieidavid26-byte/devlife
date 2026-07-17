@@ -72,6 +72,11 @@ async def _ws_mock_state(ws, data):
     app_state.forced_until = now + DEMO_STATE_HOLD_SECONDS
     app_state.mock_override_until = now + DEMO_STATE_HOLD_SECONDS
     bio.current_state = forced
+    # trezire imediata: daca banda s-a deconectat, personajul e adormit si abia peste
+    # o secventa de 5s l-ar trezi bucla. Apasarea unei taste de stare inseamna "sunt aici",
+    # deci il trezim pe loc, fara sa asteptam urmatorul tick
+    from loops import _set_sleep_mode
+    _set_sleep_mode(False, "manual wake")
     await ws.send_json(build_biometric_msg(mock.get_data(), forced))
     app_state.intervention_cooldown_until = 0
     app_state.last_analyzed_hashes.clear()
@@ -90,6 +95,20 @@ async def _ws_set_personality(ws, data):
     p = data.get("personality")
     if p in ("coach", "friend", "sarcastic"):
         brain.personality = p
+
+
+# cat timp tine miscarea personajul treaz dupa ultima apasare; reimprospatat la fiecare
+# semnal de miscare de la client, deci "activ = treaz", "plecat de la tastatura = adoarme"
+_MANUAL_AWAKE_HOLD = 120.0
+
+
+async def _ws_wake(ws, data):
+    # miscarea trezeste personajul fara sa forteze o stare demo: sleep-ul se declanseaza cand
+    # banda tace, dar un utilizator care se misca e clar treaz. Nu atinge starea cognitiva --
+    # doar suspenda deductia de banda-scoasa cat timp exista activitate.
+    app_state.manual_awake_until = time.time() + _MANUAL_AWAKE_HOLD
+    from loops import _set_sleep_mode
+    _set_sleep_mode(False, "activity")
 
 
 async def _ws_resume_live(ws, data):
@@ -261,6 +280,7 @@ WS_HANDLERS = {
     "set_lang": _ws_set_lang,
     "set_personality": _ws_set_personality,
     "resume_live": _ws_resume_live,
+    "wake": _ws_wake,
     "app_focus": _ws_app_focus,
     "heart_rate": _ws_heart_rate,
     "keystrokes": _ws_keystrokes,

@@ -150,6 +150,8 @@ class AppState:
     last_intervention_hash: object = None
     sleep_mode_active: bool = False
     sleep_low_hr_count: int = 0
+    # activitate manuala (miscare) care tine personajul treaz fara sa forteze o stare demo
+    manual_awake_until: float = 0.0
     last_coding_activity: float = 0.0
     ghost_running: bool = False
     main_event_loop: object = None
