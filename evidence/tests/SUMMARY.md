@@ -4,8 +4,8 @@
 
 | metric | valoare |
 |--------|---------|
-| total teste | 216 (215 pass + 1 skip condiționat) |
-| pass | 215 |
+| total teste | 219 (218 pass + 1 skip condiționat) |
+| pass | 218 |
 | fail | 0 |
 | skip | 1 (test dependent de mediu) |
 | durata totală | ~5s |
@@ -20,16 +20,18 @@
 | `apply_fix/validator.py` | 94% | doar o linie missed (return success duplicat) |
 | `fallback_responses.py` | 100% | toate fallback paths atinse (EN + RO) |
 | `keystroke_dynamics.py` | 99% | features, scoring stres/oboseală, flow, baseline EMA |
-| `content_analyzer.py` | 93% | analyze() cu client Claude stub-uit: JSON valid/fenced/invalid, erori API, stuck detection, RO |
-| `ghost_brain.py` | 91% | should_intervene complet, firewall templates (EN+RO), personality/lang în prompt, fallback la eroare API — cu client stub-uit |
-| `persistence/db.py` | 89% | sessions, interventions, biometric samples, session replay, calibration |
-| `runtime.py` | 81% | AppState, build_biometric_msg, load/save_calibration |
-| `terminal_pty.py` | 77% | KeystrokeFirewall 100%; spawn/PTY real testat prin test_terminal_ws |
-| `ws_game.py` | 69% | handler-ele WS exercitate prin test_ws_flow + test_run_error_routing |
-| `server.py` | 67% | endpoints HTTP + WS handler de bază |
-| `biometric_engine.py` | 55% | `classify()` (incl. fuziune tastare) + RMSSD 100%; OAuth/HTTP WHOOP nu se testează fără credențiale reale |
-| `loops.py` | 30% | bucle daemon infinite — corpul lor e exercitat indirect prin testele de integrare WS |
-| **total** | **69%** | integrările externe rămase (OAuth WHOOP, PTY spawn) se validează prin demo live |
+| `security.py` | 98% | origin check, token per proces, jail pe WORKSPACE_ROOT, CSRF store |
+| `content_analyzer.py` | 94% | analyze() cu client Claude stub-uit: JSON valid/fenced/invalid, erori API, stuck detection, RO |
+| `persistence/db.py` | 93% | sessions, interventions, biometric samples, session replay, calibration, conexiuni per fir |
+| `ghost_brain.py` | 92% | should_intervene complet, firewall templates (EN+RO), personality/lang în prompt, fallback la eroare API — cu client stub-uit |
+| `runtime.py` | 88% | AppState, build_biometric_msg (incl. câmpuri null de senzor), load/save_calibration |
+| `terminal_pty.py` | 83% | KeystrokeFirewall: oglinda liniei, escape-uri, bracketed paste, fail-closed; PTY real prin test_terminal_ws + test_pty_reaping |
+| `ws_game.py` | 75% | handler-ele WS exercitate prin test_ws_flow + test_run_error_routing + test_ws_malformed |
+| `server.py` | 71% | endpoints HTTP + WS handler de bază |
+| `context_history.py` | 58% | rezumatul de context trimis ghost-ului |
+| `biometric_engine.py` | 57% | `classify()` (incl. fuziune tastare) + RMSSD 100%; OAuth/HTTP WHOOP nu se testează fără credențiale reale |
+| `loops.py` | 31% | bucle daemon infinite — corpul lor e exercitat indirect prin testele de integrare WS |
+| **total** | **74%** | integrările externe rămase (OAuth WHOOP, PTY spawn) se validează prin demo live |
 
 ## structura tehnică a testelor
 
@@ -43,6 +45,7 @@
 | `tests/test_keystroke_dynamics.py` | 13 | features din ritmul tastării, scoring stres (rapid+corecturi) / oboseală (lent+erratic+pauze), flow, baseline EMA înghețat cât timp tastarea e deviată (nu-și mai anulează semnalul), fuziune în classify() (typing-only / demo_locked / puls real câștigă) |
 | `tests/test_ghost_brain.py` | 19 | should_intervene (firewalls, cooldown adaptiv, protecting_flow), template-uri instant EN+RO fără apel API, prompt shaping (personalitate+limbă), fallback la eroare API, feedback counters |
 | `tests/test_content_analyzer.py` | 10 | analyze() cu client stub-uit: detecție riscantă instant (doar terminal), JSON valid/fenced/invalid, erori API cu/fără istoric, stuck detection în prompt, RO, metadata kwargs |
+| `tests/test_db_concurrency.py` | 3 | fiecare fir primește propria conexiune SQLite, iar scrisul și cititul simultan nu mai corup conexiunea și nu mai pierd sample-uri |
 | `tests/test_calibration.py` | 3 | roundtrip calibration în SQLite, save→load restaurează baseline-urile, load fără valori păstrează defaults |
 | `tests/test_keystroke_firewall.py` | 15 | firewall server-side în PTY: Enter înghițit + Ctrl-U pe comenzi riscante, editare cu backspace, Ctrl-C abandon, gate pe stare, paste multi-comandă; oglinda liniei sub săgeți/Home/End, conținut de bracketed paste, și fail-closed pe istoric/yank/completare |
 | `tests/test_firewall_intervention.py` | 5 | intervenția ghost la comandă blocată, override one-shot armat din client |

@@ -1,6 +1,7 @@
 import logging
 import os
 import sqlite3
+import threading
 import time
 from pathlib import Path
 from typing import Optional
@@ -8,7 +9,9 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 _MIGRATIONS_DIR = Path(__file__).parent / "migrations"
-_conn: Optional[sqlite3.Connection] = None
+_local = threading.local()
+_migrated_paths: set[str] = set()
+_migrate_lock = threading.Lock()
 _current_session_id: Optional[int] = None
 
 
@@ -18,17 +21,46 @@ def get_db_path() -> str:
 
 
 def connect() -> sqlite3.Connection:
-    global _conn
-    if _conn is not None:
-        return _conn
+    """Cate o conexiune per fir.
+
+    Un sqlite3.Connection nu e thread-safe: are o masina de stare de tranzactie implicita
+    si un cache de statement-uri, niciunul protejat. `check_same_thread=False` doar taia
+    verificarea care semnala asta -- nu si cursa. Trei fire scriau prin aceeasi conexiune
+    (biometric_loop, ghost_loop si event loop-ul cu endpoint-urile async), iar cand se
+    intersectau aparea "cannot start a transaction within a transaction" sau se pierdea
+    tacut un sample. In plus, WAL exista tocmai ca sa mearga in paralel mai multi cititori
+    si un scriitor -- pe o singura conexiune partajata nu avea ce sa faca.
+    """
+    conn = getattr(_local, "conn", None)
+    if conn is not None:
+        return conn
     path = get_db_path()
     os.makedirs(os.path.dirname(path), exist_ok=True) if os.path.dirname(path) else None
-    _conn = sqlite3.connect(path, check_same_thread=False)
-    _conn.row_factory = sqlite3.Row
-    _conn.execute("PRAGMA journal_mode=WAL")
-    _run_migrations(_conn)
-    logger.info("db connected: %s", path)
-    return _conn
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    # cu mai multe conexiuni, un scriitor concurent da "database is locked" pe loc; asteapta
+    conn.execute("PRAGMA busy_timeout=5000")
+    with _migrate_lock:
+        if path not in _migrated_paths:
+            # journal_mode e o proprietate a fisierului, pastrata in antet: se seteaza o
+            # singura data, nu per conexiune. Trecerea in WAL cere pentru o clipa lacat
+            # exclusiv, deci din doua fire care deschid simultan arunca "database is locked"
+            conn.execute("PRAGMA journal_mode=WAL")
+            _run_migrations(conn)
+            _migrated_paths.add(path)
+    _local.conn = conn
+    logger.info("db connected: %s (fir %s)", path, threading.current_thread().name)
+    return conn
+
+
+def reset():
+    """Inchide conexiunea firului curent si uita migratiile (folosit de teste, care dau
+    alt DB_PATH la fiecare test)."""
+    conn = getattr(_local, "conn", None)
+    if conn is not None:
+        conn.close()
+        _local.conn = None
+    _migrated_paths.clear()
 
 
 def _run_migrations(conn: sqlite3.Connection):

@@ -6,7 +6,7 @@ from persistence import db
 
 def _fresh_db(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "get_db_path", lambda: str(tmp_path / "t.db"))
-    db._conn = None
+    db.reset()
     db._current_session_id = None
 
 
@@ -29,7 +29,7 @@ def test_timeline_returns_samples_and_interventions(tmp_path, monkeypatch):
     assert len(out["interventions"]) == 1
     assert out["interventions"][0]["claude_text"] == "breathe bro"
     db.end_session()
-    db._conn = None
+    db.reset()
     db._current_session_id = None
 
 

@@ -16,6 +16,7 @@ mkdir -p evidence/tests
     --cov=server --cov=runtime --cov=loops --cov=ws_game \
     --cov=biometric_engine --cov=keystroke_dynamics --cov=ghost_brain \
     --cov=content_analyzer --cov=fallback_responses \
+    --cov=terminal_pty --cov=context_history --cov=security \
     --cov=apply_fix --cov=persistence \
     --cov-report=html:evidence/tests/coverage \
     --cov-report=term-missing \

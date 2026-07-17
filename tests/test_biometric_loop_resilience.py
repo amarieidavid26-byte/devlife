@@ -4,6 +4,8 @@ statea in afara oricarui try din biometric_loop -- firul e daemon, nu are superv
 nimic nu-l reporneste, deci un singur camp lipsa ingheta HUD-ul pana la restart.
 """
 
+import re
+
 from runtime import build_biometric_msg
 
 
@@ -48,8 +50,11 @@ def test_biometric_loop_survives_a_failing_cycle():
     src = inspect.getsource(loops.biometric_loop)
     body = src.split("while app_state.ghost_running:", 1)[1]
 
-    assert body.lstrip().startswith("#") or body.lstrip().startswith("try:"), \
-        "corpul buclei de biometrie nu mai e protejat"
+    # try: inainte de prima instructiune a ciclului -- altfel prinde doar o bucata din el
     assert "try:" in body.split("is_whoop", 1)[0], \
         "try-ul trebuie sa cuprinda tot ciclul, nu doar o portiune"
-    assert "except Exception" in body
+    assert "except Exception" in body, "ciclul nu mai are ramura de recuperare"
+    # sleep-ul ramane in afara try-ului, ca in ghost_loop: altfel o exceptie ar sari peste el
+    # si bucla ar arde CPU incercand la nesfarsit
+    assert re.search(r"except Exception[^\n]*\n(?:\s+[^\n]+\n)+?\s{8}time\.sleep\(5\)", body), \
+        "time.sleep(5) trebuie sa ramana dupa except, la nivelul buclei"

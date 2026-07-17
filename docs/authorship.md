@@ -4,8 +4,8 @@
 
 | autor | GitHub | rol |
 |-------|--------|-----|
-| David Amariei | amarieidavid26-byte | backend Python, WHOOP integration, WebSocket, deployment, DemoMode |
-| Matei Vultur | mateivul | frontend PixiJS, arhitectura, securitate, persistenta, teste, CI |
+| David Amariei | amarieidavid26-byte | frontend PixiJS (camera izometrica, scene, ghost), WHOOP BLE + dashboard, DemoMode, deployment |
+| Matei Vultur | mateivul | backend FastAPI, persistenta, securitate, teste, CI, documentatie |
 
 ## distributia muncii
 
@@ -22,7 +22,7 @@
 - SQLite persistence layer: sessions, interventions, apply_fix_audit (T05)
 - offline fallback: DEMO_OFFLINE mode, seeded mock, degraded banner (T06)
 - Apply Fix safety: contract Pydantic, validator, preview UI, rollback, audit (T07)
-- suite de teste: 92 teste (biometric classifier, WS flow, apply fix, fallback, heart_rate handler, run_error routing, HRV live, session replay, keystroke firewall) (T08)
+- suite de teste: 219 teste (biometric classifier, WS flow, apply fix, fallback, heart_rate handler, run_error routing, HRV live, session replay, keystroke firewall) (T08)
 - i18n RO/EN cu toggle in Settings (T09)
 - deploy readiness: /ready endpoint, runtime.txt, healthcheck (T10)
 - docs: rubric matrix, demo playbook, install runbook, deploy runbook, assets compliance (T01, T11, T12)
@@ -46,7 +46,7 @@ Parti din cod au fost scrise cu asistenta Claude AI (Anthropic) in sesiuni de pa
 - AI a sugerat structuri, noi am decis ce pastra
 - tot codul a trecut prin review uman inainte de commit
 - deciziile arhitecturale (ce sa persistam, cum sa validam patch-urile, cum sa structuram AppState) au fost ale noastre
-- AI nu a avut acces la repo — toate sugestiile au fost integrate manual
+- nimic nu a ajuns in istoria proiectului fara ca unul dintre noi sa citeasca modificarea si sa dea el insusi commit-ul
 
 ## resurse externe declarate
 

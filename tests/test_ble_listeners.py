@@ -43,9 +43,10 @@ def test_bound_handlers_are_created_once_in_the_constructor(src):
 
 
 def test_no_inline_arrow_is_registered_as_an_event_listener(src):
-    inline = re.findall(r"addEventListener\(\s*'[^']+'\s*,\s*(?:\([^)]*\)|\w+)\s*=>", src)
+    """Prinde orice eveniment, nu doar cele doua stiute: un arrow nou la fiecare
+    inregistrare aduna listeneri, indiferent pe ce eveniment."""
+    # (…) => … si x => …: ambele forme, altfel `ev => this._onHeartRate(ev)` scapa
+    found = re.findall(r"addEventListener\(\s*'[^']+'\s*,\s*(?:\([^)]*\)|\w+)\s*=>", src)
     # visibilitychange se inregistreaza o singura data, pazit de _visibilityWired
-    assert [a for a in inline] == [] or "_visibilityWired" in src
-    for ev in ("characteristicvaluechanged", "gattserverdisconnected"):
-        assert not re.search(rf"addEventListener\(\s*'{ev}'\s*,\s*\([^)]*\)\s*=>", src), \
-            f"{ev} s-a intors la un arrow inline -- listenerele se vor aduna la reconectare"
+    inline = [a for a in found if "visibilitychange" not in a]
+    assert inline == [], f"listener inregistrat cu arrow inline -- se aduna la reconectare: {inline}"

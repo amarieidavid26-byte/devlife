@@ -24,7 +24,7 @@ def _client():
 
 def _fresh_db(tmp_path, monkeypatch):
     monkeypatch.setattr(db, "get_db_path", lambda: str(tmp_path / "t.db"))
-    db._conn = None
+    db.reset()
     db._current_session_id = None
 
 
