@@ -1,6 +1,26 @@
 # screenshots — checklist pentru predare
 
-36 capturi necesare pentru documentatia DOCX + sustinerea rubricii (Cap III + IV.2).
+Capturi pentru documentatia DOCX + sustinerea rubricii (Cap III + IV.2).
+
+## status (18 iulie 2026)
+
+**23 din 36 capturate** — acopera intreg fluxul principal: meniu, camera izometrica,
+dashboard biometric, Fatigue Firewall (client + server), Apply Fix, terminal, code runner
+(Python happy/error, JS timeout, review-only), scenele Town/Cafe/Cowork, Settings + limba +
+personalitate, shortcuts. Numerotate ca in tabelul de mai jos (`01.png` … `35.png`).
+
+Cele 13 ramase, pe categorii:
+
+- **necesita banda WHOOP reala** (le face colegul cu hardware): 28 (BPM live BLE), 33 (HRV
+  cu punct verde din RR).
+- **optionale, depind de servicii externe**: 19 (mod desktop cu Claude Vision — cere cheie
+  Claude activa), 22 (dashboard Railway — doar daca deploy-ul e viu).
+- **de facut in DEMO_OFFLINE, fara hardware**: 08 (banner mod degradat), 09 (sleep mode —
+  cel mai usor cu banda deconectata), 17 (planta in 3 stadii), 18 (credits outro), 20 (schema
+  DB), 29 (replay sesiune), 30 (panoul "Ghost invata"), 36 (planta ofilita).
+
+Scenariul de noapte (23): deschide `http://127.0.0.1:5173/?clock=01:30` — flag-ul fixeaza
+ora afisata pe dashboard fara sa umbli la ceasul sistemului — apoi `3` (FATIGUED) + TAB.
 
 ## conventii
 
@@ -207,39 +227,39 @@ deschide http://localhost:5173 in Chrome.
 
 | # | nume | status | observatii |
 |---|------|--------|------------|
-| 01 | main-menu | ⏳ | |
-| 02 | room-relaxed | ⏳ | |
-| 03 | architecture-diagram | ⏳ | poate fi exportat ASCII din docs/architecture.md |
-| 04 | hud-biometric | ⏳ | |
-| 05 | fatigue-firewall | ⏳ | **CRITICAL — capture cel mai important** |
-| 06 | apply-fix-preview | ⏳ | |
-| 07 | apply-fix-audit-sql | ⏳ | |
+| 01 | main-menu | ✅ | |
+| 02 | room-relaxed | ✅ | |
+| 03 | architecture-diagram | ✅ | poate fi exportat ASCII din docs/architecture.md |
+| 04 | hud-biometric | ✅ | |
+| 05 | fatigue-firewall | ✅ | **CRITICAL — capture cel mai important** |
+| 06 | apply-fix-preview | ✅ | |
+| 07 | apply-fix-audit-sql | ✅ | |
 | 08 | degraded-mode-banner | ⏳ | |
 | 09 | sleep-mode | ⏳ | |
-| 10 | dashboard-ecg | ⏳ | |
-| 11 | settings-language | ⏳ | |
-| 12 | codeeditor-with-fix | ⏳ | |
-| 13 | terminal-risky | ⏳ | |
-| 14 | town-scene | ⏳ | |
-| 15 | cafe-scene | ⏳ | |
-| 16 | cowork-scene | ⏳ | |
+| 10 | dashboard-ecg | ✅ | |
+| 11 | settings-language | ✅ | |
+| 12 | codeeditor-with-fix | ✅ | |
+| 13 | terminal-risky | ✅ | |
+| 14 | town-scene | ✅ | |
+| 15 | cafe-scene | ✅ | |
+| 16 | cowork-scene | ✅ | |
 | 17 | plant-progression | ⏳ | 3 capturi side-by-side |
 | 18 | outro-credits | ⏳ | |
 | 19 | desktop-mode | ⏳ | optional, depinde de Claude API |
 | 20 | db-schema | ⏳ | |
-| 21 | dev-sh-running | ⏳ | |
+| 21 | dev-sh-running | ✅ | |
 | 22 | railway-deploy | ⏳ | optional, depinde de deploy |
 | 23 | scenariu-git-reset | ⏳ | bonus pentru §7.3 |
-| 24 | runner-python-happy | ⏳ | desk code runner, Pyodide |
-| 25 | runner-python-error-then-ghost | ⏳ | **DEMO SET-PIECE** runtime error → ghost |
-| 26 | runner-js-timeout | ⏳ | Web Worker sandbox 5s |
-| 27 | runner-review-only-hint | ⏳ | degradare gratioasa C++/Go |
+| 24 | runner-python-happy | ✅ | desk code runner, Pyodide |
+| 25 | runner-python-error-then-ghost | ✅ | **DEMO SET-PIECE** runtime error → ghost |
+| 26 | runner-js-timeout | ✅ | Web Worker sandbox 5s |
+| 27 | runner-review-only-hint | ✅ | degradare gratioasa C++/Go |
 | 28 | whoop-ble-live-bpm | ⏳ | optional, necesita hardware WHOOP |
 | 29 | session-replay-scrub | ⏳ | **NOU** dashboard (TAB) → panoul "Replay sesiune", mouse pe timeline, readout vizibil |
 | 30 | ghost-learning-panel | ⏳ | **NOU** dashboard → "Ghost invata": rata acceptare + mesajul de cooldown adaptiv |
-| 31 | personality-settings | ⏳ | **NOU** Settings → Personalitatea Ghost-ului, "Sarcastic" activ |
-| 32 | firewall-sarcastic | ⏳ | **NOU** interventie firewall cu personalitatea Sarcastic — combo memorabil |
+| 31 | personality-settings | ✅ | **NOU** Settings → Personalitatea Ghost-ului, "Sarcastic" activ |
+| 32 | firewall-sarcastic | ✅ | **NOU** interventie firewall cu personalitatea Sarcastic — combo memorabil |
 | 33 | hrv-live-dot | ⏳ | **NOU** necesita strap BLE cu RR: HUD cu HRV + punct verde (RMSSD live) |
-| 34 | server-firewall-banner | ⏳ | **NOU** banner rosu "FATIGUE FIREWALL (server)" in terminal (stare FATIGUED + comanda riscanta) |
-| 35 | shortcuts-overlay | ⏳ | **NOU** apasa `?` in joc |
+| 34 | server-firewall-banner | ✅ | **NOU** banner rosu "FATIGUE FIREWALL (server)" in terminal (stare FATIGUED + comanda riscanta) |
+| 35 | shortcuts-overlay | ✅ | **NOU** apasa `?` in joc |
 | 36 | plant-withering | ⏳ | **NOU** planta ofilita (frunze cazand) dupa interventii ignorate |

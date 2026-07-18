@@ -84,6 +84,14 @@ class SpotifyService {
 
     async beginAuth() {
         if (!this.clientId) throw new Error('VITE_SPOTIFY_CLIENT_ID not set');
+        // Spotify respinge redirect URI-urile `localhost` si cere `127.0.0.1`. Daca jocul e
+        // deschis pe localhost, redirect_uri-ul derivat (origin + '/') nu se potriveste cu
+        // cel inregistrat si Spotify raspunde cu o pagina goala "redirect_uri Not matching".
+        // Prindem cazul aici cu un mesaj clar, in loc sa trimitem userul in acel dead-end.
+        if (window.location.hostname === 'localhost') {
+            throw new Error('deschide jocul pe http://127.0.0.1:' + (window.location.port || '5173') +
+                ' (nu localhost) — Spotify respinge redirect URI-urile localhost');
+        }
         const verifier = _randomString(64);
         const challengeBytes = await _sha256(verifier);
         const challenge = _b64url(challengeBytes);
