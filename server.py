@@ -157,6 +157,9 @@ async def get_session():
             "lsp": LSP_ENABLED,
             "inline_ai": INLINE_AI_ENABLED,
             "code_server": CODE_SERVER_ENABLED,
+            # efectiv, nu doar .env: cheile WHOOP pot fi puse din panoul Manage Keys (au
+            # precedenta peste .env), iar OAuth foloseste aceeasi valoare (bio.client_id)
+            "whoop": bool(effective_setting("whoop_client_id")),
         },
         "workspace_root": WORKSPACE_ROOT,
     }

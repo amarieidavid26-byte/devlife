@@ -528,6 +528,9 @@
   "cowork.panel_empty": "That desk is free. In the future, other players could sit here and you'd see their real biometrics. Imagine that.",
   "cowork.panel_whiteboard": "Sprint board says: 'Ship DevLife by March 22.' Sounds familiar.",
 
+  "whoop.section": "WHOOP ACCOUNT",
+  "whoop.hint": "The \"Pair sensor\" button in the HUD only starts Bluetooth (live pulse). Recovery, strain, sleep and daily HRV come from your WHOOP account — connect it here.",
+  "whoop.connect": "Connect WHOOP account",
   "spotify.section": "SPOTIFY",
   "spotify.connect": "Connect Spotify",
   "spotify.disconnect": "Disconnect Spotify",

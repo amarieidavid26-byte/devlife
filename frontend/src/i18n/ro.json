@@ -528,6 +528,9 @@
   "cowork.panel_empty": "Biroul acela e liber. În viitor, alți jucători ar putea sta aici și le-ai vedea datele biometrice reale. Imaginează-ți.",
   "cowork.panel_whiteboard": "Tabla de sprint spune: «Livrează DevLife până pe 22 martie». Sună cunoscut.",
 
+  "whoop.section": "CONT WHOOP",
+  "whoop.hint": "Butonul \"Conectează senzor\" din HUD pornește doar Bluetooth-ul (puls live). Recovery, efort, somn și HRV zilnic vin din contul WHOOP — conectează-l aici.",
+  "whoop.connect": "Conectează cont WHOOP",
   "spotify.section": "SPOTIFY",
   "spotify.connect": "Conectează Spotify",
   "spotify.disconnect": "Deconectează Spotify",

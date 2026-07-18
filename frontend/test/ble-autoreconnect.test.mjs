@@ -118,15 +118,13 @@ await t('connect() hangs forever -> timeout aborts it, does NOT hang boot', asyn
     const dev = makeDevice('aaa', { hangs: true });
     stubBluetooth([dev]);
     const b = new WHOOPBluetooth();
-    const started = Date.now();
+    b._autoConnectTimeoutMs = 50;   // testable seam: don't depend on the real 6s wall-clock
     const r = await Promise.race([
         b.autoReconnect(),
-        new Promise(res => setTimeout(() => res({ ok: false, reason: 'HUNG' }), 9000)),
+        new Promise(res => setTimeout(() => res({ ok: false, reason: 'HUNG' }), 3000)),
     ]);
-    const ms = Date.now() - started;
-    eq(r.reason, 'timeout', 'reason');
+    eq(r.reason, 'timeout', 'reason');           // not 'HUNG' -> the timeout fired, boot did not stall
     eq(dev.__disconnectCalled(), true, 'disconnect() must abort the in-flight connect');
-    if (ms > 8000) throw new Error(`took ${ms}ms — boot would stall`);
     eq(b.connected, false, 'connected');
 });
 

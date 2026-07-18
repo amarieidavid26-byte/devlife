@@ -22,8 +22,9 @@ export class WHOOPBluetooth {
         this._onGiveUp = null;
         this._visibilityWired = false;
         this._cancelAuto = false;
-        // instanta, ca testele sa poata scurta asteptarile fara sa astepte 2 minute reale
+        // instanta, ca testele sa poata scurta asteptarile fara sa astepte timpi reali
         this._reconnectDelays = RECONNECT_DELAYS;
+        this._autoConnectTimeoutMs = AUTO_CONNECT_TIMEOUT_MS;
         // referinte stabile: addEventListener ignora un (tip, listener) deja inregistrat
         // doar daca functia e aceeasi. Cu cate un arrow nou la fiecare resubscriere,
         // fiecare reconectare mai adauga un listener pe aceeasi caracteristica, iar un
@@ -78,7 +79,7 @@ export class WHOOPBluetooth {
             const timer = setTimeout(() => {
                 timedOut = true;
                 try { device.gatt.disconnect(); } catch (_) { /* deja cazut */ }
-            }, AUTO_CONNECT_TIMEOUT_MS);
+            }, this._autoConnectTimeoutMs);
 
             try {
                 const server = await device.gatt.connect();

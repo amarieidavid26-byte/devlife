@@ -1,6 +1,8 @@
 import { i18n } from '../i18n/index.js';
 import { Spotify } from '../network/Spotify.js';
 import { openApiKeysModal } from '../hud/ApiKeysModal.js';
+import { CONFIG } from '../config.js';
+import { getFeatures } from '../network/session.js';
 
 const KEYBINDS = [
   ['WASD', 'settings.kb_move'],
@@ -111,6 +113,34 @@ export class SettingsMenu {
     muteRow.appendChild(muteLabel);
     muteRow.appendChild(muteBox);
     panel.appendChild(muteRow);
+
+    // WHOOP account (OAuth cloud) — distinct from "PAIR SENSOR" (Bluetooth, live pulse only).
+    // Recovery, strain, sleep si HRV zilnic vin DOAR de aici; fara acest pas raman "--".
+    // Sectiunea se construieste mereu, dar vizibilitatea se decide la fiecare deschidere
+    // (show()): panoul e construit in constructor, INAINTE ca initSession() sa aduca
+    // feature flags, deci un `if (getFeatures().whoop)` aici ar fi mereu fals la pornire.
+    // Ascunsa cand nu exista chei WHOOP configurate, altfel butonul ar duce la un redirect rupt.
+    this._whoopSection = document.createElement('div');
+    this._whoopSection.appendChild(this._sectionLabel(i18n.t('whoop.section')));
+    const whoopHint = document.createElement('div');
+    whoopHint.style.cssText = "font-family:'Nunito',sans-serif;font-size:11px;color:#8A7E6A;line-height:1.5;margin-bottom:10px;";
+    whoopHint.textContent = i18n.t('whoop.hint');
+    this._whoopSection.appendChild(whoopHint);
+    const whoopBtn = document.createElement('button');
+    whoopBtn.style.cssText = `padding:8px 16px;background:rgba(255,255,255,0.05);
+      color:#6AD89A;border:1px solid #6AD89A;border-radius:4px;cursor:pointer;
+      font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;
+      transition:background 0.15s;`;
+    whoopBtn.textContent = i18n.t('whoop.connect');
+    whoopBtn.addEventListener('mouseenter', () => { whoopBtn.style.background = '#6AD89A22'; });
+    whoopBtn.addEventListener('mouseleave', () => { whoopBtn.style.background = 'rgba(255,255,255,0.05)'; });
+    whoopBtn.addEventListener('click', () => {
+      // navigheaza la fluxul OAuth din backend; el redirectioneaza la WHOOP si inapoi in aplicatie
+      window.location.href = CONFIG.BACKEND_URL + '/api/whoop/auth';
+    });
+    this._whoopSection.appendChild(whoopBtn);
+    this._whoopSection.style.display = getFeatures().whoop ? '' : 'none';
+    panel.appendChild(this._whoopSection);
 
     // spotify section — only shown when client_id is configured at build time
     if (Spotify.isConfigured()) {
@@ -271,6 +301,12 @@ export class SettingsMenu {
 
   show() {
     this._visible = true;
+    // feature flags sosesc dupa constructie (initSession e async), deci re-evaluam
+    // vizibilitatea sectiunii WHOOP la fiecare deschidere -- pana acum se deschide, sesiunea
+    // e gata de mult
+    if (this._whoopSection) {
+      this._whoopSection.style.display = getFeatures().whoop ? '' : 'none';
+    }
     this._root.style.visibility = 'visible';
     void this._root.offsetWidth;
     this._root.style.opacity = '1';
