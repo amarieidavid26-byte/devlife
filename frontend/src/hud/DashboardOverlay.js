@@ -87,10 +87,16 @@ export class DashboardOverlay {
 
     _startClock() {
         const padZ = n => (n < 10 ? '0' : '') + n;
+        // ?clock=01:30 in URL fixeaza ora afisata (secundele curg normal), pentru capturi de
+        // scenariu gen "git reset la 1:30 noaptea", fara sa umbli la ceasul sistemului
+        const cm = (new URLSearchParams(location.search).get('clock') || '').match(/^(\d{1,2}):(\d{2})$/);
+        const fixed = cm ? { h: +cm[1], m: +cm[2] } : null;
         setInterval(() => {
             const now = new Date();
+            const hh = fixed ? fixed.h : now.getHours();
+            const mm = fixed ? fixed.m : now.getMinutes();
             this._$.clock.textContent =
-                padZ(now.getHours()) + ':' + padZ(now.getMinutes()) + ':' + padZ(now.getSeconds());
+                padZ(hh) + ':' + padZ(mm) + ':' + padZ(now.getSeconds());
             if (this._sessionStart && this._isConnected) {
                 const s = Math.floor((Date.now() - this._sessionStart) / 1000);
                 this._$.sessionTimer.textContent =
