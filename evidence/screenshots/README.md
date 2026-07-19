@@ -37,7 +37,7 @@ deschide http://localhost:5173 in Chrome.
 - **cum**: START → asteapta sa intri in scena Room → starea initiala e RELAXED
 - **focus**: vibrant warm palette, atmosfera prietenoasa, Ghost cu aura
 
-### 03 — diagrama arhitectura (pentru §2.1)
+### 03 — diagrama arhitectura (pentru §2.1)     
 - **ce arata**: diagrama ASCII din `docs/architecture.md` exportata ca imagine
 - **cum**: foloseste un tool ca [carbon.now.sh](https://carbon.now.sh) sau screenshot la sectiunea din MD afisata in browser cu zoom mare
 - **alternativa**: deseneaza o diagrama proprie cu Excalidraw + ai cei 5 layers + 3 servicii externe
