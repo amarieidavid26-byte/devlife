@@ -15,6 +15,8 @@ Plus resolve_in_workspace() to keep all file access inside WORKSPACE_ROOT, and a
 CSRF state store for the WHOOP OAuth round-trip.
 """
 
+import hashlib
+import hmac
 import logging
 import secrets
 import time
@@ -28,7 +30,34 @@ logger = logging.getLogger(__name__)
 SESSION_TOKEN = secrets.token_urlsafe(32)
 
 _CSRF_TTL_SECONDS = 600
-_pending_csrf_states: dict[str, float] = {}
+# states already burned, so a replay is rejected within this process. The VALIDITY of a state
+# no longer depends on this dict (it is a signature check), so a uvicorn --reload wiping it can
+# only weaken single-use, never reject a legitimate in-flight login -- which was the real cause
+# of "the WHOOP login only works sometimes".
+_consumed_csrf_states: dict[str, float] = {}
+_csrf_signing_key = None
+
+
+def _csrf_key() -> bytes:
+    """Signing key for the stateless CSRF state. Persisted in the local DB so it survives a
+    reload/restart (SESSION_TOKEN is regenerated each process and would break in-flight logins).
+    """
+    global _csrf_signing_key
+    if _csrf_signing_key is not None:
+        return _csrf_signing_key
+    try:
+        from persistence import db
+        key = db.get_setting("csrf_signing_key")
+        if not key:
+            key = secrets.token_urlsafe(32)
+            db.set_setting("csrf_signing_key", key)
+    except Exception as e:
+        # DB unavailable (e.g. a unit test with no migrations): fall back to a process-local key.
+        # Single-process flows still work; only a cross-reload login would be affected.
+        logger.warning("csrf key persistence unavailable (%s); using ephemeral key", e)
+        key = secrets.token_urlsafe(32)
+    _csrf_signing_key = key.encode()
+    return _csrf_signing_key
 
 
 def check_origin(websocket) -> bool:
@@ -65,24 +94,43 @@ def resolve_in_workspace(rel_path: str) -> Path:
 
 
 def new_state() -> str:
-    """Issue a one-time CSRF state for the WHOOP OAuth redirect."""
-    state = secrets.token_urlsafe(16)
-    _pending_csrf_states[state] = time.time() + _CSRF_TTL_SECONDS
-    _prune_states()
-    return state
+    """Issue a signed, single-use CSRF state for the WHOOP OAuth redirect.
+
+    Stateless by design: validity is a signature + timestamp check, so there is no in-memory
+    entry to lose if the dev server reloads mid-login. A random nonce keeps two states issued in
+    the same second distinct.
+    """
+    payload = f"{int(time.time())}.{secrets.token_urlsafe(8)}"
+    sig = hmac.new(_csrf_key(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+    return f"{payload}.{sig}"
 
 
 def consume_state(state: str | None) -> bool:
-    """Validate and burn a CSRF state. Returns False if unknown or expired."""
-    _prune_states()
-    if not state:
+    """Validate and burn a CSRF state. Returns False if malformed, mis-signed, expired or reused."""
+    if not state or state.count(".") != 2:
         return False
-    expiry = _pending_csrf_states.pop(state, None)
-    return expiry is not None and expiry > time.time()
+    ts_str, _nonce, sig = state.split(".")
+    try:
+        issued = int(ts_str)
+    except ValueError:
+        return False
+    now = time.time()
+    if now - issued > _CSRF_TTL_SECONDS or issued > now + 60:
+        return False
+    payload = f"{ts_str}.{_nonce}"
+    expected = hmac.new(_csrf_key(), payload.encode(), hashlib.sha256).hexdigest()[:32]
+    # compare bytes: compare_digest raises TypeError on non-ASCII str, and sig is caller input
+    if not hmac.compare_digest(sig.encode(), expected.encode()):
+        return False
+    _prune_states()
+    if state in _consumed_csrf_states:
+        return False   # replay within this process
+    _consumed_csrf_states[state] = issued + _CSRF_TTL_SECONDS
+    return True
 
 
 def _prune_states() -> None:
     now = time.time()
-    expired = [s for s, exp in _pending_csrf_states.items() if exp <= now]
+    expired = [s for s, exp in _consumed_csrf_states.items() if exp <= now]
     for s in expired:
-        _pending_csrf_states.pop(s, None)
+        _consumed_csrf_states.pop(s, None)

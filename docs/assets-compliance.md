@@ -1,13 +1,13 @@
-# resurse externe — conformitate (criterii VI.2)
+# resurse externe: conformitate (criterii VI.2)
 
 Lista completa a resurselor externe folosite in DevLife. Versiunile si licentele sunt cele ale
 pachetelor instalate efectiv (`frontend/package.json`, `requirements.txt`).
 
 ## assets grafice
 
-Nu exista assets grafice externe. Toata grafica — mobilier, personaje, camera izometrica,
-scenele din oras — este desenata procedural din cod, cu `PIXI.Graphics`. Niciun sprite sheet,
-tileset sau asset pack.
+Nu exista assets grafice externe. Toata grafica (mobilier, personaje, camera izometrica,
+scenele din oras) este desenata procedural din cod, cu `PIXI.Graphics`. Niciun sprite sheet
+sau tileset. Niciun asset pack.
 
 Pachetul de sprite-uri izometrice folosit intr-o faza timpurie a fost eliminat din arborele de
 lucru impreuna cu incarcatorul lui.
@@ -24,13 +24,15 @@ camera ramane silentios in absenta lui.
 
 Livrate self-hosted ca `.woff2` in `frontend/public/lib/fonts/` si incarcate prin
 `/lib/fonts/fonts.css` (`frontend/index.html`), nu prin CDN: interfata trebuie sa arate identic
-si fara conexiune la internet, pentru demo offline.
+si fara conexiune la internet, pentru demo offline. Singura exceptie e pagina separata
+`frontend/public/dashboard.html` (dashboard-ul standalone), care incarca JetBrains Mono si
+Inter din Google Fonts CDN; jocul propriu-zis nu depinde de ea.
 
 | font | rol in interfata | licenta |
 |------|------------------|---------|
 | Fredoka | titluri, numele starii cognitive | SIL OFL 1.1 |
 | Nunito | text curent, etichete | SIL OFL 1.1 |
-| JetBrains Mono | cifrele biometrice live si terminalul — latimea fixa a cifrelor le tine pe loc la actualizare | SIL OFL 1.1 |
+| JetBrains Mono | cifrele biometrice live din dashboard si HUD (latimea fixa a cifrelor le tine pe loc la actualizare); terminalul xterm foloseste fonturile monospace de sistem (Menlo/Monaco) | SIL OFL 1.1 |
 
 ## biblioteci JavaScript
 
@@ -41,10 +43,10 @@ si fara conexiune la internet, pentru demo offline.
 | @xterm/xterm | 5.5.0 | terminalul din joc (`src/apps/Terminal.js`) | MIT |
 | @xterm/addon-fit | 0.11.0 | redimensionarea terminalului la fereastra | MIT |
 | JSCPP | 2.0.9 | interpretorul C++ care ruleaza in browser (`src/apps/runners/cppWorker.js`) | MIT |
-| howler | 2.2.4 | redarea sunetelor sintetizate | MIT |
+| howler | 2.2.4 | declarata in `package.json`, fara consumator in cod: sunetele sunt sintetizate direct cu Web Audio API (`src/audio/SoundManager.js`) | MIT |
 | vite | 5.4.21 | bundler si server de dezvoltare | MIT |
-| terser | 5.47.1 | minificare la build | BSD-2-Clause |
-| ws | 8.19.0 | server WebSocket folosit doar la testare locala | MIT |
+| terser | 5.47.1 | declarata in `devDependencies`, fara consumator: build-ul minifica cu esbuild (`vite.config.js`) | BSD-2-Clause |
+| ws | 8.19.0 | declarata in `devDependencies`, fara consumator in cod: serverul de test care o folosea (`test-server.js`) a fost sters | MIT |
 
 ## Pyodide
 
@@ -78,7 +80,7 @@ Dependinte directe, cu rol functional:
 | ImageHash | 4.3.2 | detectarea ecranelor identice, ca sa nu fie re-analizate | BSD-2-Clause |
 | PyWavelets | 1.9.0 | dependinta a ImageHash | MIT si BSD-3-Clause |
 | mss | 10.1.0 | captura de ecran | MIT |
-| pytest, pytest-asyncio | 9.0.3 / 1.x | suita de teste | MIT |
+| pytest, pytest-asyncio | 9.0.3 / 1.3.0 | suita de teste | MIT / Apache-2.0 |
 
 Dependintele tranzitive (starlette, anyio, httpcore, certifi, idna, h11, typing_extensions,
 jiter, distro, click, sniffio si celelalte) sunt fixate integral in `requirements.txt`.
@@ -97,9 +99,9 @@ ghost-ul foloseste replicile pre-scrise din `fallback_responses.py`.
 ## asistenta AI in dezvoltare
 
 O parte din cod a fost scrisa cu asistenta Claude (Anthropic), folosit ca unealta de dezvoltare.
-Detalierea — ce anume, ce este original si cum s-a lucrat — este in `docs/authorship.md`,
-sectiunea *utilizarea AI*. Declaratia apare si aici pentru ca VI.2 cere lista resurselor externe
-folosite in dezvoltare, inclusiv tooling.
+Detalierea este in `docs/authorship.md`, sectiunea *utilizarea AI*: ce anume s-a scris asa si
+cum s-a lucrat, plus ce ramane in intregime al nostru. Declaratia apare si aici pentru ca VI.2
+cere lista resurselor externe folosite in dezvoltare, inclusiv tooling.
 
 ## fragmente de cod externe
 

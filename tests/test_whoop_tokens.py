@@ -63,6 +63,52 @@ def test_refresh_resends_offline_and_saves(tmp_path, monkeypatch):
     assert json.loads(tokens_file.read_text())["access_token"] == "AT2"
 
 
+def test_disconnect_clears_tokens_and_file(tmp_path, monkeypatch):
+    tokens_file = tmp_path / ".whoop_tokens.json"
+    tokens_file.write_text(json.dumps({"access_token": "AT", "refresh_token": "RT", "expires_at": time.time() + 9999}))
+    monkeypatch.setattr(BiometricEngine, "TOKENS_FILE", str(tokens_file))
+    eng = BiometricEngine("cid", "secret")
+    assert eng.access_token == "AT"
+    eng.disconnect()
+    assert eng.access_token is None
+    assert eng.refresh_token is None
+    assert not tokens_file.exists()
+
+
+def test_disconnect_neutralises_in_flight_refresh(tmp_path, monkeypatch):
+    """A refresh already running on the loop thread must not resurrect the tokens a concurrent
+    disconnect() just cleared. The _disconnected sentinel makes that refresh discard its result."""
+    tokens_file = tmp_path / ".whoop_tokens.json"
+    monkeypatch.setattr(BiometricEngine, "TOKENS_FILE", str(tokens_file))
+    eng = BiometricEngine("cid", "secret")
+    eng.refresh_token = "OLD_RT"
+
+    def fake_post(url, data=None, **kw):
+        # simulate disconnect() landing while the refresh POST is in flight
+        eng.disconnect()
+        return _Resp(200, {"access_token": "AT_NEW", "refresh_token": "RT_NEW", "expires_in": 3600})
+
+    monkeypatch.setattr(biometric_engine.httpx, "post", fake_post)
+    assert eng.refresh_access_token() is False
+    assert eng.access_token is None          # not resurrected
+    assert not tokens_file.exists()          # not rewritten
+
+
+def test_reconnect_after_disconnect_clears_sentinel(tmp_path, monkeypatch):
+    tokens_file = tmp_path / ".whoop_tokens.json"
+    monkeypatch.setattr(BiometricEngine, "TOKENS_FILE", str(tokens_file))
+    monkeypatch.setattr(
+        biometric_engine.httpx, "post",
+        lambda *a, **k: _Resp(200, {"access_token": "AT", "refresh_token": "RT", "expires_in": 3600}),
+    )
+    eng = BiometricEngine("cid", "secret")
+    eng.disconnect()
+    assert eng._disconnected is True
+    assert eng.exchange_token("code", "http://localhost:8000/api/whoop/callback") is True
+    assert eng._disconnected is False        # a fresh connect supersedes the disconnect
+    assert eng.access_token == "AT"
+
+
 def test_load_tokens_round_trip(tmp_path, monkeypatch):
     tokens_file = tmp_path / ".whoop_tokens.json"
     tokens_file.write_text(json.dumps({

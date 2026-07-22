@@ -215,6 +215,10 @@ def build_biometric_msg(data, state):
         "source": "ble" if ble_active else source,
         # where recovery/HRV/strain come from -- lets the HUD be honest in BLE-only mode
         "metrics_source": source,
+        # durable WHOOP-account state on every tick: a page reloaded after the OAuth redirect
+        # reads this to show "Connected" instead of the Connect button (the one-shot
+        # whoop_connected broadcast is lost when the SPA navigates away for the OAuth round-trip)
+        "whoop_connected": bio.access_token is not None,
         "heartRate": round(data["heartRate"]) if data.get("heartRate") else None,
         # `or 0`, nu `get(k, 0)`: WHOOP scrie cheia cu None cand strapul nu are senzorul,
         # iar default-ul din get() se aplica doar cand cheia lipseste -- round(None) arunca

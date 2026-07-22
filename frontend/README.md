@@ -1,86 +1,80 @@
-# DevLife — Ghost AI Companion
+# DevLife frontend
 
-2.5D isometric game where an AI companion called Ghost reads your WHOOP biometric data and helps you code — adapting its personality based on whether you're focused, stressed, fatigued, relaxed, or wired.
+The game half of DevLife: a 2.5D isometric room drawn entirely in code with PixiJS (no sprite sheets), where a ghost companion reads your live biometrics and reacts while you code. Its personality follows your cognitive state: DEEP_FOCUS, STRESSED, FATIGUED, RELAXED or WIRED.
 
+## quick start
 
-## Quick Start
+Backend and frontend live in the same repo; the backend is the repo root. Easiest path, from the root:
 
-### Frontend (this repo)
+```bash
+./scripts/setup.sh    # once: venv + python deps + npm install + pyodide
+./scripts/dev.sh      # backend on http://localhost:8000 + this frontend
+```
+
+Frontend only:
+
 ```bash
 npm install
 npm run dev
-# Opens at http://localhost:5173
+# http://localhost:5173, also bound on http://127.0.0.1:5173
+# (Spotify rejects `localhost` redirect URIs, so both origins are served)
 ```
 
-### Backend (David's Python server)
-```bash
-cd ~/devlife
-source venv/bin/activate
-python3 server.py
-# Runs on http://localhost:8000, WebSocket at ws://localhost:8000/ws
-```
+The game talks to the backend at `ws://localhost:8000/ws`.
 
-### Test without backend
-```bash
-node test-server.js
-# Fake Ghost backend on ws://localhost:8000
-# Sends biometric updates every 5s, interventions every 20s
-# Then in another terminal: npm run dev
-```
+### no backend? still fine
 
-### Dashboard (for judges/projector)
-Open `http://localhost:8000/public/dashboard.html` or open `public/dashboard.html` directly.
+When the WebSocket is down, the frontend switches to a client-side mock biometric generator. States 1-5, the HUD, the ghost and the ECG all keep working; only the ghost's AI replies need the backend.
 
-## Controls
+## dashboard (judges / projector)
+
+Press Tab in game for the biometric dashboard overlay: live ECG, sparklines, session replay. A standalone page also exists at `http://localhost:5173/dashboard.html` and connects to the same WebSocket.
+
+## controls
 
 | Key | Action |
 |-----|--------|
-| C | Open Code Editor |
-| T | Open Terminal |
-| B | Open Browser |
-| N | Open Notes |
-| H | Open Chat |
-| ESC | Close current app |
-| 1 | Mock: DEEP_FOCUS (purple) |
-| 2 | Mock: STRESSED (red) |
-| 3 | Mock: FATIGUED (orange) |
-| 4 | Mock: RELAXED (green) |
-| 5 | Mock: WIRED (blue) |
+| WASD | move |
+| E | interact with nearby furniture (this is how apps open) |
+| T | switch between room and town |
+| Tab | dashboard overlay |
+| O | settings (API keys, language, personality, audio) |
+| ? | shortcuts overlay |
+| ESC | close current app or speech bubble |
+| Shift+ESC | close every open app |
+| 1-5 | force a mock cognitive state |
 
-## File Ownership
+## who wrote what
 
-**David (backend + frontend infrastructure):**
-- `src/network/WebSocket.js` — all backend communication
-- `src/apps/*` — 5 app overlay panels
-- `src/utils/isometric.js` — coordinate math
-- `public/dashboard.html` — judge projector view
-- `test-server.js` — fake backend for testing
+**David Amariei**: the PixiJS world (isometric camera, room, Player, Ghost, town scenes), WHOOP BLE pairing, the dashboard overlay with live ECG, DemoMode, the sound system.
 
-**Matei (PixiJS game world):**
-- `src/room/*` — Room.js, Furniture.js, Atmosphere.js
-- `src/character/*` — Player.js, Ghost.js
-- `src/hud/HUD.js` — biometric HUD overlay
-- `src/main.js` — game entry point (owns this file)
+**Matei Vultur**: the FastAPI backend in the repo root, plus security, persistence, the test suite, the offline fallback and RO/EN i18n.
 
-## Architecture
+Full breakdown in `docs/authorship.md`.
+
+## architecture
 
 ```
-Browser (game)  <->  ws://localhost:8000/ws  <->  Python Backend (FastAPI)
-Browser (dashboard)  <->  same WebSocket  <->  Same Backend
+Browser (game)       <->  ws://localhost:8000/ws  <->  FastAPI backend (repo root)
+Browser (dashboard)  <->  same WebSocket          <->  same backend
 ```
 
-Frontend sends: content_update, feedback, mock_state, app_focus
-Backend sends: intervention, biometric_update, state_change, connection_established
+Frontend sends: content_update, app_focus, keystrokes, heart_rate, run_error, feedback, firewall_block, mock_state, set_lang, set_personality, resume_live, wake
 
-## The 5 Cognitive States
+Backend sends: biometric_update, state_change, intervention, sleep_mode, plant_update, app_focus_change, whoop_connected, whoop_disconnected, degraded_mode
 
-| # | State | Color | Ghost Personality |
+## the 5 cognitive states
+
+| # | State | Color | Ghost personality |
 |---|-------|-------|-------------------|
-| 1 | DEEP_FOCUS | #8000FF | Silent, minimal |
-| 2 | STRESSED | #FF5050 | Warm, supportive |
-| 3 | FATIGUED | #FFA000 | Protective, blocks risky actions |
-| 4 | RELAXED | #00C864 | Curious, exploratory |
-| 5 | WIRED | #0096FF | Direct, action-oriented |
+| 1 | DEEP_FOCUS | #9B6AFF | silent, minimal |
+| 2 | STRESSED | #FF7A6A | warm, supportive |
+| 3 | FATIGUED | #FFB84A | protective, blocks risky actions |
+| 4 | RELAXED | #6AD89A | curious, exploratory |
+| 5 | WIRED | #6AB8FF | direct, action-oriented |
 
-## Backend Repo
-`github.com/amariedavid26-byte/devlife`
+Colors live in `src/theme.js`, the single source for the per-state palette.
+
+## repo
+
+`github.com/amarieidavid26-byte/devlife` is a monorepo. This folder is `frontend/`; the backend sits in the repo root.

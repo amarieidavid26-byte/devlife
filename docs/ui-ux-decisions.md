@@ -1,4 +1,4 @@
-# UI/UX — decizii de design
+# UI/UX: decizii de design
 
 document pentru capitolul III (Interfata UX / UI / CUI, 15 puncte). Aici justificam fiecare alegere vizuala si interactiva.
 
@@ -10,16 +10,17 @@ DevLife nu este un cockpit medical. Este un companion vizual prietenos cu care u
 - Personajul Ghost cu personalitate vizibila (tint, aura, screen shake la critic)
 - Camera izometrica 2.5D in loc de view 2D simplu
 - Paleta "Animal Crossing" calda in loc de neutru sterile
-- Plant procedural care creste cu activitatea — feedback pozitiv vizual
+- Plant procedural care creste cu activitatea, ca feedback pozitiv vizual
 
 ### 2. Interventie respectuoasa
 
-In stare DEEP_FOCUS, aplicatia tace. In stare STRESSED, este suportiva. In stare FATIGUED, este protectiva. Niciodata intrusiva fara motiv.
+In DEEP_FOCUS aplicatia tace complet. Devine suportiva cand esti STRESSED si protectiva cand esti FATIGUED, niciodata intrusiva fara motiv.
 
 Concret:
-- Cooldown adaptiv: 30s default, 60s daca user ignora repetat, 20s daca accepta
+- Cooldown adaptiv (`GhostBrain.should_intervene` in `ghost_brain.py`): 30s default (`GhostBrain.cooldown`), 60s daca utilizatorul a ignorat 3+ interventii la rand, 20s daca a acceptat mai multe decat a ignorat; actiunile riscante sar peste cooldown-ul adaptiv, dar pastreaza un minim de 10s anti-spam
+- Gate suplimentar de 8s pe pipeline-ul de analiza dupa fiecare interventie trimisa (`app_state.intervention_cooldown_until`, setat in `loops.py`)
 - DEEP_FOCUS: 90% threshold pentru interventie, max 30 tokens raspuns
-- Niciodata blocking modal — folosim speech bubble dismiss-able cu ESC
+- Niciodata blocking modal: folosim speech bubble dismiss-able cu ESC
 - Toast notifications non-intrusive, dispar singure
 
 ### 3. Feedback vizual la fiecare actiune
@@ -33,7 +34,7 @@ Fiecare actiune are confirmare vizuala:
 
 ### 4. Doua moduri, o experienta
 
-Hotbar 1-5 pentru schimbare manuala stare permite demonstrare rapida. Cand WHOOP BLE streamuieste date reale, hotbar-ul se dezactiveaza automat (vezi `b7ce5d1` — "WHOOP live mode priority, disable manual override during BLE") pentru a evita coliziuni.
+Hotbar 1-5 pentru schimbare manuala stare permite demonstrare rapida. Cand WHOOP BLE streamuieste date reale, hotbar-ul se dezactiveaza automat (vezi `b7ce5d1`: "WHOOP live mode priority, disable manual override during BLE") pentru a evita coliziuni.
 
 ## paleta de culori
 
@@ -55,11 +56,12 @@ Toate culorile au contrast WCAG AA pentru text peste fundal (verificat cu Chrome
 
 | font | utilizare | de ce |
 |------|-----------|-------|
-| **Fredoka** | titluri, brand, headlines in HUD | rotund, prietenos — companion-ul |
-| **Nunito** | text general, body | readable, optimizata pentru ecran |
-| **monospace** (fallback system) | cod in Monaco editor, terminal | pastrare aspect editor |
+| **Fredoka** | titluri, brand, numele starii in HUD | rotund si prietenos, ca un companion |
+| **Nunito** | text general, body, etichete | readable, optimizata pentru ecran |
+| **JetBrains Mono** | cifrele biometrice din dashboard si InfoPanel | latime fixa: valorile nu sar la fiecare actualizare |
+| **monospace** (stack de sistem) | cod in Monaco editor, terminal (xterm cu Menlo / Monaco / Courier New) | pastrare aspect editor |
 
-Ambele fonturi prin Google Fonts CDN (SIL Open Font License 1.1).
+Fredoka, Nunito si JetBrains Mono (toate SIL Open Font License 1.1) sunt self-hosted ca `.woff2` in `frontend/public/lib/fonts/` si incarcate prin `/lib/fonts/fonts.css`, nu prin CDN: interfata arata identic si fara internet (detalii in `docs/assets-compliance.md`). Singura exceptie e pagina standalone `dashboard.html`, care inca incarca JetBrains Mono si Inter din Google Fonts CDN; jocul propriu-zis nu depinde de ea.
 
 ## componente UI
 
@@ -68,9 +70,9 @@ Ambele fonturi prin Google Fonts CDN (SIL Open Font License 1.1).
 Date primare biometrice:
 - HR mare (numeric) + grafic ECG procedural mic
 - HRV cu trend (sageata up/down/stable)
-- Recovery, Strain, Sleep Performance — bare progresive
-- CQI (Cognitive Quality Index) — derivat, 0-100
-- Autonomic Balance — raport simpatic/parasimpatic
+- Recovery, Strain, Sleep Performance: bare progresive
+- CQI (Code Quality Index): derivat, 0-100
+- Autonomic Balance: raport simpatic/parasimpatic
 
 Decizie: HUD-ul este intotdeauna vizibil, dar mic. Nu inghite ecranul.
 
@@ -103,19 +105,21 @@ State activ are border luminos + tint. Disable cand BLE este conectat (vizual: o
 ### Toast notifications
 
 5 tipuri (config in `frontend/src/hud/ToastSystem.js`):
-- `info` (albastru) — informatii generale
-- `state` (purple) — schimbare stare cognitiva
-- `warning` (portocaliu) — risc detectat
-- `ghost` (turcoaz) — actiune Ghost
-- `achievement` (auriu) — gamificare usoara
+- `info` (albastru): informatii generale
+- `state` (purple): schimbare stare cognitiva
+- `warning` (portocaliu): risc detectat
+- `ghost` (turcoaz): actiune Ghost
+- `achievement` (auriu): gamificare usoara
 
 Pozitionate top-right, stack vertical, auto-dismiss dupa 3-5s.
 
 ## responsivitate
 
+Desktop-first este o decizie, nu o scapare: DevLife e un companion de coding, deci ecranul tinta e acelasi pe care stau IDE-ul si terminalul, adica un laptop sau un monitor extern. CSS-ul nu impune un min-width global pe pagina; latimile minime sunt doar la nivel de componenta (bula de dialog a Ghost-ului la 300px in `Ghost.js`, meniul principal la 240px in `MainMenu.js`), iar layout pentru mobil nu exista si nu e planificat.
+
 - `window.addEventListener('resize')` reseteaza dimensiunile PixiJS si recalculeaza camera offset
-- HUD overlay foloseste CSS positioning (DOM, nu canvas) — adapteaza la rezolutia ecranului automat
-- Toate dialog-urile sunt flex-based, scaleaza pana la min-width 768px
+- HUD overlay foloseste CSS positioning (DOM, nu canvas), deci se adapteaza automat la rezolutia ecranului
+- Toate dialog-urile sunt flex-based si se aseaza dupa spatiul disponibil
 - `devicePixelRatio` luat in considerare pentru ecrane retina (`resolution: window.devicePixelRatio`)
 
 Testat pe:
@@ -128,12 +132,12 @@ Testat pe:
 Toate sunetele sintetizate procedural prin Web Audio API (`audio/SoundManager.js`). Niciun fisier audio extern (vezi `docs/assets-compliance.md`).
 
 Tipuri:
-- `playOpen()` — app overlay deschis (fade in tone)
-- `playClose()` — app overlay inchis (fade out tone)
-- `playClick()` — buton meniu (short tick)
-- `playGhostSpeak()` — interventie normala (soft chime)
-- `playGhostAlert()` — interventie critic (alarmant, mai prelung)
-- `setState(state)` — ambient drone adaptat starii (DEEP_FOCUS: continuu calm; STRESSED: vibrato; etc.)
+- `playOpen()`: app overlay deschis (fade in tone)
+- `playClose()`: app overlay inchis (fade out tone)
+- `playClick()`: buton meniu (short tick)
+- `playGhostSpeak()`: interventie normala (soft chime)
+- `playGhostAlert()`: interventie critic (alarmant, mai prelung)
+- `setState(state)`: ambient drone adaptat starii (DEEP_FOCUS: continuu calm; STRESSED: vibrato; etc.)
 
 Volum master controlabil din Settings, persistent in localStorage.
 
@@ -143,7 +147,7 @@ Volum master controlabil din Settings, persistent in localStorage.
 - **Atmosphere transitions**: fade peste 800ms intre starile cognitive
 - **Plant growth**: animatie de scale 1.5s la fiecare `plant_update` (debounced)
 - **Ghost trail**: particule cu lifespan variabil, intensitate per stare
-- **Screen shake**: doar pe interventii `critical`, max 200ms, max 8px amplitude — sub pragul motion-sensitivity
+- **Screen shake**: doar pe interventii `critical`, max 200ms, max 8px amplitude, sub pragul motion-sensitivity
 - **Tranzitii scene** (Room → Town → Cafe → Cowork): fade-to-black 800ms cu `TransitionOverlay`
 
 ## internationalizare (i18n)
@@ -153,18 +157,18 @@ Volum master controlabil din Settings, persistent in localStorage.
 - Persistat in `localStorage[devlife_lang]`
 - Toate string-urile critical path trec prin `i18n.t(key)`
 - Fallback la RO daca cheia lipseste in EN
-- Modulul accepta `onChange(fn)` listeners — UI poate reactiona la schimbare fara reload
+- Modulul accepta `onChange(fn)` listeners, deci UI poate reactiona la schimbare fara reload
 
 Fisiere:
-- `frontend/src/i18n/ro.json` — sursa de adevar
-- `frontend/src/i18n/en.json` — traducere
-- `frontend/src/i18n/index.js` — engine cu format `{var}` placeholders
+- `frontend/src/i18n/ro.json`: sursa de adevar
+- `frontend/src/i18n/en.json`: traducere
+- `frontend/src/i18n/index.js`: engine cu format `{var}` placeholders
 
 ## accesibilitate
 
 - **Keyboard navigation**: WASD pentru miscare, E pentru interact, 1-5 pentru stari, ESC pentru dismiss/close, TAB pentru dashboard overlay
 - **No flashing < 3Hz**: niciun element nu palpaie sub pragul WCAG (epilepsie)
-- **High contrast text**: text alb pe fundal inchis, alb pe accent rosu — contrast > 4.5:1
+- **High contrast text**: text alb pe fundal inchis, alb pe accent rosu, contrast > 4.5:1
 - **Sound mutable**: Settings → Sound toggle (persistat)
 - **Screen reader friendly**: butoanele din speech bubble sunt elemente `<button>` accesibile, nu doar canvas-painted
 

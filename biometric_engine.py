@@ -1,4 +1,5 @@
 import logging
+import threading
 # biometric engine - here we have the whoop integration and cognitive state classifier
 # smart ass file right here
 # connects to whoop api via oauth2, fetches recov/strain/sleep data and classifies them into
@@ -39,6 +40,11 @@ class BiometricEngine:
         # token refresh
         self.token_expiry = 0
         self.refresh_token = None
+        # set by disconnect(); makes a refresh already in flight on the biometric-loop thread
+        # discard its result instead of resurrecting the tokens we just cleared. The lock makes
+        # the sentinel check and the token writes atomic across the two threads.
+        self._disconnected = False
+        self._token_lock = threading.Lock()
         self._sleep_error_logged = False
         self.live_heart_rate = 0
         self.live_hr_timestamp = 0
@@ -53,19 +59,37 @@ class BiometricEngine:
     RR_WINDOW_SECONDS = 60
     RR_MIN_MS, RR_MAX_MS = 300, 2000   # physiological bounds; outside = sensor artifact
     RR_MIN_SAMPLES = 8
+    # A wrist optical sensor (Huawei, Garmin, etc.) drops and doubles beats, so the "RR" it
+    # broadcasts jumps across the whole 300..2000 band even when the wearer is calm. Two guards
+    # keep that noise out of the HRV, both applied at compute time against the WHOLE-window
+    # median (robust to a minority of outliers -- unlike a running anchor, a single bad first
+    # beat cannot lock out every real beat that follows):
+    #   * per beat: a genuine inter-beat interval sits close to the window median; anything
+    #     further off is a missed or doubled beat and is excluded from the RMSSD.
+    #   * per window: a real short-window RMSSD stays well under 200ms. Above that the window is
+    #     artifact-corrupted, so we publish nothing and the WHOOP-cloud daily HRV stands in.
+    # Without these, a Huawei strap showed a garbage ~300ms HRV that also read as "very high
+    # HRV -> relaxed" in classify(), quietly suppressing the fatigue firewall.
+    RR_ARTIFACT_TOLERANCE = 0.30
+    HRV_MAX_PLAUSIBLE_MS = 200
 
     def add_rr_intervals(self, rr_list):
         # called from the WS 'heart_rate' handler with RR intervals (ms) parsed
         # from the BLE Heart Rate Measurement characteristic (flag bit 4)
         now = time.time()
+        # prune first so the window (and the median computed from it) never references beats
+        # older than RR_WINDOW_SECONDS -- e.g. stale beats from before a reconnect gap
+        cutoff = now - self.RR_WINDOW_SECONDS
+        self.live_rr = [(t, v) for t, v in self.live_rr if t >= cutoff]
         for rr in rr_list:
             if isinstance(rr, (int, float)) and self.RR_MIN_MS <= rr <= self.RR_MAX_MS:
                 self.live_rr.append((now, float(rr)))
-        cutoff = now - self.RR_WINDOW_SECONDS
-        self.live_rr = [(t, v) for t, v in self.live_rr if t >= cutoff]
+        # None (too few beats, or an artifact-corrupted window) must clear the live value, not
+        # leave a stale reading behind: a 30s-fresh garbage HRV would keep overriding the clean
+        # WHOOP-cloud value in build_biometric_msg() and classify().
         hrv = self.compute_live_hrv()
+        self.live_hrv = hrv
         if hrv is not None:
-            self.live_hrv = hrv
             self.live_hrv_timestamp = now
 
     def compute_live_hrv(self):
@@ -74,8 +98,18 @@ class BiometricEngine:
         values = [v for _, v in self.live_rr]
         if len(values) < self.RR_MIN_SAMPLES:
             return None
-        diffs = [values[i + 1] - values[i] for i in range(len(values) - 1)]
-        return round((sum(d * d for d in diffs) / len(diffs)) ** 0.5, 1)
+        # drop artifact beats against the window median before differencing. The median is
+        # robust to a minority of missed/doubled beats, so one bad reading (even the first one
+        # after a reconnect) is excluded instead of poisoning the whole window.
+        median = sorted(values)[len(values) // 2]
+        clean = [v for v in values if abs(v - median) <= self.RR_ARTIFACT_TOLERANCE * median]
+        if len(clean) < self.RR_MIN_SAMPLES:
+            return None
+        diffs = [clean[i + 1] - clean[i] for i in range(len(clean) - 1)]
+        rmssd = round((sum(d * d for d in diffs) / len(diffs)) ** 0.5, 1)
+        if rmssd > self.HRV_MAX_PLAUSIBLE_MS:
+            return None   # optical-sensor artifact, not a real HRV -- fall back to cloud
+        return rmssd
 
     # oauth2 urls
     AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth"
@@ -105,6 +139,7 @@ class BiometricEngine:
         return f"{self.AUTH_URL}?{query}"
 
     def exchange_token(self, code, redirect_uri):
+        self._disconnected = False   # a fresh OAuth connect supersedes any prior disconnect
         try:
             response = httpx.post(self.TOKEN_URL, data={
                 "client_id": self.client_id,
@@ -135,7 +170,7 @@ class BiometricEngine:
             return False
 
     def refresh_access_token(self):
-        if not self.refresh_token:
+        if not self.refresh_token or self._disconnected:
             return False
         try:
             response = httpx.post(self.TOKEN_URL, data={
@@ -148,11 +183,17 @@ class BiometricEngine:
             })
             if response.status_code == 200:
                 data = response.json()
-                self.access_token = data.get("access_token")
-                self.refresh_token = data.get("refresh_token", self.refresh_token)
-                expires_in = data.get("expires_in", 3600)
-                self.token_expiry = time.time() + expires_in
-                self._save_tokens()
+                # a disconnect() may have landed while this POST was in flight -- honour it
+                # rather than repopulating the tokens it just cleared. Checked under the lock
+                # so a disconnect cannot slip between the check and the writes.
+                with self._token_lock:
+                    if self._disconnected:
+                        return False
+                    self.access_token = data.get("access_token")
+                    self.refresh_token = data.get("refresh_token", self.refresh_token)
+                    expires_in = data.get("expires_in", 3600)
+                    self.token_expiry = time.time() + expires_in
+                    self._save_tokens()
                 logger.info("token refreshed")
                 return True
             else:
@@ -454,7 +495,25 @@ class BiometricEngine:
         result["hrv_baseline"] = self.hrv_baseline
         return result
 
+    def disconnect(self):
+        """Unlink the WHOOP account: clear tokens in memory and on disk so a reload doesn't
+        re-connect. Live BLE pulse and mock data are unaffected; the loop falls back to them."""
+        with self._token_lock:
+            self._disconnected = True   # neutralise any refresh in flight on the loop thread
+            self.access_token = None
+            self.refresh_token = None
+            self.token_expiry = 0
+            self.current_data = None
+        try:
+            if os.path.exists(self.TOKENS_FILE):
+                os.remove(self.TOKENS_FILE)
+        except Exception as e:
+            logger.warning("failed to remove tokens file: %s", e)
+        logger.info("WHOOP account disconnected")
+
     def _save_tokens(self):
+        if self._disconnected:
+            return   # a disconnect is in progress; don't rewrite the file we just deleted
         try:
             with open(self.TOKENS_FILE, "w") as f:
                 json.dump({

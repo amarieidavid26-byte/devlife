@@ -470,6 +470,13 @@ async def whoop_callback(code: str = None, state: str = None, error: str = None)
     return JSONResponse({"error": "Token exchange failed"}, status_code=500)
 
 
+@app.post("/api/whoop/disconnect", dependencies=[Depends(require_token)])
+async def whoop_disconnect():
+    bio.disconnect()
+    broadcast_sync({"type": "whoop_disconnected"})
+    return {"ok": True}
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     if not security.check_origin(ws):

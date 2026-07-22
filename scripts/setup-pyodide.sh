@@ -17,7 +17,7 @@ mkdir -p "$(dirname "${TARGET_DIR}")"
 TMP=$(mktemp -d)
 trap 'rm -rf "${TMP}"' EXIT
 
-echo "[setup-pyodide] descarc ${URL} (~30MB)..."
+echo "[setup-pyodide] descarc ${URL} (~284MB)..."
 curl -fL --progress-bar -o "${TMP}/${TARBALL}" "${URL}"
 
 echo "[setup-pyodide] dezarhivez..."

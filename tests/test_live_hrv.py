@@ -32,6 +32,46 @@ def test_rmssd_rejects_artifacts():
     assert bio.live_hrv is not None
 
 
+def test_rmssd_ceiling_rejects_artifact_window():
+    bio = _bio()
+    # beats oscillating at the top of the accepted band (each within the per-beat tolerance,
+    # so the median filter lets them through) still produce an RMSSD of ~240ms -- far above any
+    # real HRV. The per-window ceiling must reject it so the clean WHOOP-cloud value stands in.
+    bio.add_rr_intervals([800, 1040] * 5)
+    assert bio.compute_live_hrv() is None
+    assert bio.live_hrv is None
+
+
+def test_artifact_beat_excluded_from_hrv():
+    bio = _bio()
+    # steady ~800ms beats with one doubled-beat spike (1600); it is a window-median outlier and
+    # must be excluded from the RMSSD instead of inflating it
+    bio.add_rr_intervals([800, 810, 790, 805, 1600, 795, 800, 812, 798, 803])
+    assert bio.live_hrv is not None
+    assert bio.live_hrv < 50   # without exclusion the 1600 spike would blow the RMSSD sky-high
+
+
+def test_lone_bad_first_beat_does_not_lock_out_good_beats():
+    bio = _bio()
+    # the first beat after pairing is a doubled-beat artifact (400ms), then the sensor recovers.
+    # A running-anchor filter would reject every real beat after it; the window-median approach
+    # treats the 400 as the outlier and still yields a real HRV.
+    bio.add_rr_intervals([400, 800, 810, 790, 805, 795, 800, 812, 798, 803])
+    assert bio.live_hrv is not None
+    assert bio.live_hrv < 50
+
+
+def test_live_hrv_cleared_when_window_turns_artifact():
+    bio = _bio()
+    bio.add_rr_intervals([800, 810, 790, 805, 795, 800, 812, 798, 803])
+    assert bio.live_hrv is not None
+    # a later artifact burst must drop live_hrv back to None, not leave a stale reading that
+    # keeps overriding the cloud HRV for 30s
+    bio.live_rr = []
+    bio.add_rr_intervals([800, 1040] * 5)
+    assert bio.live_hrv is None
+
+
 def test_rmssd_window_expiry():
     bio = _bio()
     bio.add_rr_intervals([800, 810, 790, 805, 795, 800, 812, 798])

@@ -87,6 +87,9 @@ export class GhostSocket {
                     this._toastSystem.show('info', i18n.t('toast.whoop_connected'), i18n.t('toast.whoop_connected_body'), 6000);
                 }
                 break;
+            case 'whoop_disconnected':
+                this.emit('whoop_disconnected', msg);
+                break;
             case 'degraded_mode':
                 this.emit('degraded_mode', msg);
                 if (this._toastSystem) {

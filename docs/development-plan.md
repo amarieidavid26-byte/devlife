@@ -1,6 +1,6 @@
-# planul de dezvoltare — DevLife
+# planul de dezvoltare: DevLife
 
-documentul oficial pentru criteriul I.2 (Planificarea dezvoltarii, 5 puncte). Pastrat actualizat pe parcursul lucrarii ca single-source-of-truth.
+documentul oficial pentru criteriul I.2 (Planificarea dezvoltarii, 5 puncte). Il tinem actualizat pe parcursul lucrarii, ca sursa unica de adevar.
 
 ## faza 0: analiza si decizii
 
@@ -25,12 +25,7 @@ Dezvoltatorii software iau decizii proaste cand sunt obositi cognitiv:
 
 ### concluzie analiza
 
-Niciun produs nu combina:
-1. Biometrice in timp real (WHOOP + BLE)
-2. Intelegere AI a contextului de cod (Claude API)
-3. Interventie ACTIVA (nu pasiva) — Fatigue Firewall blocheaza comenzile
-
-→ exista loc pe piata pentru DevLife.
+Niciun produs nu combina biometricele in timp real (WHOOP + BLE) cu intelegerea AI a contextului de cod (Claude API). Si niciunul nu intervine activ: cel mult iti arata un dashboard, in timp ce Fatigue Firewall-ul din DevLife chiar blocheaza comenzile. Aici e locul liber pe piata.
 
 ## faza 1: design tehnic
 
@@ -41,7 +36,7 @@ Niciun produs nu combina:
 | backend | Python 3.11 + FastAPI | ecosistem AI dominant Python; FastAPI = Pydantic + WebSocket native |
 | frontend | Vanilla JS + PixiJS 7 | canvas WebGL hardware-accelerated, control complet pe render izometric |
 | persistenta | SQLite + WAL | zero deployment overhead; ACID; reads concurente non-blocking |
-| AI | Claude API (Sonnet 4) | top tier reasoning + JSON structurat stabil |
+| AI | Claude API (Sonnet 5) | urmeaza fidel instructiunile + JSON structurat stabil; Haiku 4.5 pentru completarile inline |
 | biometrice | WHOOP API + Chrome Web Bluetooth | WHOOP pentru date "lente"; BLE pentru BPM live |
 | testing | pytest + pytest-asyncio | standard, async-friendly |
 | deploy | Railway | Procfile + auto-deploy from main |
@@ -59,10 +54,10 @@ Browser (PixiJS)  <──ws://──>  FastAPI (Python)  <──>  Claude API
 Decizii de design fundamentale:
 - **AppState dataclass** centralizat: toate globalele in `AppState` ca sa evitam state-ul imprastiat
 - **2 thread-uri daemon**: `biometric_loop` (5s) si `ghost_loop` (1s), comunica prin AppState + asyncio.run_coroutine_threadsafe pentru WS broadcast
-- **Two operational modes**: `GAME_MODE=True` (in-app surfaces, content_update prin WS) si `GAME_MODE=False` (screenshot desktop real prin Claude Vision)
-- **Patch contract**: orice fix propus de AI trebuie sa treaca prin Pydantic + validator + preview UI + audit log — niciodata aplicat automat
+- **doua moduri de operare**: `GAME_MODE=True` (in-app surfaces, content_update prin WS) si `GAME_MODE=False` (screenshot desktop real prin Claude Vision)
+- **patch contract**: orice fix propus de AI trebuie sa treaca prin Pydantic + validator + preview UI + audit log; niciodata aplicat automat
 
-## faza 2: task breakdown (T01-T13)
+## faza 2: task breakdown (T01-T14)
 
 | task | scop | autor principal | tag livrare |
 |------|------|-----------------|-------------|
@@ -72,8 +67,8 @@ Decizii de design fundamentale:
 | **T04** | Security baseline: Pydantic validation, CORS strict, rate limiting, logging, security-checklist | Matei | (parte din v0.5) |
 | **T05** | Persistence SQLite: sessions, interventions, biometric_samples, feedback, apply_fix_audit, consent | Matei | `v0.6-persistence` |
 | **T06** | Mod offline: DEMO_OFFLINE, seeded mock, degraded banner | Matei | (parte din v0.7) |
-| **T07** | Apply Fix: PatchContract Pydantic, validator (max 50 linii + shell metachar), audit, endpoints, preview UI cu rollback | Matei | `v0.7-apply-fix` |
-| **T08** | Suita de teste: 37 teste pytest (apply_fix, biometric_classifier, fallback, server_smoke, ws_flow) | Matei | `v0.9-tests` |
+| **T07** | Apply Fix: PatchContract Pydantic, validator (max 50 linii la livrare, azi 500; reject metacaractere shell), audit, endpoints, preview UI cu rollback | Matei | `v0.7-apply-fix` |
+| **T08** | Prima suita de teste: 37 teste pytest (apply_fix, biometric_classifier, fallback, server_smoke, ws_flow) | Matei | `v0.9-tests` |
 | **T09** | i18n RO/EN module + toggle in Settings + toasts traduse | Matei | `v0.8-i18n` |
 | **T10** | Deploy readiness: endpoint `/ready` cu 503 daca lipsesc dependinte, `runtime.txt`, healthcheck script | Matei | (parte din v1.0-rc) |
 | **T11** | Conformitate resurse: assets-compliance.md, sters MP3 cu copyright neclar, declaratii licente | Matei | (parte din v1.0-rc) |
@@ -82,12 +77,12 @@ Decizii de design fundamentale:
 | **T14** | Hardening pre-predare: timeout Claude (15s), bounds WS payload, OWASP API Top 10 mapping | echipa | `v1.1-hardening` |
 
 In paralel, contributiile lui David (frontend, vizual, scene, BLE):
-- Cinematice (intro main menu + chapter transitions + outro credits) — `v0.3-cinematics`
+- Cinematice (intro main menu + chapter transitions + outro credits), tag `v0.3-cinematics`
 - Camera izometrica procedurala, palette Animal Crossing
 - Town scenes: Cafe (sistem brewing), Cowork (NPCs animate), Park (meditatie)
-- WHOOP BLE live: hartbeat real-time via Chrome Web Bluetooth
+- WHOOP BLE live: heartbeat real-time via Chrome Web Bluetooth
 - Dashboard CQI (Cognitive Quality Index), autonomic balance, ECG live, sleep data
-- 14 risky command patterns expanded
+- risky command patterns: 11 regex in backend, oglindite in client pentru firewall-ul din terminal
 - Visual polish: ghost trail + aura, vignette, theme branding
 
 ## faza 3: dependinte intre task-uri
@@ -110,12 +105,12 @@ v1.0-rc ──> T14 (hardening) ──> v1.1-hardening (submission)
 
 | criteriu | masura |
 |----------|--------|
-| toate 37 testele verzi | `./scripts/run-tests.sh` → `37 passed` |
+| toate testele verzi | `./scripts/run-tests.sh` → `233 passed, 1 skipped` (234 teste) |
 | `/ready` returneaza 200 in DEMO_OFFLINE | `curl localhost:8000/ready` → `{"ready":true}` |
 | Apply Fix functional end-to-end | preview validat → confirm → audit row in SQLite |
 | Fatigue Firewall trigger-it instant | scrie `git push --force` cu stare FATIGUED → ghost intervine fara apel Claude (regex local) |
 | demo offline rulabil | `DEMO_OFFLINE=true ./scripts/dev.sh` → 0 apeluri externe, 0 erori |
-| docs completa | toate rubric-matrix-line cu artefact concretizat |
+| docs completa | fiecare linie din rubric-matrix are un artefact concret in repo |
 
 ## faza 5: risc + mitigare
 
@@ -125,17 +120,17 @@ v1.0-rc ──> T14 (hardening) ──> v1.1-hardening (submission)
 | WHOOP token expira mid-demo | medie | mediu | hotbar 1-5 mock states + `DEMO_OFFLINE` |
 | WiFi pica la prezentare | medie | critic | `DEMO_OFFLINE=true` ruleaza identic |
 | memory leak in ghost_loop | scazuta | mare | profiling local: RSS stabil dupa 60 min |
-| copyright pe assets | scazuta | critic | grafica 100% procedurala (PIXI.Graphics) + audio synthesized procedural — zero assets externe |
+| copyright pe assets | scazuta | critic | grafica 100% procedurala (PIXI.Graphics) + audio sintetizat procedural, zero asset pack-uri externe |
 | force push pe main pierde munca | scazuta | mare | patches backup-uite local + tags semantice pe stari intermediare |
 
 ## faza 6: stadiul curent
 
 | arie | stadiu | restant |
 |------|--------|---------|
-| backend | 100% | — |
-| frontend | 95% | screenshot-uri finale pentru DOCX |
-| testing | 100% (37/37) | — |
-| security | 100% | — |
-| docs | 95% | DOCX final |
-| evidence | 95% | screenshot-uri PNG efective |
-| deploy | 100% | — |
+| backend | 100% | - |
+| frontend | 100% | - |
+| testing | 100% (233 pass + 1 skip din 234) | - |
+| security | 100% | - |
+| docs | 100% (`documentatie-finala.docx` generat) | - |
+| evidence | 100% (23 capturi in `evidence/screenshots/`) | - |
+| deploy | 100% | - |

@@ -1,7 +1,7 @@
-# DevLife — The Science Behind the Biometric Dashboard
+# DevLife: The Science Behind the Biometric Dashboard
 
 **Audience:** InfoEducație judges & reviewers
-**Purpose:** explain, with peer-reviewed sources, the physiological reasoning behind every derived metric DevLife shows — and the exact algorithm used to compute it.
+**Purpose:** explain, with peer-reviewed sources, the physiological reasoning behind every derived metric DevLife shows, plus the exact algorithm used to compute it.
 **Date:** 2026-05-20
 
 > In the app these same explanations are one click away: a 💡 lightbulb next to each
@@ -12,8 +12,8 @@
 
 ## Overview
 
-DevLife reads four *measured* signals from a WHOOP band — **recovery**, **HRV** (heart-rate
-variability, RMSSD), **day strain**, and **resting heart rate** — plus an optional **live
+DevLife reads four *measured* signals from a WHOOP band: **recovery**, **HRV** (heart-rate
+variability, RMSSD), **day strain**, and **resting heart rate**, plus an optional **live
 heart rate** over Bluetooth. From these it derives four *interpreted* signals shown on the
 dashboard: a **Stress Level**, a **Cognitive Load** index, an **Autonomic Balance** (SNS vs
 PNS) readout, and a five-way **Cognitive State**. A composite **Code Quality Index (CQI)**
@@ -21,7 +21,7 @@ summarises "fitness to ship".
 
 The throughline is one well-established idea in psychophysiology: the **autonomic nervous
 system** (which we can observe non-invasively through the heart) tracks both stress and the
-mental effort behind focused work — and performance follows an **inverted-U** with arousal.
+mental effort behind focused work, and performance follows an **inverted-U** with arousal.
 Everything below grounds each readout in that literature.
 
 > **Honesty note:** DevLife estimates wellness/arousal signals for productivity insight. It
@@ -31,7 +31,7 @@ Everything below grounds each readout in that literature.
 
 ---
 
-## 1. Stress Level (scale 0.0 – 3.0)
+## 1. Stress Level (scale 0.0-3.0)
 
 **What it means.** A live estimate of nervous-system strain. It rises when current HRV falls
 below the user's personal normal.
@@ -52,12 +52,12 @@ especially vagally-mediated components such as RMSSD (Kim et al., 2018). Compari
 **personal baseline** rather than fixed thresholds follows standard HRV methodology, because
 healthy HRV varies widely across people (Shaffer & Ginsberg, 2017).
 
-- Kim et al. (2018), *Psychiatry Investig.* — PMID **29486547**
-- Shaffer & Ginsberg (2017), *Front Public Health* — PMID **29034226**
+- Kim et al. (2018), *Psychiatry Investig.*, PMID **29486547**
+- Shaffer & Ginsberg (2017), *Front Public Health*, PMID **29034226**
 
 ---
 
-## 2. Cognitive Load (index 0 – 100%)
+## 2. Cognitive Load (index 0-100%)
 
 **What it means.** The physiological "cost" of concentration right now. High sustained load is
 where errors begin.
@@ -70,15 +70,15 @@ Autonomic arousal (the stress index) is used as a proxy for mental workload.
 
 **The science.** Mental workload measurably suppresses HRV: as a task gets harder, time-domain
 HRV drops in a **graded, dose-dependent** way (Hörberg/“Task difficulty influences HRV”, 2026;
-graded task-difficulty effects, 2025). This is explained by **neurovisceral integration** —
-the prefrontal circuits that sustain focus also regulate the heart — so cardiac autonomic
+graded task-difficulty effects, 2025). This is explained by **neurovisceral integration**:
+the prefrontal circuits that sustain focus also regulate the heart, so cardiac autonomic
 signals track executive demand (integrative review, 2021). HRV is used operationally to gauge
 workload in demanding professions, e.g. surgeons (meta-analysis, 2026).
 
-- Task difficulty influences HRV (2026), *Sci Rep* — PMID **41820547**
-- Graded task-difficulty effects via time-domain HRV (2025), *J Physiol Anthropol* — PMID **41286973**
-- Low HRV, emotional dysregulation & prefrontal function (2021), *J Pers Med* — PMID **34575648**
-- HRV in assessing surgeons' stress (2026), *Healthcare* — PMID **41753997**
+- Task difficulty influences HRV (2026), *Sci Rep*, PMID **41820547**
+- Graded task-difficulty effects via time-domain HRV (2025), *J Physiol Anthropol*, PMID **41286973**
+- Low HRV, emotional dysregulation & prefrontal function (2021), *J Pers Med*, PMID **34575648**
+- HRV in assessing surgeons' stress (2026), *Healthcare*, PMID **41753997**
 
 ---
 
@@ -100,16 +100,16 @@ else      → "Balanced"
 **The science.** RMSSD-based HRV is a recognised marker of **parasympathetic (vagal)**
 activity, so higher HRV = stronger rest-and-digest tone (Shaffer & Ginsberg, 2017). Stress
 shifts the balance toward **sympathetic dominance** and away from vagal control (Kim et al.,
-2018). The brain and heart continuously negotiate this balance through the brain–heart axis
+2018). The brain and heart continuously negotiate this balance through the brain-heart axis
 (2025 review).
 
-- Shaffer & Ginsberg (2017), *Front Public Health* — PMID **29034226**
-- Kim et al. (2018), *Psychiatry Investig.* — PMID **29486547**
-- Brain–Heart Interactions (2025), *Appl Psychophysiol Biofeedback* — PMID **39969644**
+- Shaffer & Ginsberg (2017), *Front Public Health*, PMID **29034226**
+- Kim et al. (2018), *Psychiatry Investig.*, PMID **29486547**
+- Brain-Heart Interactions (2025), *Appl Psychophysiol Biofeedback*, PMID **39969644**
 
 ---
 
-## 4. Cognitive State (5 states · Yerkes–Dodson inverted-U)
+## 4. Cognitive State (5 states · Yerkes-Dodson inverted-U)
 
 **What it means.** Each moment is classified as **RELAXED, DEEP_FOCUS, WIRED, STRESSED, or
 FATIGUED** using the **inverted-U law**: performance peaks at *moderate* arousal and declines
@@ -125,23 +125,23 @@ moderate-arousal "sweet spot"  → DEEP_FOCUS
 otherwise                      → RELAXED
 ```
 
-**The science.** The Yerkes–Dodson law (1908) has been **re-validated with modern
+**The science.** The Yerkes-Dodson law (1908) has been **re-validated with modern
 neuroscience**: a cortical disinhibitory circuit produces peak performance at mid-level
 arousal (PNAS, 2024), and norepinephrine-driven arousal yields inverted-U brain-network
 dynamics (Nat Commun, 2025). Because lower HRV maps to weaker prefrontal control (2021), the
-high-arousal states are exactly when error rates climb — which is why DevLife's Ghost
+high-arousal states are exactly when error rates climb, which is why DevLife's Ghost
 intervenes most in STRESSED/WIRED/FATIGUED.
 
-- A disinhibitory circuit for peak performance at mid-level arousal (2024), *PNAS* — PMID **38277436**
-- Norepinephrine-mediated inverted-U connectivity dynamics (2025), *Nat Commun* — PMID **41390822**
-- Low HRV & prefrontal dysfunction (2021), *J Pers Med* — PMID **34575648**
+- A disinhibitory circuit for peak performance at mid-level arousal (2024), *PNAS*, PMID **38277436**
+- Norepinephrine-mediated inverted-U connectivity dynamics (2025), *Nat Commun*, PMID **41390822**
+- Low HRV & prefrontal dysfunction (2021), *J Pers Med*, PMID **34575648**
 
 ---
 
-## 5. Code Quality Index — CQI (index 0 – 100%)
+## 5. Code Quality Index: CQI (index 0-100%)
 
-**What it means.** A single "fitness to ship" readout combining how recovered, how calm, and
-how regulated the developer is.
+**What it means.** A single "fitness to ship" readout. It blends three inputs into one number:
+how recovered the developer is, how calm, and how well their autonomic system is regulated.
 
 **How DevLife computes it** (`DashboardOverlay.update()` / `main.js`):
 ```
@@ -156,8 +156,8 @@ marker of self-regulation capacity (Shaffer & Ginsberg, 2017), and the HRV-based
 (Kim et al., 2018). The rationale is the neurovisceral link: better autonomic regulation
 supports the prefrontal control careful programming depends on.
 
-- Shaffer & Ginsberg (2017), *Front Public Health* — PMID **29034226**
-- Kim et al. (2018), *Psychiatry Investig.* — PMID **29486547**
+- Shaffer & Ginsberg (2017), *Front Public Health*, PMID **29034226**
+- Kim et al. (2018), *Psychiatry Investig.*, PMID **29486547**
 
 ---
 
@@ -170,22 +170,22 @@ supports the prefrontal control careful programming depends on.
 - **SNS / PNS:** sympathetic ("fight-or-flight") and parasympathetic ("rest-and-digest")
   branches of the autonomic nervous system.
 - **Neurovisceral integration:** the framework linking prefrontal cognitive control to cardiac
-  autonomic regulation — why HRV tracks focus and stress.
-- **Yerkes–Dodson / inverted-U:** performance is best at moderate arousal and worse at the
+  autonomic regulation, which is why HRV tracks focus and stress.
+- **Yerkes-Dodson / inverted-U:** performance is best at moderate arousal and worse at the
   extremes.
 
 ## Selected papers
 
-1. **An Overview of Heart Rate Variability Metrics and Norms** — Shaffer & Ginsberg (2017),
-   *Frontiers in Public Health*. PMID 29034226 — https://pubmed.ncbi.nlm.nih.gov/29034226/
-2. **Stress and Heart Rate Variability: A Meta-Analysis and Review** — Kim et al. (2018),
-   *Psychiatry Investigation*. PMID 29486547 — https://pubmed.ncbi.nlm.nih.gov/29486547/
-3. **A disinhibitory circuit mechanism for peak performance at mid-level arousal** — (2024),
-   *PNAS*. PMID 38277436 — https://pubmed.ncbi.nlm.nih.gov/38277436/
-4. **Task difficulty influences heart rate variability** — (2026), *Scientific Reports*.
-   PMID 41820547 — https://pubmed.ncbi.nlm.nih.gov/41820547/
-5. **Low HRV, emotional dysregulation & prefrontal function: an integrative view** — (2021),
-   *J Personalized Medicine*. PMID 34575648 — https://pubmed.ncbi.nlm.nih.gov/34575648/
+1. **An Overview of Heart Rate Variability Metrics and Norms**, Shaffer & Ginsberg (2017),
+   *Frontiers in Public Health*. PMID 29034226: https://pubmed.ncbi.nlm.nih.gov/29034226/
+2. **Stress and Heart Rate Variability: A Meta-Analysis and Review**, Kim et al. (2018),
+   *Psychiatry Investigation*. PMID 29486547: https://pubmed.ncbi.nlm.nih.gov/29486547/
+3. **A disinhibitory circuit mechanism for peak performance at mid-level arousal** (2024),
+   *PNAS*. PMID 38277436: https://pubmed.ncbi.nlm.nih.gov/38277436/
+4. **Task difficulty influences heart rate variability** (2026), *Scientific Reports*.
+   PMID 41820547: https://pubmed.ncbi.nlm.nih.gov/41820547/
+5. **Low HRV, emotional dysregulation & prefrontal function: an integrative view** (2021),
+   *J Personalized Medicine*. PMID 34575648: https://pubmed.ncbi.nlm.nih.gov/34575648/
 
 ---
 

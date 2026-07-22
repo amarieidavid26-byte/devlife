@@ -1,4 +1,4 @@
-# latenta masuri — DevLife
+# masuratori de latenta DevLife
 
 masuri efectuate local (macOS 25.2, Python 3.11+, DEMO_OFFLINE=true, hardware: MacBook Air M-series)
 
@@ -6,7 +6,7 @@ masuri efectuate local (macOS 25.2, Python 3.11+, DEMO_OFFLINE=true, hardware: M
 
 - **WebSocket**: medie pe ~100 cicluri, masurata in `tests/test_ws_flow.py`
 - **HTTP**: `curl -w "%{time_total}"` din terminal, n=20
-- **Claude API**: timpii reali raportati de Anthropic SDK (online mode, claude-sonnet-4)
+- **Claude API**: timpii reali raportati de Anthropic SDK (online mode, claude-sonnet-5)
 - **Clasificare biometrica**: `time.perf_counter()` in jurul `bio.classify()`, n=1000
 
 ## WebSocket round-trip
@@ -35,8 +35,8 @@ masuri efectuate local (macOS 25.2, Python 3.11+, DEMO_OFFLINE=true, hardware: M
 
 | operatie | p50 | p95 | timeout | note |
 |----------|-----|-----|---------|------|
-| ghost brain (`GHOST_MAX_TOKENS=100`) | ~800ms | ~1800ms | 15s | claude-sonnet-4 |
-| content analyzer (`VISION_MAX_TOKENS=500`) | ~1200ms | ~2500ms | 15s | mai mare datorita system prompt + content |
+| ghost brain (`GHOST_MAX_TOKENS_DEFAULT=100`) | ~800ms | ~1800ms | 15s | claude-sonnet-5 |
+| content analyzer (`VISION_MAX_TOKENS=2048`) | ~1200ms | ~2500ms | 15s | mai mare datorita system prompt + content |
 
 **Note timeout**: clientul Anthropic e instantiat cu `timeout=15.0s` in `ghost_brain.py` si `content_analyzer.py`. p95 observat (~2.5s) este cu marja larga sub timeout, dar protejeaza impotriva atarnarii API-ului.
 
@@ -44,7 +44,7 @@ masuri efectuate local (macOS 25.2, Python 3.11+, DEMO_OFFLINE=true, hardware: M
 
 | operatie | latenta | note |
 |----------|---------|------|
-| `bio.classify(data)` | < 1ms | pur Python, fara I/O — n=1000 medie |
+| `bio.classify(data)` | < 1ms | pur Python, fara I/O (n=1000, medie) |
 | `mock.get_data()` | < 1ms | dict copy thread-safe sub lock |
 | `content_analyzer.detect_risky_commands()` | < 1ms | 11 regex compiled, early-exit la prima potrivire |
 | `validate_patch()` | < 2ms | regex + count + length checks |
@@ -53,7 +53,7 @@ masuri efectuate local (macOS 25.2, Python 3.11+, DEMO_OFFLINE=true, hardware: M
 
 | operatie | latenta | note |
 |----------|---------|------|
-| `save_intervention()` | ~3-5ms | INSERT + commit; WAL mode permite concurency cu reads |
+| `save_intervention()` | ~3-5ms | INSERT + commit; WAL mode permite citiri concurente |
 | `save_biometric()` | ~3-5ms | similar |
 | `get_interventions(limit=50)` | ~5-8ms | JOIN cu sessions, ORDER BY ts DESC, LIMIT |
 | `start_session()` + migrate (cold start) | ~30ms | rulare migration 001_init.sql daca DB e nou |
@@ -74,5 +74,5 @@ masuri efectuate local (macOS 25.2, Python 3.11+, DEMO_OFFLINE=true, hardware: M
 - in DEMO_OFFLINE mode Claude API nu e apelat → latenta interventie < 10ms
 - SQLite foloseste WAL mode → writes non-blocking pentru reads concurente
 - biometric_loop ruleaza la interval de 5s (configurabil prin variabila environment)
-- ghost_loop ruleaza la 1s tick, dar trimite interventii doar dupa cooldown (default 8-30s in functie de stare cognitiva)
+- ghost_loop ruleaza la 1s tick, dar trimite interventii doar dupa cooldown: un gate de 8s pe pipeline dupa fiecare interventie trimisa (`app_state.intervention_cooldown_until`, `loops.py`) plus cooldown-ul adaptiv din `GhostBrain.should_intervene` (`ghost_brain.py`): 30s default, 60s dupa 3+ interventii ignorate, 20s cand acceptarile depasesc ignorarile, minim 10s la actiuni riscante
 - aplicatia nu prezinta memory leak observabil dupa 60 min de rulare cu DEMO_OFFLINE=true (RSS stabil)

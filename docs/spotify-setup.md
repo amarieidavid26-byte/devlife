@@ -1,4 +1,4 @@
-# Spotify integration — setup pentru cont propriu
+# Spotify integration: setup pentru cont propriu
 
 Boxa din cameră deschide o **interfață Spotify**: un player oficial **embed** (iframe) plus o
 **căutare** prin care pui orice melodie. Codul e gata; trebuie doar un Spotify dev app
@@ -15,13 +15,13 @@ Boxa din cameră deschide o **interfață Spotify**: un player oficial **embed**
 
 - Cont **Spotify Premium** + **logat în Spotify în browser-ul demo** (pentru melodii complete)
 - Chrome / Edge / Brave
-- Prezinți jocul pe **`http://127.0.0.1:5173`** (NU `localhost` — vezi mai jos)
+- Prezinți jocul pe **`http://127.0.0.1:5173`** (NU `localhost`, vezi mai jos)
 
 ## ⚠️ De ce 127.0.0.1 și nu localhost
 
 Dashboard-ul Spotify **respinge** redirect URI-urile `http://localhost:...` ("not secure") și
 cere IP-ul loopback explicit `http://127.0.0.1:...`. Pentru ca login-ul (PKCE) să meargă,
-redirect-ul derivat (`window.location.origin + '/'`) trebuie să fie exact cel înregistrat — deci
+redirect-ul derivat (`window.location.origin + '/'`) trebuie să fie exact cel înregistrat. Deci
 **rulezi tot jocul pe `http://127.0.0.1:5173`**.
 
 Backend-ul acceptă deja această origine: `config.py` `ALLOWED_ORIGINS` include atât
@@ -37,10 +37,10 @@ ghost / IDE) când prezinți pe 127.0.0.1.
    - Website: gol
    - **Redirect URIs** (slash final obligatoriu): `http://127.0.0.1:5173/`
      - (opțional, prod) `https://devlife-rog-production.up.railway.app/`
-   - API used: bifează **Web API** (Web Playback SDK e opțional — embed-ul nu îl folosește)
+   - API used: bifează **Web API** (Web Playback SDK e opțional, embed-ul nu îl folosește)
    - Save
 3. **Copy Client ID** de pe pagina app-ului
-4. Pune-l în `.env` (rădăcina proiectului — Vite citește root prin `envDir:'..'`):
+4. Pune-l în `.env` (rădăcina proiectului: Vite citește root prin `envDir:'..'`):
    ```
    VITE_SPOTIFY_CLIENT_ID=clientul_tau_id
    ```
@@ -63,14 +63,14 @@ ghost / IDE) când prezinți pe 127.0.0.1.
 - **Melodii complete** doar dacă ești logat în Spotify (Premium) în browser; altfel preview 30s.
 - **Fără client_id**: căutarea e dezactivată (apare buton Connect); embed-ul tot poate reda
   playlist-ul default.
-- Embed-ul e UI oficial Spotify (opac) — îl controlăm doar prin iFrame API (`loadUri`/`play`);
-  volumul master din Settings nu îl conduce.
+- Embed-ul e UI oficial Spotify (opac); îl controlăm doar prin iFrame API (`loadUri`/`play`),
+  iar volumul master din Settings nu îl conduce.
 - Token OAuth expiră în 1h → refresh transparent.
 
 ## Securitate
 
-- **PKCE** (RFC 7636) — fără client_secret în frontend; `.env` e gitignored.
-- **State CSRF** verificat pe callback.
+- Login prin PKCE (RFC 7636), deci niciun client_secret în frontend; `.env` e gitignored.
+- Parametrul `state` anti-CSRF e verificat pe callback.
 - Tokenii stau în localStorage (acceptabil pentru un app educațional).
 
 ## Troubleshooting
@@ -84,8 +84,8 @@ ghost / IDE) când prezinți pe 127.0.0.1.
 
 ## Fișiere relevante
 
-- `frontend/src/network/Spotify.js` — OAuth PKCE + `search()` (Web API)
-- `frontend/src/apps/SpotifyApp.js` — overlay-ul boxei: embed iFrame API + căutare
-- `frontend/src/main.js` — `apps.speaker` + dispatch boxă → `openApp('speaker')`
-- `config.py` — `ALLOWED_ORIGINS` (include 127.0.0.1)
-- `.env` — `VITE_SPOTIFY_CLIENT_ID=`
+- `frontend/src/network/Spotify.js`: OAuth PKCE + `search()` (Web API)
+- `frontend/src/apps/SpotifyApp.js`: overlay-ul boxei, embed iFrame API + căutare
+- `frontend/src/main.js`: `apps.speaker` + dispatch boxă → `openApp('speaker')`
+- `config.py`: `ALLOWED_ORIGINS` (include 127.0.0.1)
+- `.env`: `VITE_SPOTIFY_CLIENT_ID=`

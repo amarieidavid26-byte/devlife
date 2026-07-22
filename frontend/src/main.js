@@ -311,7 +311,7 @@ async function startGame(enableDemo = false) {
 
     wireSocketHandlers({
         socket, offlineBio, hud, dashboard, demoHotbar, atmosphere,
-        ghost, player, furniture, soundManager, toastSystem, apps,
+        ghost, player, furniture, soundManager, toastSystem, apps, settingsMenu,
     });
 
     wireKeyboard({

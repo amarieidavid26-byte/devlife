@@ -10,6 +10,9 @@ let _token = null;
 let _features = { terminal: false, files: false, lsp: false, inline_ai: false, code_server: false, whoop: false };
 let _workspaceRoot = null;
 let _ready = null;
+// live WHOOP-account state, fed from the biometric_update WS stream (and the whoop_connected
+// event). Distinct from _features.whoop, which only means "WHOOP keys are configured".
+let _whoopConnected = false;
 
 export function initSession() {
     if (_ready) return _ready;
@@ -35,6 +38,14 @@ export function getToken() {
 
 export function getFeatures() {
     return _features;
+}
+
+export function isWhoopConnected() {
+    return _whoopConnected;
+}
+
+export function setWhoopConnected(v) {
+    _whoopConnected = !!v;
 }
 
 export function getWorkspaceRoot() {

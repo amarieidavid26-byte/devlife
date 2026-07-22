@@ -1,8 +1,8 @@
-# licenses summary — dependințe DevLife
+# licenses summary: dependințe DevLife
 
-Generat cu `pip-licenses` (backend) și `license-checker` (frontend). Toate dependințele au licențe permisive (MIT / BSD / Apache-2.0 / ISC / MPL-2.0 / PSF) — compatibile cu distribuirea open-source a proiectului.
+Generat cu `pip-licenses` (backend) și `license-checker` (frontend). Toate dependințele au licențe permisive (MIT / BSD / Apache-2.0 / ISC / MPL-2.0 / PSF), deci compatibile cu distribuirea open-source a proiectului.
 
-## frontend (npm, production) — sumar
+## frontend (npm, production): sumar
 
 ```
 ├─ MIT: 74
@@ -12,19 +12,19 @@ Generat cu `pip-licenses` (backend) și `license-checker` (frontend). Toate depe
 
 ```
 
-Note: `dompurify` (MPL-2.0 OR Apache-2.0 — alegem Apache-2.0), `earcut` (ISC), `qs` (BSD-3-Clause); restul MIT. Toate declarate și în `docs/assets-compliance.md`.
+Note: `dompurify` (MPL-2.0 OR Apache-2.0; alegem Apache-2.0), `earcut` (ISC), `qs` (BSD-3-Clause); restul MIT. Toate declarate și în `docs/assets-compliance.md`.
 
 ## alte resurse
 
 | resursă | licență |
 |---------|---------|
-| grafică 100% procedurală (PIXI.Graphics, cod propriu) | — |
+| grafică 100% procedurală (PIXI.Graphics, cod propriu) | n/a |
 | Fonturi Fredoka, Nunito (self-hosted) | SIL OFL 1.1 |
 | Font JetBrains Mono (self-hosted) | SIL OFL 1.1 |
 | Pyodide (runtime local + CDN fallback) | MPL-2.0 |
 | API-uri: Anthropic Claude, WHOOP, Spotify | termeni de serviciu, chei proprii |
 
-## backend (pip) — tabel complet
+## backend (pip): tabel complet
 
 | Name              | Version  | License                                            |
 |-------------------|----------|----------------------------------------------------|

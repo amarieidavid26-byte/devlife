@@ -1,15 +1,15 @@
-# rezumat teste — DevLife
+# rezumat teste DevLife
 
 ## execuție curentă
 
 | metric | valoare |
 |--------|---------|
-| total teste | 219 (218 pass + 1 skip condiționat) |
-| pass | 218 |
+| total teste | 234 (233 pass + 1 skip condiționat) |
+| pass | 233 |
 | fail | 0 |
 | skip | 1 (test dependent de mediu) |
-| durata totală | ~5s |
-| ultima rulare | 2026-07-17 |
+| durata totală | ~6s |
+| ultima rulare | 2026-07-20 |
 
 ## acoperire pe modul
 
@@ -20,17 +20,17 @@
 | `apply_fix/validator.py` | 94% | doar o linie missed (return success duplicat) |
 | `fallback_responses.py` | 100% | toate fallback paths atinse (EN + RO) |
 | `keystroke_dynamics.py` | 99% | features, scoring stres/oboseală, flow, baseline EMA |
-| `security.py` | 98% | origin check, token per proces, jail pe WORKSPACE_ROOT, CSRF store |
+| `security.py` | 91% | origin check, token per proces, jail pe WORKSPACE_ROOT, CSRF semnat HMAC (single-use, tamper, expirare, supraviețuire la reload); nemăsurat doar path-ul de persistare a cheii în DB |
 | `content_analyzer.py` | 94% | analyze() cu client Claude stub-uit: JSON valid/fenced/invalid, erori API, stuck detection, RO |
 | `persistence/db.py` | 93% | sessions, interventions, biometric samples, session replay, calibration, conexiuni per fir |
-| `ghost_brain.py` | 92% | should_intervene complet, firewall templates (EN+RO), personality/lang în prompt, fallback la eroare API — cu client stub-uit |
+| `ghost_brain.py` | 92% | should_intervene complet, firewall templates (EN+RO), personality/lang în prompt, fallback la eroare API, totul cu client stub-uit |
 | `runtime.py` | 88% | AppState, build_biometric_msg (incl. câmpuri null de senzor), load/save_calibration |
 | `terminal_pty.py` | 83% | KeystrokeFirewall: oglinda liniei, escape-uri, bracketed paste, fail-closed; PTY real prin test_terminal_ws + test_pty_reaping |
-| `ws_game.py` | 75% | handler-ele WS exercitate prin test_ws_flow + test_run_error_routing + test_ws_malformed |
+| `ws_game.py` | 74% | handler-ele WS exercitate prin test_ws_flow + test_run_error_routing + test_ws_malformed |
 | `server.py` | 71% | endpoints HTTP + WS handler de bază |
 | `context_history.py` | 58% | rezumatul de context trimis ghost-ului |
-| `biometric_engine.py` | 57% | `classify()` (incl. fuziune tastare) + RMSSD 100%; OAuth/HTTP WHOOP nu se testează fără credențiale reale |
-| `loops.py` | 31% | bucle daemon infinite — corpul lor e exercitat indirect prin testele de integrare WS |
+| `biometric_engine.py` | 60% | `classify()` (incl. fuziune tastare) + RMSSD/filtrare artefacte 100% + disconnect WHOOP; OAuth/HTTP WHOOP nu se testează fără credențiale reale |
+| `loops.py` | 40% | bucle daemon infinite; corpul lor e exercitat indirect prin testele de integrare WS |
 | **total** | **74%** | integrările externe rămase (OAuth WHOOP, PTY spawn) se validează prin demo live |
 
 ## structura tehnică a testelor
@@ -39,7 +39,7 @@
 |--------|----------|---------|
 | `tests/test_apply_fix.py` | 8 | contract Pydantic, validator (shell metacharacters, max lines, empty rationale), lifecycle preview→confirm→rollback |
 | `tests/test_biometric_classifier.py` | 10 | toate 5 stările cognitive, callback on_state_change, personality modifiers, default RELAXED când lipsesc date |
-| `tests/test_live_hrv.py` | 9 | RMSSD cu valoare calculată de mână, filtrare artefacte (300–2000ms), fereastră glisantă 60s, minim de sample-uri, integrare cu classify(), baseline HRV pliat o singură dată per ciclu WHOOP |
+| `tests/test_live_hrv.py` | 13 | RMSSD cu valoare calculată de mână, filtrare artefacte (300-2000ms + outlier față de mediana ferestrei + plafon RMSSD 200ms), fereastră glisantă 60s, minim de sample-uri, live_hrv golit când fereastra devine artefact, integrare cu classify(), baseline HRV pliat o singură dată per ciclu WHOOP |
 | `tests/test_biometric_loop_resilience.py` | 4 | câmpuri de senzor null (spo2/skin temp) nu mai arunca la rotunjire, valorile reale se rotunjesc in continuare, iar corpul buclei de biometrie e protejat ca in ghost_loop |
 | `tests/test_ble_listeners.py` | 4 | anti-drift peste WHOOPBluetooth.js: handlerele de HR și de deconectare sunt referințe stabile, deci reconectările nu stivuiesc listeneri și nu dublează intervalele RR în RMSSD |
 | `tests/test_keystroke_dynamics.py` | 13 | features din ritmul tastării, scoring stres (rapid+corecturi) / oboseală (lent+erratic+pauze), flow, baseline EMA înghețat cât timp tastarea e deviată (nu-și mai anulează semnalul), fuziune în classify() (typing-only / demo_locked / puls real câștigă) |
@@ -56,16 +56,17 @@
 | `tests/test_server_smoke.py` | 8 | WHOOP callback happy path + error, /ready, port env var, AppState dataclass, get_analyzer factory |
 | `tests/test_ws_flow.py` | 8 | WebSocket connect + first biometric_update, mock_state, invalid JSON ignored, content_update accepted, feedback accepted, heart_rate accepted/out-of-range/wrong-type |
 | `tests/test_run_error_routing.py` | 3 | rutare run_error prin ghost loop, truncare payload oversize, integrare runtime-error → intervenție |
-| `tests/test_security.py` | 6 | origin check, token per proces, workspace-root jail |
+| `tests/test_security.py` | 9 | origin check, token per proces, workspace-root jail, CSRF semnat (single-use, tamper, expirare/timestamp viitor, validare după reload) |
 | `tests/test_file_api.py` | 8 | tree/read/write cu jail pe WORKSPACE_ROOT, path traversal respins |
 | `tests/test_terminal_ws.py` + `test_terminal_pty.py` | 4 | sesiune PTY reală, gate pe feature flag + token |
 | `tests/test_inline_ws.py` + `test_lsp_bridge.py` + `test_codeserver.py` | 9 | completări inline AI, LSP bridge, code-server gating |
-| `tests/test_whoop_tokens.py` | 4 | persistență + refresh tokens OAuth WHOOP |
+| `tests/test_whoop_tokens.py` | 7 | persistență + refresh tokens OAuth WHOOP; disconnect (curăță memoria + fișierul, neutralizează un refresh în zbor, reconectarea îl anulează) |
 | `tests/test_context_history.py` | 4 | rezumatul de context ajunge la ghost si cand utilizatorul nu e blocat, lista de aplicații/activități/comutări, linia de stuck doar cât ține |
 | `tests/test_settings.py` | 6 | GET/POST /api/settings cu token de sesiune, mascarea cheilor în răspuns, precedența aplicație > .env |
 | `tests/test_escape_cascade.py` | 14 | anti-drift peste keyboard.js: ordinea cascadei ESC (modal chei → setări → scurtături → bulă → aplicații → dashboard) și garda de scenă pentru meniul de pauză și tasta E |
 | `tests/test_pty_reaping.py` | 10 | ciclul de viață al procesului copil din PTY: fără zombie după închidere, copil care ignoră SIGHUP tot e reaped, sesiuni repetate nu acumulează procese, resize cu valori arbitrare de la client nu aruncă |
 | `tests/test_ws_malformed.py` | 8 | mesaje WS malformate (tipuri greșite, valori nehashable) nu doboară socketul, iar clientul e scos din starea partajată pe orice ieșire |
+| `tests/test_sleep_mode.py` | 5 | trezirea din sleep: control manual (1-5) și mișcare (WASD) câștigă peste deducția de bandă scoasă, expirarea override-ului lasă sleep-ul să revină, pulsul live trezește normal |
 
 ## cum se rulează
 
@@ -76,7 +77,7 @@
 generează automat:
 - `evidence/tests/junit.xml` (raport JUnit XML)
 - `evidence/tests/coverage/index.html` (raport HTML coverage)
-- terminal output cu termeni missing (pentru debugging)
+- output în terminal cu liniile neacoperite (`term-missing`, pentru debugging)
 
 rulează și în CI (GitHub Actions, `.github/workflows/ci.yml`) la fiecare push.
 
@@ -89,5 +90,5 @@ răspunde cu text controlat (sau aruncă excepții controlate). Asta ne lasă s�
 - TOATE path-urile de eroare (API down → fallback la suggested_intervention / ultima analiză)
 - că template-urile instant de firewall NU consumă apeluri API
 
-Nu testăm cu credențiale Claude/WHOOP reale în CI — calitatea răspunsurilor live se
+Nu testăm cu credențiale Claude/WHOOP reale în CI; calitatea răspunsurilor live se
 validează manual prin demo (vezi `docs/demo-playbook.md`).

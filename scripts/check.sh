@@ -8,14 +8,14 @@ if [ -x "venv/bin/python" ]; then
     PY="venv/bin/python"
 fi
 
-echo "[check] 1/4 pytest..."
+echo "[check] 1/5 pytest..."
 "$PY" -m pytest tests/ -q
 
-echo "[check] 2/4 ruff..."
+echo "[check] 2/5 ruff..."
 "$PY" -m ruff check . --quiet
 echo "ruff ok"
 
-echo "[check] 3/4 paritate i18n en/ro..."
+echo "[check] 3/5 paritate i18n en/ro..."
 "$PY" - <<'EOF'
 import json
 with open("frontend/src/i18n/en.json") as f: en = json.load(f)

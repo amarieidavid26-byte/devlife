@@ -2,14 +2,22 @@
 // plant health, sleep mode, connect/disconnect
 
 import { i18n } from '../i18n/index.js';
+import { setWhoopConnected } from '../network/session.js';
 
 export function wireSocketHandlers(deps) {
     const { socket, offlineBio, hud, dashboard, demoHotbar, atmosphere,
-            ghost, player, furniture, soundManager, toastSystem, apps } = deps;
+            ghost, player, furniture, soundManager, toastSystem, apps, settingsMenu } = deps;
     let lastRecVel = null;
 
     socket.on('connected', () => { hud.setConnected(true); dashboard.setConnected(true); offlineBio.stop(); });
     socket.on('disconnected', () => { hud.setConnected(false); dashboard.setConnected(false); offlineBio.start(); });
+
+    const syncWhoopRow = (v) => {
+        setWhoopConnected(v);
+        if (settingsMenu && settingsMenu.refreshWhoopRow) settingsMenu.refreshWhoopRow();
+    };
+    socket.on('whoop_connected', () => syncWhoopRow(true));
+    socket.on('whoop_disconnected', () => syncWhoopRow(false));
 
     socket.on('intervention', (data) => {
         // the terminal firewall draws its own banner; a bubble would render behind the
@@ -27,6 +35,12 @@ export function wireSocketHandlers(deps) {
     });
 
     socket.on('biometric_update', (data) => {
+        // durable WHOOP-account state: keeps the Settings button honest after the OAuth
+        // page reload, when the one-shot whoop_connected broadcast has already been lost
+        if (data.whoop_connected !== undefined) {
+            setWhoopConnected(data.whoop_connected);
+            if (settingsMenu && settingsMenu.refreshWhoopRow) settingsMenu.refreshWhoopRow();
+        }
         hud.update(data);
         dashboard.update(data);
         demoHotbar.setActive(data.state);
