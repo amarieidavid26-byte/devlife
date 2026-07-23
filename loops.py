@@ -50,11 +50,8 @@ def _check_sleep_mode(data):
     # whether the band is on the wrist right now.
     now = time.time()
 
-    # Manual activity -- a demo state key (mock_override_until) OR movement (manual_awake_until)
-    # -- is an explicit "I'm awake and driving" signal and must win over off-wrist inference.
-    # Without this, once the band disconnects (unplugged, or a page refresh kills the BLE link)
-    # there is no live pulse left to ever reach the wake branch below, so the character latches
-    # asleep with no escape but a server restart.
+    # manual activity (demo key or movement) wins over off-wrist inference: after a BLE
+    # drop there is no live pulse left to reach the wake branch below
     if now < app_state.mock_override_until or now < app_state.manual_awake_until:
         app_state.sleep_low_hr_count = 0
         _set_sleep_mode(False, "manual activity")
@@ -92,9 +89,7 @@ def _check_sleep_mode(data):
 def biometric_loop():
     cycles = 0
     while app_state.ghost_running:
-        # o exceptie aici omora firul de biometrie definitiv: e daemon, nu are supervizor
-        # si nimic nu-l reporneste, deci HUD-ul ingheata pana la restart. Un ciclu prost
-        # se sare, ca in ghost_loop
+        # fir daemon fara supervizor: un ciclu prost se sare, nu omoara bucla
         try:
             is_whoop = False
             demo_locked = DEMO_OFFLINE or time.time() < app_state.mock_override_until
@@ -115,12 +110,9 @@ def biometric_loop():
                 if ble_fresh:
                     data["heartRate"] = bio.live_heart_rate
                 elif bio.live_hr_timestamp > 0:
-                    # a band streamed a live pulse and it stopped -> WHOOP is off the wrist. Don't
-                    # pass the API resting HR off as a live heartbeat; null it so the HUD honestly
-                    # shows "--" and the character can fall asleep (see _check_sleep_mode).
+                    # band streamed live HR then went silent: null it rather than presenting the API
+                    # resting HR as a live pulse (see _check_sleep_mode)
                     data["heartRate"] = None
-                # else: pure WHOOP-API mode (no band ever paired) -> keep the real resting HR from
-                # fetch_data. We never synthesize a fake live pulse.
                 if app_state.forced_state and time.time() < app_state.forced_until:
                     # A demo state is locked (keys 1-5). Hold it verbatim -- don't re-classify the
                     # transitioning mock numbers, which would briefly read as neighbouring states.

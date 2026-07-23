@@ -125,12 +125,6 @@ v1.0-rc ──> T14 (hardening) ──> v1.1-hardening (submission)
 
 ## faza 6: stadiul curent
 
-| arie | stadiu | restant |
-|------|--------|---------|
-| backend | 100% | - |
-| frontend | 100% | - |
-| testing | 100% (233 pass + 1 skip din 234) | - |
-| security | 100% | - |
-| docs | 100% (`documentatie-finala.docx` generat) | - |
-| evidence | 100% (23 capturi in `evidence/screenshots/`) | - |
-| deploy | 100% | - |
+Toate ariile sunt livrate la `v1.1-hardening` (233 pass + 1 skip din 234 teste,
+`documentatie-finala.docx` generat, 23 capturi in `evidence/screenshots/`); stadiul
+detaliat, inclusiv situatia deploy-ului Railway, e in `docs/rubric-matrix.md`.

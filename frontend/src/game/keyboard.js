@@ -42,8 +42,6 @@ export function wireKeyboard(deps) {
             return;
         }
 
-        // Escape always works (closes apps/bubbles even while typing). Cascade: inchide
-        // ce e deschis, iar daca nu e nimic deschis se comporta ca un meniu de pauza
         // !e.shiftKey: Shift+Esc e chordul de inchidere al aplicatiilor. Handler-ul din
         // xterm/monaco inchide aplicatia si abia apoi evenimentul ajunge aici, cu activeApp
         // deja null -- fara garda, Shift+Esc inchidea terminalul si deschidea setarile
@@ -108,11 +106,8 @@ export function wireKeyboard(deps) {
         }
 
         if (e.key.toLowerCase() === 'e') {
-            // doar in camera: `furniture` si `player` sunt instantele camerei, iar
-            // main.js nu mai cheama player.update() in alte scene, deci gridX/gridY
-            // raman inghetate unde a stat ultima oara -- fara garda, E in oras
-            // deschidea aplicatii ale camerei peste scena curenta (orasul/cafeneaua
-            // isi au propriile handlere de E)
+            // in alte scene player.update() nu ruleaza, deci gridX/gridY raman inghetate in camera;
+            // fara garda, E deschidea aplicatiile camerei peste oras/cafenea
             if (!inRoom()) return;
             const name = furniture.getNearbyInteractable(player.gridX, player.gridY);
             // preventDefault: aplicatia isi pune focusul pe un camp de text (textarea din

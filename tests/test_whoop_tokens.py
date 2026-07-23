@@ -1,8 +1,8 @@
-"""WHOOP token persistence + OAuth correctness (Phase 1).
+"""WHOOP token persistence + OAuth correctness.
 
 The core bug this guards: exchange/refresh used to set tokens in memory only, so the
-connection died on restart. These tests prove tokens are written, reloaded, and that
-`offline` is re-sent on refresh (WHOOP drops the refresh token otherwise)."""
+connection died on restart. Tokens must be written, reloaded, and `offline` re-sent on
+refresh (WHOOP drops the refresh token otherwise)."""
 
 import json
 import time

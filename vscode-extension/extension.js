@@ -1,6 +1,5 @@
-// DevLife Bridge - streams REAL editor context to the DevLife backend over the same
-// WS protocol the game uses. the ghost analyzes what you actually code in VS Code,
-// interventions come back as notifications, your cognitive state sits in the status bar.
+// DevLife Bridge: streams live editor context to the DevLife backend over the same WS protocol as the game;
+// interventions surface as notifications, cognitive state in the status bar.
 // privacy: keystrokes are sent as (interval, category) pairs only, never key contents
 // (same contract as the game's KeystrokeCapture -- see keystroke_dynamics.py)
 

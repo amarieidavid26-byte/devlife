@@ -25,11 +25,8 @@ export class WHOOPBluetooth {
         // instanta, ca testele sa poata scurta asteptarile fara sa astepte timpi reali
         this._reconnectDelays = RECONNECT_DELAYS;
         this._autoConnectTimeoutMs = AUTO_CONNECT_TIMEOUT_MS;
-        // referinte stabile: addEventListener ignora un (tip, listener) deja inregistrat
-        // doar daca functia e aceeasi. Cu cate un arrow nou la fiecare resubscriere,
-        // fiecare reconectare mai adauga un listener pe aceeasi caracteristica, iar un
-        // cadru BLE ajungea de N ori in RMSSD -- diferentele dintre duplicate sunt 0,
-        // deci HRV-ul afisat scadea artificial dupa fiecare reconectare
+        // referinte stabile: un arrow nou la fiecare resubscriere stivuia listeneri pe caracteristica,
+        // iar cadrele BLE duplicate (diferenta 0) scadeau artificial RMSSD/HRV
         this._onHeartRateBound = (event) => this._onHeartRate(event);
         this._onGattDisconnectedBound = () => {
             console.log('[whoop-ble] disconnected');
@@ -201,9 +198,7 @@ export class WHOOPBluetooth {
             }
         }
 
-        // exhausted all attempts -- user must click Pair again
-        // listeners are already in (0, false) state from the original disconnect event;
-        // we only fire the dedicated give-up callback so the UI shows one terminal toast
+        // incercari epuizate; doar callback-ul de give-up, listener-ii sunt deja pe (0, false)
         this._reconnecting = false;
         // daca intre timp s-a conectat (Pair manual in timpul buclei), nu avem voie sa
         // marcam _giveUp: ar stinge reconectarea automata pentru tot restul sesiunii si ar

@@ -3,11 +3,6 @@ import { i18n } from '../i18n/index.js';
 // The in-game speaker. Plays music through the official Spotify *embed* iframe, controlled via
 // Spotify's Embed iFrame API. No Web API / OAuth dependency — the embed needs only that the user
 // is logged into Spotify (Premium) in this browser for full-length tracks (otherwise 30s previews).
-//
-// "Play whatever you want" is covered three ways, all API-free and demo-safe:
-//   1. Quick-pick playlist buttons (swap the embed instantly).
-//   2. Paste any Spotify link (song / album / playlist) -> loads into the embed.
-//   3. Browse + click tracks inside the embed's own Spotify UI.
 
 const EMBED_API_SRC = 'https://open.spotify.com/embed/iframe-api/v1';
 
@@ -61,9 +56,7 @@ export class SpotifyApp {
         this.socket = socket;
         this.appType = 'spotify';
         this.isOpen = false;
-        // fara capturesKeyboard: 1-5 sunt deja pazite de garda INPUT, iar WASD/E de
-        // `if (activeApp) return` -- flagul doar inghitea ESC, ca overlay-ul nu poate
-        // primi focus, deci handler-ul local de mai jos nu era in calea evenimentului
+        // fara capturesKeyboard: inghitea ESC, iar 1-5/WASD/E au deja garzile lor
         this.overlay = null;
         this.onClose = null;            // set by main.js -> closeAllApps (restores game state)
         this._controller = null;

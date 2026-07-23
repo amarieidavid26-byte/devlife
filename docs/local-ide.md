@@ -35,7 +35,8 @@ complet; doar replicile AI ale ghost-ului au nevoie de backend.
 
 Toate functiile de aici sunt OFF by default. Le pornesti din `.env` (vezi `.env.example`):
 `TERMINAL_ENABLED`, `FILES_ENABLED`, `LSP_ENABLED`, `INLINE_AI_ENABLED`,
-`CODE_SERVER_ENABLED`.
+`CODE_SERVER_ENABLED`. Starea curenta a flag-urilor se vede in joc, in Settings, sectiunea
+"functii locale" (doar afisare; activarea ramane exclusiv in `.env`).
 
 Workspace-ul e implicit `./workspace`. Pointeaza-l catre un proiect real cu
 `WORKSPACE_ROOT=/cale/catre/proiect` in `.env`; accesul la fisiere ramane limitat la acest

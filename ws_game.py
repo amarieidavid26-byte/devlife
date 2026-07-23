@@ -183,9 +183,8 @@ async def _ws_run_error(ws, data):
 
     state = bio.current_state
     modifiers = bio.get_personality_modifiers(state)
-    # tot pe executor, ca analiza de mai sus: process() ajunge la clientul sincron Anthropic
-    # (timeout 15s), iar aici suntem pe event loop -- un Run cu eroare bloca broadcast-urile
-    # tuturor clientilor. In ghost_loop acelasi apel e deja pe alt fir, deci e tiparul stabilit
+    # pe executor: process() foloseste clientul sincron Anthropic (timeout 15s),
+    # iar aici suntem pe event loop
     try:
         intervention = await loop.run_in_executor(
             None,

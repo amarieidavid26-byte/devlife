@@ -233,18 +233,11 @@ export class TownDialogue {
     }
 
     _findNearbyBuilding(playerPos) {
-        // Building centers in screen space -- use the same isometric formula as Town.js
-        // cartToIso: x = (gx-gy)*32, y = (gx+gy)*16
-        // Then offset by viewport center / zoom and grid offset
-        // Since playerPos is in the same coordinate space (container-local),
-        // we compare using cartToIso directly, matching Town._gridToScreen
+        // aceeasi formula izometrica ca Town.js cartToIso; playerPos e in acelasi spatiu (container-local),
+        // asa ca offsetul de viewport se anuleaza la calculul distantei
         for (const b of BUILDINGS) {
             const isoX = (b.gx - b.gy) * 32; // TILE_WIDTH/2
             const isoY = (b.gx + b.gy) * 16;  // TILE_HEIGHT/2
-
-            // Player position relative to the same container origin
-            // We need raw iso coords since both player and buildings live in the same container
-            // The viewport offset cancels out when computing distance, so just use raw iso
             const dx = playerPos.x - isoX;
             const dy = playerPos.y - isoY;
             const dist = Math.sqrt(dx * dx + dy * dy);

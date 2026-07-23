@@ -4,6 +4,9 @@ import { openApiKeysModal } from '../hud/ApiKeysModal.js';
 import { CONFIG } from '../config.js';
 import { getFeatures, isWhoopConnected, setWhoopConnected, authHeaders } from '../network/session.js';
 
+// doar afisate in UI: flag-urile pornesc exclusiv din .env, ca granita de securitate
+const FEATURE_FLAGS = ['terminal', 'files', 'lsp', 'inline_ai', 'code_server'];
+
 const KEYBINDS = [
   ['WASD', 'settings.kb_move'],
   ['E', 'settings.kb_interact'],
@@ -62,7 +65,7 @@ export class SettingsMenu {
     // audio section
     panel.appendChild(this._sectionLabel(i18n.t('settings.audio')));
 
-    // volume row
+    // volume + mute on one row
     const volRow = this._row();
     const volLabel = this._label(i18n.t('settings.volume'));
     const volValue = this._label('70%');
@@ -88,15 +91,8 @@ export class SettingsMenu {
       if (this._volumeCb) this._volumeCb(v / 100);
     });
 
-    volRow.appendChild(volLabel);
-    volRow.appendChild(slider);
-    volRow.appendChild(volValue);
-    panel.appendChild(volRow);
-
-    // mute row
-    const muteRow = this._row();
-    muteRow.style.marginTop = '12px';
     const muteLabel = this._label(i18n.t('settings.mute'));
+    muteLabel.style.margin = '0 8px 0 18px';
 
     const muteBox = document.createElement('input');
     muteBox.type = 'checkbox';
@@ -110,75 +106,12 @@ export class SettingsMenu {
       if (this._muteCb) this._muteCb(muteBox.checked);
     });
 
-    muteRow.appendChild(muteLabel);
-    muteRow.appendChild(muteBox);
-    panel.appendChild(muteRow);
-
-    // WHOOP account (OAuth cloud) — distinct from "PAIR SENSOR" (Bluetooth, live pulse only).
-    // Recovery, strain, sleep si HRV zilnic vin DOAR de aici; fara acest pas raman "--".
-    // Sectiunea se construieste mereu, dar vizibilitatea se decide la fiecare deschidere
-    // (show()): panoul e construit in constructor, INAINTE ca initSession() sa aduca
-    // feature flags, deci un `if (getFeatures().whoop)` aici ar fi mereu fals la pornire.
-    // Ascunsa cand nu exista chei WHOOP configurate, altfel butonul ar duce la un redirect rupt.
-    this._whoopSection = document.createElement('div');
-    this._whoopSection.appendChild(this._sectionLabel(i18n.t('whoop.section')));
-    this._whoopHint = document.createElement('div');
-    this._whoopHint.style.cssText = "font-family:'Nunito',sans-serif;font-size:11px;color:#8A7E6A;line-height:1.5;margin-bottom:10px;";
-    this._whoopSection.appendChild(this._whoopHint);
-    this._whoopBtn = document.createElement('button');
-    this._whoopBtn.style.cssText = `padding:8px 16px;background:rgba(255,255,255,0.05);
-      border-radius:4px;cursor:pointer;
-      font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;
-      transition:background 0.15s;`;
-    this._whoopBtn.addEventListener('click', () => {
-      if (isWhoopConnected()) {
-        // clear the UI only after the backend confirms. On failure (e.g. a stale session token
-        // after a dev reload -> 403) leave the button as "Disconnect"; the next biometric_update
-        // keeps it honest either way, so we never claim a disconnect that did not happen.
-        fetch(CONFIG.BACKEND_URL + '/api/whoop/disconnect', { method: 'POST', headers: authHeaders() })
-          .then((r) => { if (r.ok) { setWhoopConnected(false); this.refreshWhoopRow(); } })
-          .catch(() => {});
-        return;
-      }
-      // navigheaza la fluxul OAuth din backend; el redirectioneaza la WHOOP si inapoi in aplicatie
-      window.location.href = CONFIG.BACKEND_URL + '/api/whoop/auth';
-    });
-    this._whoopSection.appendChild(this._whoopBtn);
-    this.refreshWhoopRow();
-    this._whoopSection.style.display = getFeatures().whoop ? '' : 'none';
-    panel.appendChild(this._whoopSection);
-
-    // spotify section — only shown when client_id is configured at build time
-    if (Spotify.isConfigured()) {
-      panel.appendChild(this._sectionLabel(i18n.t('spotify.section')));
-      this._spotifyRow = this._row();
-      this._spotifyRow.style.flexDirection = 'column';
-      this._spotifyRow.style.alignItems = 'stretch';
-      this._spotifyRow.style.gap = '8px';
-      panel.appendChild(this._spotifyRow);
-      this._renderSpotifyRow();
-      this._spotifyUnsub = Spotify.onChange(() => this._renderSpotifyRow());
-    }
-
-    // API keys (BYOK) section — opens the shared modal, same one as the dashboard topbar
-    panel.appendChild(this._sectionLabel(i18n.t('apikeys.title')));
-    const keysRow = this._row();
-    keysRow.style.gap = '12px';
-    const keysNote = document.createElement('div');
-    keysNote.textContent = i18n.t('apikeys.privacy');
-    keysNote.style.cssText = "flex:1; font-family:'Nunito',sans-serif; font-size:11px; color:#888; line-height:1.5;";
-    const keysBtn = document.createElement('button');
-    keysBtn.textContent = i18n.t('apikeys.manage');
-    keysBtn.style.cssText = `padding:8px 16px;background:rgba(255,255,255,0.05);
-      color:#00c864;border:1px solid #00c864;border-radius:4px;cursor:pointer;
-      font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;flex-shrink:0;
-      transition:background 0.15s;`;
-    keysBtn.addEventListener('mouseenter', () => { keysBtn.style.background = 'rgba(0,200,100,0.13)'; });
-    keysBtn.addEventListener('mouseleave', () => { keysBtn.style.background = 'rgba(255,255,255,0.05)'; });
-    keysBtn.addEventListener('click', () => openApiKeysModal());
-    keysRow.appendChild(keysNote);
-    keysRow.appendChild(keysBtn);
-    panel.appendChild(keysRow);
+    volRow.appendChild(volLabel);
+    volRow.appendChild(slider);
+    volRow.appendChild(volValue);
+    volRow.appendChild(muteLabel);
+    volRow.appendChild(muteBox);
+    panel.appendChild(volRow);
 
     // language section
     panel.appendChild(this._sectionLabel(i18n.t('settings.language')));
@@ -233,42 +166,118 @@ export class SettingsMenu {
     }
     panel.appendChild(persRow);
 
+    // cont WHOOP (OAuth), distinct de PAIR SENSOR (BLE, doar puls live); recovery/strain/sleep/HRV vin doar de aici
+    // vizibilitatea se decide in show(): feature flags sosesc abia dupa constructor (initSession e async)
+    this._whoopSection = document.createElement('div');
+    this._whoopSection.appendChild(this._sectionLabel(i18n.t('whoop.section')));
+    this._whoopHint = document.createElement('div');
+    this._whoopHint.style.cssText = "font-family:'Nunito',sans-serif;font-size:11px;color:#8A7E6A;line-height:1.5;margin-bottom:10px;";
+    this._whoopSection.appendChild(this._whoopHint);
+    this._whoopBtn = document.createElement('button');
+    this._whoopBtn.style.cssText = `padding:8px 16px;background:rgba(255,255,255,0.05);
+      border-radius:4px;cursor:pointer;
+      font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;
+      transition:background 0.15s;`;
+    this._whoopBtn.addEventListener('click', () => {
+      if (isWhoopConnected()) {
+        // la esec (ex: token invalid dupa un reload de dev -> 403) starea o corecteaza urmatorul biometric_update
+        fetch(CONFIG.BACKEND_URL + '/api/whoop/disconnect', { method: 'POST', headers: authHeaders() })
+          .then((r) => { if (r.ok) { setWhoopConnected(false); this.refreshWhoopRow(); } })
+          .catch(() => {});
+        return;
+      }
+      window.location.href = CONFIG.BACKEND_URL + '/api/whoop/auth';
+    });
+    this._whoopSection.appendChild(this._whoopBtn);
+    this.refreshWhoopRow();
+    this._whoopSection.style.display = getFeatures().whoop ? '' : 'none';
+    panel.appendChild(this._whoopSection);
+
+    // spotify section — only shown when client_id is configured at build time
+    if (Spotify.isConfigured()) {
+      panel.appendChild(this._sectionLabel(i18n.t('spotify.section')));
+      this._spotifyRow = this._row();
+      this._spotifyRow.style.flexDirection = 'column';
+      this._spotifyRow.style.alignItems = 'stretch';
+      this._spotifyRow.style.gap = '8px';
+      panel.appendChild(this._spotifyRow);
+      this._renderSpotifyRow();
+      this._spotifyUnsub = Spotify.onChange(() => this._renderSpotifyRow());
+    }
+
+    // API keys (BYOK) section — opens the shared modal, same one as the dashboard topbar
+    panel.appendChild(this._sectionLabel(i18n.t('apikeys.title')));
+    const keysRow = this._row();
+    keysRow.style.gap = '12px';
+    const keysNote = document.createElement('div');
+    keysNote.textContent = i18n.t('apikeys.privacy');
+    keysNote.style.cssText = "flex:1; font-family:'Nunito',sans-serif; font-size:11px; color:#888; line-height:1.5;";
+    const keysBtn = document.createElement('button');
+    keysBtn.textContent = i18n.t('apikeys.manage');
+    keysBtn.style.cssText = `padding:8px 16px;background:rgba(255,255,255,0.05);
+      color:#00c864;border:1px solid #00c864;border-radius:4px;cursor:pointer;
+      font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;flex-shrink:0;
+      transition:background 0.15s;`;
+    keysBtn.addEventListener('mouseenter', () => { keysBtn.style.background = 'rgba(0,200,100,0.13)'; });
+    keysBtn.addEventListener('mouseleave', () => { keysBtn.style.background = 'rgba(255,255,255,0.05)'; });
+    keysBtn.addEventListener('click', () => openApiKeysModal());
+    keysRow.appendChild(keysNote);
+    keysRow.appendChild(keysBtn);
+    panel.appendChild(keysRow);
+
+    // functii locale: doar stare, fara toggle-uri; randurile se reconstruiesc la fiecare show()
+    panel.appendChild(this._sectionLabel(i18n.t('settings.features')));
+    this._featuresRows = document.createElement('div');
+    panel.appendChild(this._featuresRows);
+    this._renderFeatureRows();
+    const featuresHint = document.createElement('div');
+    featuresHint.textContent = i18n.t('settings.features_hint');
+    featuresHint.style.cssText = "font-family:'Nunito',sans-serif;font-size:11px;color:#8A7E6A;line-height:1.5;margin-top:8px;";
+    panel.appendChild(featuresHint);
+
     // controls section
     panel.appendChild(this._sectionLabel(i18n.t('settings.controls')));
 
+    const kbGrid = document.createElement('div');
+    kbGrid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; column-gap:24px; row-gap:4px;';
     for (const [key, descKey] of KEYBINDS) {
-      const row = this._row();
+      const cell = document.createElement('div');
       const k = this._label(key);
+      k.style.fontSize = '12px';
       k.style.color = '#00c864';
-      k.style.minWidth = '80px';
-      const sep = this._label('\u2014');
-      sep.style.margin = '0 10px';
+      const sep = this._label('\u00b7');
+      sep.style.fontSize = '12px';
+      sep.style.margin = '0 6px';
       sep.style.color = '#555';
       const d = this._label(i18n.t(descKey));
+      d.style.fontSize = '12px';
       d.style.color = '#888';
-      row.appendChild(k);
-      row.appendChild(sep);
-      row.appendChild(d);
-      panel.appendChild(row);
+      cell.appendChild(k);
+      cell.appendChild(sep);
+      cell.appendChild(d);
+      kbGrid.appendChild(cell);
     }
+    panel.appendChild(kbGrid);
 
-    // about section — version, tagline, and an "author cards" row crediting both builders
+    const kbHint = document.createElement('div');
+    kbHint.textContent = i18n.t('settings.kb_all_hint');
+    kbHint.style.cssText = "font-family:'Nunito',sans-serif;font-size:11px;color:#8A7E6A;line-height:1.5;margin-top:8px;";
+    panel.appendChild(kbHint);
+
+    // about section: one version + credit line, then the author cards
     panel.appendChild(this._sectionLabel(i18n.t('settings.about')));
 
-    const version = document.createElement('div');
-    version.textContent = i18n.t('settings.about_version');
-    version.style.cssText = "font-family:'Courier New',monospace; font-size:14px; color:#00c864; text-align:center; letter-spacing:2px; margin-bottom:4px;";
-    panel.appendChild(version);
-
-    const tagline = document.createElement('div');
-    tagline.textContent = i18n.t('menu.subtitle');
-    tagline.style.cssText = "font-family:'Nunito',sans-serif; font-size:12px; color:#888; text-align:center; font-style:italic; margin-bottom:18px;";
-    panel.appendChild(tagline);
-
-    const builtByLabel = document.createElement('div');
-    builtByLabel.textContent = i18n.t('settings.about_built_by');
-    builtByLabel.style.cssText = "font-family:'Courier New',monospace; font-size:10px; color:#666; text-align:center; letter-spacing:4px; margin-bottom:12px;";
-    panel.appendChild(builtByLabel);
+    const aboutLine = document.createElement('div');
+    aboutLine.style.cssText = "font-family:'Courier New',monospace; font-size:12px; text-align:center; letter-spacing:2px; margin-bottom:12px;";
+    const aboutVersion = document.createElement('span');
+    aboutVersion.textContent = i18n.t('settings.about_version');
+    aboutVersion.style.color = '#00c864';
+    aboutLine.appendChild(aboutVersion);
+    const aboutBuiltBy = document.createElement('span');
+    aboutBuiltBy.textContent = ' · ' + i18n.t('settings.about_built_by');
+    aboutBuiltBy.style.color = '#666';
+    aboutLine.appendChild(aboutBuiltBy);
+    panel.appendChild(aboutLine);
 
     const authorsRow = document.createElement('div');
     authorsRow.style.cssText = 'display:flex; gap:12px; justify-content:center;';
@@ -305,8 +314,7 @@ export class SettingsMenu {
 
   // public api
 
-  // reflects live WHOOP-account state (fed by the biometric_update stream) so the button reads
-  // "Connect" when unlinked and "Disconnect" when linked -- instead of always saying "Connect"
+  // starea contului WHOOP vine din stream-ul biometric_update, nu doar din click-ul local
   refreshWhoopRow() {
     if (!this._whoopBtn) return;
     const connected = isWhoopConnected();
@@ -322,13 +330,11 @@ export class SettingsMenu {
 
   show() {
     this._visible = true;
-    // feature flags sosesc dupa constructie (initSession e async), deci re-evaluam
-    // vizibilitatea sectiunii WHOOP la fiecare deschidere -- pana acum se deschide, sesiunea
-    // e gata de mult
     if (this._whoopSection) {
       this._whoopSection.style.display = getFeatures().whoop ? '' : 'none';
       this.refreshWhoopRow();
     }
+    this._renderFeatureRows();
     this._root.style.visibility = 'visible';
     void this._root.offsetWidth;
     this._root.style.opacity = '1';
@@ -355,6 +361,29 @@ export class SettingsMenu {
   destroy() {
     if (this._spotifyUnsub) { try { this._spotifyUnsub(); } catch (_) {} this._spotifyUnsub = null; }
     this._root.remove();
+  }
+
+  _renderFeatureRows() {
+    if (!this._featuresRows) return;
+    this._featuresRows.innerHTML = '';
+    const features = getFeatures();
+    for (const flag of FEATURE_FLAGS) {
+      const on = !!features[flag];
+      const row = this._row();
+      const dot = document.createElement('span');
+      dot.style.cssText = `width:8px; height:8px; border-radius:50%; margin-right:10px; flex-shrink:0;
+        background:${on ? '#6AD89A' : '#555'};
+        box-shadow:${on ? '0 0 8px rgba(106,216,154,0.6)' : 'none'};`;
+      row.appendChild(dot);
+      const name = this._label(i18n.t(`settings.feature.${flag}`));
+      name.style.flex = '1';
+      row.appendChild(name);
+      const state = this._label(on ? i18n.t('settings.feature_on') : i18n.t('settings.feature_off'));
+      state.style.fontSize = '12px';
+      state.style.color = on ? '#6AD89A' : '#666';
+      row.appendChild(state);
+      this._featuresRows.appendChild(row);
+    }
   }
 
   _renderSpotifyRow() {
@@ -412,7 +441,7 @@ export class SettingsMenu {
     el.style.cssText = `
         font-family:'Courier New',monospace; font-size:11px; color:#7a7a7a;
         letter-spacing:3px; border-bottom:1px solid rgba(255,255,255,0.06);
-        padding-bottom:6px; margin-top:26px; margin-bottom:14px;
+        padding-bottom:6px; margin-top:18px; margin-bottom:14px;
         display:flex; align-items:center; gap:8px;
     `;
     const dot = document.createElement('span');

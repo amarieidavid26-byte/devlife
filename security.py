@@ -1,18 +1,8 @@
 """Security primitives for the privileged local endpoints (terminal / files / lsp / inline AI).
 
-The app runs a FastAPI server on the user's own machine. Once it gains a real PTY,
-filesystem writes and LSP subprocesses, an unguarded localhost port becomes a remote
-code-execution hole: any webpage open in the user's browser could WebSocket into it.
-
-Three layers defend against that:
-  1. binding to 127.0.0.1 (config.HOST) — no LAN exposure
-  2. an Origin check on every WS handshake — browsers always send Origin and JS cannot
-     forge it, so a malicious site at evil.com is rejected (CORS does NOT cover WebSockets)
-  3. a per-process session token the frontend reads from /api/session (which CORS keeps
-     unreadable cross-origin) and attaches to every privileged call
-
-Plus resolve_in_workspace() to keep all file access inside WORKSPACE_ROOT, and a small
-CSRF state store for the WHOOP OAuth round-trip.
+Three layers: 127.0.0.1 bind, an Origin check on every WS handshake (CORS does not cover
+WebSockets), and a per-process session token from /api/session. resolve_in_workspace()
+bounds file access to WORKSPACE_ROOT; the CSRF store covers the WHOOP OAuth round-trip.
 """
 
 import hashlib
@@ -30,10 +20,8 @@ logger = logging.getLogger(__name__)
 SESSION_TOKEN = secrets.token_urlsafe(32)
 
 _CSRF_TTL_SECONDS = 600
-# states already burned, so a replay is rejected within this process. The VALIDITY of a state
-# no longer depends on this dict (it is a signature check), so a uvicorn --reload wiping it can
-# only weaken single-use, never reject a legitimate in-flight login -- which was the real cause
-# of "the WHOOP login only works sometimes".
+# replay guard only: validity is a signature check, so a dev-server reload wiping this
+# dict cannot reject an in-flight login
 _consumed_csrf_states: dict[str, float] = {}
 _csrf_signing_key = None
 
@@ -61,13 +49,8 @@ def _csrf_key() -> bytes:
 
 
 def check_origin(websocket) -> bool:
-    """Allow a WS handshake only from a known Origin.
-
-    A browser always sends Origin and JS cannot spoof it, so this blocks the
-    "malicious website connects to your localhost" attack. A non-browser local
-    client may omit Origin entirely; we allow that and rely on the session token
-    for the privileged endpoints.
-    """
+    """Reject WS handshakes from unknown Origins. A missing Origin (non-browser local
+    client) is allowed; the session token still gates the privileged endpoints."""
     origin = websocket.headers.get("origin")
     if origin is None:
         return True

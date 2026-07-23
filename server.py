@@ -503,15 +503,12 @@ async def websocket_endpoint(ws: WebSocket):
                 try:
                     await handler(ws, data)
                 except Exception:
-                    # un mesaj malformat nu are voie sa doboare socketul: pana acum orice
-                    # exceptie dintr-un handler iesea din endpoint si omora sesiunea
+                    # o exceptie dintr-un handler nu are voie sa doboare socketul
                     logger.exception("ws handler failed for type=%r", data.get("type"))
 
     except WebSocketDisconnect:
         pass
     finally:
-        # cleanup-ul statea doar pe ramura de disconnect, deci orice alta iesire lasa
-        # un client mort in lista partajata
         if ws in app_state.connected_clients:
             app_state.connected_clients.remove(ws)
         logger.info("ws client offline (%d total)", len(app_state.connected_clients))
@@ -674,9 +671,7 @@ async def terminal_ws(ws: WebSocket):
 
     # defense in depth: even if the browser-side firewall is bypassed (direct WS client),
     # risky commands typed while FATIGUED/STRESSED never reach the shell
-    # "Do it anyway" in the UI arms this for exactly one command. The firewall exists to make
-    # you stop and think, not to lock you out of your own machine -- but every override is
-    # audited, and it is consumed immediately so it can never become a standing bypass.
+    # "Do it anyway" arms exactly one command; every override is audited
     override = {"armed": False}
 
     def _block_reason(line, unknown=False):

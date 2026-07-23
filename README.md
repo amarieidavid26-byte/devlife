@@ -49,7 +49,7 @@ cinci stari: RELAXED · DEEP_FOCUS · STRESSED · FATIGUED · WIRED. ghost-ul re
 - session replay in SQLite + raport HTML exportabil, self-contained, RO/EN (`GET /api/session/report/html`)
 - chei API din UI (BYOK): Claude + WHOOP direct din dashboard, salvate doar in SQLite local, mascate in API
 - demo offline: fara backend, biometricele sunt simulate client-side; starile 1-5, HUD-ul, ghost-ul si ECG-ul merg complet
-- sleep mode, personalitati de ghost (antrenor strict / prieten cald / sarcastic, din Settings), i18n RO/EN cu 549 chei
+- sleep mode, personalitati de ghost (antrenor strict / prieten cald / sarcastic, din Settings), i18n RO/EN cu 559 chei
 
 <p align="center">
   <img src="evidence/screenshots/32.png" alt="interventie ghost in stare FATIGUED, cu personalitatea Sarcastic" width="410">

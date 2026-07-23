@@ -139,6 +139,7 @@ puncte de mentionat:
 - Pydantic validation pe toate endpoint-urile POST
 - rate limiting cu slowapi
 - CORS restrictionat la originile cunoscute
+- Settings → sectiunea "functii locale": dovada vizuala rapida ca functiile privilegiate sunt flag-uri opt-in din `.env`, toate ON in demo pentru ca ruleaza local
 
 ---
 

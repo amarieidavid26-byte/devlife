@@ -1,9 +1,5 @@
 # DevLife: The Science Behind the Biometric Dashboard
 
-**Audience:** InfoEducație judges & reviewers
-**Purpose:** explain, with peer-reviewed sources, the physiological reasoning behind every derived metric DevLife shows, plus the exact algorithm used to compute it.
-**Date:** 2026-05-20
-
 > In the app these same explanations are one click away: a 💡 lightbulb next to each
 > term on the Dashboard (TAB) opens an expandable panel with the plain-language
 > meaning, the formula, and the citations below.
@@ -187,7 +183,4 @@ supports the prefrontal control careful programming depends on.
 5. **Low HRV, emotional dysregulation & prefrontal function: an integrative view** (2021),
    *J Personalized Medicine*. PMID 34575648: https://pubmed.ncbi.nlm.nih.gov/34575648/
 
----
-
-*Compiled from peer-reviewed literature on PubMed for educational/competition purposes. DevLife
-is not a medical device and does not provide medical advice or diagnosis.*
+*DevLife is not a medical device and does not provide medical advice or diagnosis.*

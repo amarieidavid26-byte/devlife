@@ -35,8 +35,7 @@ export function wireSocketHandlers(deps) {
     });
 
     socket.on('biometric_update', (data) => {
-        // durable WHOOP-account state: keeps the Settings button honest after the OAuth
-        // page reload, when the one-shot whoop_connected broadcast has already been lost
+        // dupa reload-ul de OAuth, broadcast-ul one-shot whoop_connected s-a pierdut; starea vine de aici
         if (data.whoop_connected !== undefined) {
             setWhoopConnected(data.whoop_connected);
             if (settingsMenu && settingsMenu.refreshWhoopRow) settingsMenu.refreshWhoopRow();
@@ -119,9 +118,8 @@ export function wireSocketHandlers(deps) {
         }
     });
 
-    // miscarea trezeste personajul. Sleep-ul blocheaza update()-ul de miscare din Player,
-    // deci tasta de miscare nu poate porni singura mersul cat timp doarme -- o prindem aici,
-    // trezim instant (local) si anuntam serverul ca sa nu re-adoarma. WASD, sageti si E
+    // sleep-ul blocheaza Player.update(), deci tastele de miscare se prind aici;
+    // serverul e anuntat ca sa nu re-adoarma
     const WAKE_KEYS = new Set(['w', 'a', 's', 'd', 'e', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
     window.addEventListener('keydown', (ev) => {
         if (!_asleep) return;

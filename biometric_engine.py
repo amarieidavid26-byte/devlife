@@ -40,9 +40,7 @@ class BiometricEngine:
         # token refresh
         self.token_expiry = 0
         self.refresh_token = None
-        # set by disconnect(); makes a refresh already in flight on the biometric-loop thread
-        # discard its result instead of resurrecting the tokens we just cleared. The lock makes
-        # the sentinel check and the token writes atomic across the two threads.
+        # set by disconnect(): an in-flight refresh discards its result (see refresh_access_token)
         self._disconnected = False
         self._token_lock = threading.Lock()
         self._sleep_error_logged = False
@@ -59,17 +57,10 @@ class BiometricEngine:
     RR_WINDOW_SECONDS = 60
     RR_MIN_MS, RR_MAX_MS = 300, 2000   # physiological bounds; outside = sensor artifact
     RR_MIN_SAMPLES = 8
-    # A wrist optical sensor (Huawei, Garmin, etc.) drops and doubles beats, so the "RR" it
-    # broadcasts jumps across the whole 300..2000 band even when the wearer is calm. Two guards
-    # keep that noise out of the HRV, both applied at compute time against the WHOLE-window
-    # median (robust to a minority of outliers -- unlike a running anchor, a single bad first
-    # beat cannot lock out every real beat that follows):
-    #   * per beat: a genuine inter-beat interval sits close to the window median; anything
-    #     further off is a missed or doubled beat and is excluded from the RMSSD.
-    #   * per window: a real short-window RMSSD stays well under 200ms. Above that the window is
-    #     artifact-corrupted, so we publish nothing and the WHOOP-cloud daily HRV stands in.
-    # Without these, a Huawei strap showed a garbage ~300ms HRV that also read as "very high
-    # HRV -> relaxed" in classify(), quietly suppressing the fatigue firewall.
+    # Optical wrist sensors drop and double beats, so raw RR spans the whole 300..2000 band
+    # even at rest (a Huawei strap produced a ~300ms fake HRV that classified as relaxed).
+    # Per beat: drop outliers vs the window median. Per window: RMSSD > HRV_MAX_PLAUSIBLE_MS
+    # publishes None.
     RR_ARTIFACT_TOLERANCE = 0.30
     HRV_MAX_PLAUSIBLE_MS = 200
 
@@ -84,9 +75,7 @@ class BiometricEngine:
         for rr in rr_list:
             if isinstance(rr, (int, float)) and self.RR_MIN_MS <= rr <= self.RR_MAX_MS:
                 self.live_rr.append((now, float(rr)))
-        # None (too few beats, or an artifact-corrupted window) must clear the live value, not
-        # leave a stale reading behind: a 30s-fresh garbage HRV would keep overriding the clean
-        # WHOOP-cloud value in build_biometric_msg() and classify().
+        # None must clear live_hrv, or a stale reading overrides the cloud HRV for up to 30s
         hrv = self.compute_live_hrv()
         self.live_hrv = hrv
         if hrv is not None:
@@ -98,9 +87,7 @@ class BiometricEngine:
         values = [v for _, v in self.live_rr]
         if len(values) < self.RR_MIN_SAMPLES:
             return None
-        # drop artifact beats against the window median before differencing. The median is
-        # robust to a minority of missed/doubled beats, so one bad reading (even the first one
-        # after a reconnect) is excluded instead of poisoning the whole window.
+        # drop artifact beats vs the window median (robust even to a bad first beat)
         median = sorted(values)[len(values) // 2]
         clean = [v for v in values if abs(v - median) <= self.RR_ARTIFACT_TOLERANCE * median]
         if len(clean) < self.RR_MIN_SAMPLES:
@@ -116,12 +103,8 @@ class BiometricEngine:
     TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token"
     API_BASE = "https://api.prod.whoop.com/developer/v2"
 
-    # the `offline` scope is required for WHOOP to issue a refresh token; without it
-    # the connection silently dies after the first access token expires (~1h).
-    # must match exactly the scopes enabled on the WHOOP dev app, or auth fails with
-    # invalid_scope. `offline` is required for a refresh token (not shown in the dashboard
-    # scope list). read:workout / read:body_measurement were removed — the app doesn't grant
-    # them and we don't use them.
+    # must match exactly the scopes enabled on the WHOOP dev app or auth fails with
+    # invalid_scope; `offline` (absent from the dashboard list) is required for a refresh token
     SCOPES = "offline read:recovery read:cycles read:sleep read:profile"
 
     # oauth flow
@@ -183,9 +166,7 @@ class BiometricEngine:
             })
             if response.status_code == 200:
                 data = response.json()
-                # a disconnect() may have landed while this POST was in flight -- honour it
-                # rather than repopulating the tokens it just cleared. Checked under the lock
-                # so a disconnect cannot slip between the check and the writes.
+                # disconnect() may land while the POST is in flight; check the sentinel under the lock
                 with self._token_lock:
                     if self._disconnected:
                         return False
@@ -209,11 +190,8 @@ class BiometricEngine:
         return self.access_token is not None
 
     def update_baseline(self, hrv_value, cycle_id=None):
-        # WHOOP HRV is a once-daily recovery value, but fetch_data polls every 5s. Feeding
-        # it unconditionally filled the window with copies of today -> baseline == today
-        # -> hrv_ratio ~1.0 always -> the HRV stress signal erased itself within ~70s. Fold
-        # in only a genuinely new daily reading (distinct cycle_id) and drift the baseline
-        # slowly, so today's value can still deviate from the personal norm.
+        # WHOOP HRV is once daily but fetch_data polls every 5s: fold in only a new cycle_id,
+        # otherwise the baseline collapses to today's value and the stress signal erases itself
         if cycle_id is not None and cycle_id == self._last_hrv_cycle:
             return
         self._last_hrv_cycle = cycle_id
@@ -275,11 +253,8 @@ class BiometricEngine:
                     logger.warning("sleep API failed: %s -- skipping", e)
                     self._sleep_error_logged = True
 
-            # WHOOP wraps each metric in records[0].score, but ONLY when score_state is
-            # "SCORED". First thing in the morning it can be PENDING_SCORE/UNSCORABLE, and a
-            # new member shows CALIBRATING. We start from the last-known reading and overwrite a
-            # section only when it's freshly scored, so a not-yet-scored morning keeps the
-            # previous real numbers instead of silently inventing plausible fakes.
+            # WHOOP fills records[0].score only when score_state is "SCORED" (mornings can be
+            # PENDING_SCORE/UNSCORABLE, new members CALIBRATING): overwrite a section only when scored
             def _scored(payload):
                 recs = payload.get("records", []) if payload else []
                 if recs and recs[0].get("score_state") == "SCORED":

@@ -37,9 +37,8 @@ from inline_completer import InlineCompleter
 
 logger = logging.getLogger(__name__)
 
-# WS payload bounds — keep these aligned with the Pydantic models in server.py so
-# HTTP and WS share the same input contract. Without these a malicious or buggy
-# client could blow up memory or run up Claude token costs.
+# WS payload bounds, kept aligned with the Pydantic models in server.py so
+# HTTP and WS share one input contract
 WS_MAX_CONTENT_CHARS = 50000
 WS_MAX_ACTION_CHARS = 100
 WS_MAX_KWARG_CHARS = 500
@@ -215,9 +214,8 @@ def build_biometric_msg(data, state):
         "source": "ble" if ble_active else source,
         # where recovery/HRV/strain come from -- lets the HUD be honest in BLE-only mode
         "metrics_source": source,
-        # durable WHOOP-account state on every tick: a page reloaded after the OAuth redirect
-        # reads this to show "Connected" instead of the Connect button (the one-shot
-        # whoop_connected broadcast is lost when the SPA navigates away for the OAuth round-trip)
+        # sent every tick: a page reloaded after the OAuth redirect misses the one-shot
+        # whoop_connected broadcast
         "whoop_connected": bio.access_token is not None,
         "heartRate": round(data["heartRate"]) if data.get("heartRate") else None,
         # `or 0`, nu `get(k, 0)`: WHOOP scrie cheia cu None cand strapul nu are senzorul,
@@ -228,8 +226,7 @@ def build_biometric_msg(data, state):
         "sleepPerformance": round(data.get("sleepPerformance") or 0, 2),
         "hrv": live_hrv if live_hrv is not None else round(data.get("hrv") or 0, 1),
         "hrv_live": live_hrv is not None,
-        # bio.estimated_stress is what classify() actually decided (incl. typing/HRV fusion);
-        # the raw data value would contradict the state label whenever fusion adjusted it
+        # what classify() decided, incl. typing/HRV fusion
         "estimated_stress": round(bio.estimated_stress, 2),
         "spo2": round(data["spo2"], 1) if data.get("spo2") is not None else None,
         "skinTemp": round(data["skinTemp"], 1) if data.get("skinTemp") is not None else None,

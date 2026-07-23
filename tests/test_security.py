@@ -1,4 +1,4 @@
-"""Tests for the privileged-endpoint security primitives (Phase 0)."""
+"""Tests for the privileged-endpoint security primitives."""
 
 import security
 from config import ALLOWED_ORIGINS, WORKSPACE_ROOT

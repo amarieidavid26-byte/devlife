@@ -162,9 +162,7 @@ export class TerminalApp {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(obj));
     }
 
-    // a firewall block is a real intervention -- the ghost stopped you on your biometrics --
-    // so it must be counted in the dashboard like any other. The backend records + broadcasts
-    // it; with no backend we emit the same event locally (as OfflineBiometrics does).
+    // firewall blocks count as interventions in the dashboard; without a backend, emit the same event locally
     _reportBlock(cmd, desc) {
         if (this.socket && this.socket.isConnected) {
             this.socket.send({ type: 'firewall_block', command: cmd, description: desc });

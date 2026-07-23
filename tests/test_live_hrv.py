@@ -53,9 +53,7 @@ def test_artifact_beat_excluded_from_hrv():
 
 def test_lone_bad_first_beat_does_not_lock_out_good_beats():
     bio = _bio()
-    # the first beat after pairing is a doubled-beat artifact (400ms), then the sensor recovers.
-    # A running-anchor filter would reject every real beat after it; the window-median approach
-    # treats the 400 as the outlier and still yields a real HRV.
+    # first beat after pairing is a doubled-beat artifact; it must not anchor the filter
     bio.add_rr_intervals([400, 800, 810, 790, 805, 795, 800, 812, 798, 803])
     assert bio.live_hrv is not None
     assert bio.live_hrv < 50
