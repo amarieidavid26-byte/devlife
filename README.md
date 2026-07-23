@@ -2,69 +2,59 @@
 
 [![CI](https://github.com/amarieidavid26-byte/devlife/actions/workflows/ci.yml/badge.svg)](https://github.com/amarieidavid26-byte/devlife/actions/workflows/ci.yml)
 
-developerii fac greseli proaste cand sunt obositi. nu un timer. nu un pomodoro app. ceva care iti citeste biometricele in timp real si spune "hey nu da push la productie acum".
+![camera izometrica DevLife: player, ghost si HUD-ul biometric live](evidence/screenshots/02.png)
 
-DevLife e un companion AI conectat la corpul tau prin WHOOP. citeste heart rate, HRV, recovery, stress - si clasifica starea ta cognitiva. cand esti in deep focus, te lasa in pace. cand esti cooked la 2am, activeaza Fatigue Firewall-ul si blocheaza comenzile periculoase inainte sa faci ceva de care o sa iti para rau.
+developerii obositi iau decizii proaste in cod, si niciun tool nu se uita la corpul lor cand se intampla asta. DevLife e un companion AI conectat la tine prin WHOOP si Web Bluetooth: iti citeste pulsul, HRV-ul si recovery-ul, clasifica starea ta cognitiva si reactioneaza. in deep focus te lasa in pace; cand esti epuizat la 2 dimineata, Fatigue Firewall iti blocheaza `git push --force` inainte sa apuci sa regreti.
+
+construit pentru developeri solo si freelanceri care lucreaza noaptea, SRE on-call, studenti si quantified-self enthusiasts cu wearables. analiza publicului tinta si a competitorilor: `docs/positioning.md`.
+
+## quick start
+
+```bash
+git clone https://github.com/amarieidavid26-byte/devlife.git
+cd devlife
+./scripts/setup.sh    # venv + deps
+./scripts/dev.sh      # backend + frontend, app pe http://127.0.0.1:5173
+```
+
+setup complet (.env, Pyodide, conectare WHOOP): `docs/install-runbook.md`.
 
 ## cum functioneaza
 
-biometrice (WHOOP + BLE) → clasificare stare cognitiva → ghost AI reactioneaza → interventii + firewall
+biometrice (WHOOP + BLE + tastare) → clasificare stare cognitiva → ghost AI reactioneaza → interventii + firewall
 
-**5 stari cognitive:** RELAXED · DEEP_FOCUS · STRESSED · FATIGUED · WIRED
+cinci stari: RELAXED · DEEP_FOCUS · STRESSED · FATIGUED · WIRED. ghost-ul reactioneaza diferit in fiecare; in FATIGUED blocheaza activ `git push --force`, `rm -rf`, `DROP TABLE`, `chmod 777` si restul pattern-urilor riscante.
 
-ghost isi schimba personalitatea pentru fiecare stare. in FATIGUED, blocheaza activ comenzile de tip `git push --force`, `rm -rf`, `DROP TABLE`, `chmod 777`.
+## ce il face diferit
 
-## features
+**fatigue firewall cu defense in depth.** e 2 noaptea, recovery 30%, starea: FATIGUED. tastezi `git push --force` in terminalul din joc si apesi Enter. comanda nu ajunge niciodata la shell: interceptarea din UI e doar primul strat, iar serverul mirroreaza tastele in PTY (`KeystrokeFirewall`) si inghite Enter-ul cand comanda e riscanta, deci nu treci nici daca ocolesti browserul. exista buton "Do it anyway", valabil pentru o singura comanda si auditat in SQLite: decizia devine una constienta, nu reflexul unui om epuizat.
 
-- **biometrice reale**: WHOOP API (recovery/somn/strain) + Chrome Web Bluetooth pentru bpm live. heart rate-ul tau apare pe ecran cu badge `● LIVE`
-- **IDE real in joc**: editorul Monaco (acelasi din VS Code) editeaza **fisiere reale** de pe PC, cu file tree si taburi; deschizi si salvezi cu Cmd/Ctrl+S. detalii in `docs/local-ide.md`
-- **terminal real**: un shell adevarat (zsh) in joc via xterm.js + PTY pe backend; ruleaza orice comanda, inclusiv TUI-uri (vim, htop)
-- **biometric Cursor**: completari AI inline in stil Cursor (ghost-text, Claude Haiku, accepti cu Tab). se **adapteaza la starea ta cognitiva**: prudente/safety-first cand esti FATIGUED/STRESSED, minimale in DEEP_FOCUS. badge `🧠 <STARE>` in editor.
-- **inteligenta de limbaj (LSP)**: diagnostice, autocomplete si hover reale prin pyright / typescript-language-server
-- **Open in full VS Code**: buton care lanseaza code-server (VS Code real, 1:1) in iframe pe acelasi workspace, pentru editare „power". local-only.
-- **fatigue firewall**: detecteaza comenzile periculoase si le blocheaza cand starea ta e FATIGUED. **defense in depth**: pe langa interceptarea din UI, serverul mirroreaza tastele in PTY si inghite Enter-ul (inlocuit cu Ctrl-U), asa ca comanda nu ajunge niciodata la shell, chiar daca ocolesti browserul
-- **HRV live (RMSSD)**: cand strapul transmite intervalele RR intre batai (BLE flag bit 4), calculam RMSSD pe fereastra glisanta de 60s, cu filtrare de artefacte. WHOOP iti arata HRV-ul de ieri; noi il calculam in timp real, in mijlocul sesiunii de cod
-- **dinamica tastarii**: stres si oboseala estimate din ritmul tastarii (intervale intre taste, variabilitatea lor, rata de backspace, pauzele de gandire) fata de baseline-ul tau personal. functioneaza **fara niciun wearable**. confidentialitate: se trimit doar intervale si categorii, niciodata ce tastezi. fuziune: pulsul real > tastare > sumar WHOOP > mock
-- **calibrare personala persistenta**: baseline-urile tale (ritm de tastare, HR de repaus, HRV de referinta) se salveaza in SQLite si se incarca la pornire; din a doua sesiune sistemul te compara cu TINE, nu cu valori hardcodate
-- **session replay**: fiecare sesiune e inregistrata in SQLite (sample-uri biometrice + interventii); dashboard-ul are un timeline colorat pe stari prin care poti face scrub: "aici am obosit, aici ghost-ul m-a oprit din force push"
-- **raport de sesiune exportabil**: `GET /api/session/report/html` genereaza un raport HTML self-contained (CSS + SVG inline, se deschide offline), cu distributia starilor, pulsul min/max/mediu, timeline-ul colorat pe stare cu tick-uri pe interventii si tabelul interventiilor. RO/EN prin `?lang=`
-- **chei API din aplicatie (BYOK)**: din panoul "Chei API" al dashboard-ului iti pui cheia Claude si credentialele WHOOP direct din UI, fara sa editezi `.env`; se salveaza in SQLite-ul local (niciodata pe alt server), se aplica instant fara restart, iar API-ul returneaza doar ultimele 4 caractere (endpoint protejat cu session token)
-- **personalitate ghost**: antrenor strict / prieten cald / sarcastic, din Settings; schimba tonul interventiilor AI
-- **apply fix**: ghost vede bug-uri in cod si propune fix-uri cu preview + confirm + rollback (buton Revert pe toast)
-- **desk code runner**: butonul Run executa Python (Pyodide) si JavaScript (Web Worker) in sandbox; runtime errors merg la ghost prin flow-ul apply-fix. detalii in `docs/desk-code-runner.md`
-- **sleep mode**: dai jos wearable-ul si camera se intuneca automat
-- **demo offline**: fara backend, biometricele sunt simulate client-side. starile (1-5), HUD-ul, ghost-ul si ECG-ul functioneaza complet; doar replicile AI ale ghost-ului au nevoie de backend
-- **extensie VS Code (DevLife Bridge)**: acelasi protocol WS, dar cu contextul REAL din editorul tau. ghost-ul analizeaza codul pe care il scrii efectiv si interventiile apar ca notificari VS Code; starea cognitiva sta in status bar. DevLife devine utilitar real, nu doar joc. detalii in `vscode-extension/README.md`
+![terminal real cu git push --force blocat de Fatigue Firewall](evidence/screenshots/05.png)
 
-## public tinta
+**HRV live (RMSSD).** cand strapul transmite intervalele RR prin BLE, calculam RMSSD pe fereastra glisanta de 60s, cu filtrare de artefacte. WHOOP iti arata HRV-ul de ieri; noi il masuram in mijlocul sesiunii de cod.
 
-- **developeri care lucreaza noaptea / freelanceri**: nimeni nu le spune "opreste-te"; DevLife o face pe baza de date, nu de ceas
-- **studenti si elevi la informatica**: invata igiena cognitiva (cat conteaza somnul si stresul, cand e momentul unei pauze) direct in fluxul de lucru, gamificat
-- **echipe mici / startup-uri**: un singur force push obosit pe productie costa mai mult decat tot setup-ul
-- **quantified-self enthusiasts cu wearables**: au deja datele, de la WHOOP si Polar la orice strap BLE standard; DevLife e primul tool care le transforma in interventii active in editor si terminal
+**dinamica tastarii, fara niciun wearable.** stres si oboseala estimate din ritmul tastarii (intervale intre taste, variabilitatea lor, rata de backspace, pauzele de gandire) fata de baseline-ul tau personal, persistat in SQLite. se trimit doar intervale si categorii, niciodata ce tastezi. fuziunea semnalelor: puls real > tastare > sumar WHOOP > mock.
 
-## tech stack
+**iese din joc, in editorul tau real.** extensia VS Code (DevLife Bridge) vorbeste cu acelasi backend, dar cu contextul real din editor: ghost-ul analizeaza codul la care chiar lucrezi, interventiile apar ca notificari VS Code, iar starea cognitiva sta in status bar (`vscode-extension/README.md`).
 
-- frontend: vanilla JS + PixiJS (camera izometrica procedurala, fara sprite-uri)
-- editor: Monaco (bundled ESM) + xterm.js (terminal) + provideri inline AI / LSP
-- backend: Python + FastAPI + WebSockets; PTY (stdlib `pty`), file API, LSP bridge
-- AI: Claude API (Anthropic), ghost brain (Sonnet) + completari inline (Haiku)
-- biometrice: WHOOP API + Chrome Web Bluetooth
-- persistenta: SQLite
-- deploy: Railway; functiile locale privilegiate (terminal, fisiere, LSP) raman OFF in prod
+## restul, pe scurt
 
-### de ce aceste tehnologii
+- IDE real in joc: Monaco pe fisiere reale de pe PC, file tree, taburi, Cmd/Ctrl+S (`docs/local-ide.md`)
+- terminal real via xterm.js + PTY, cu shell-ul tau (implicit zsh); ruleaza orice, inclusiv TUI-uri (vim, htop)
+- completari AI inline in stil Cursor (Claude Haiku, ghost-text, Tab), adaptate starii cognitive
+- LSP real: diagnostice, autocomplete si hover prin pyright / typescript-language-server
+- "Open in full VS Code": code-server pe acelasi workspace, in iframe, doar local
+- desk code runner: Python (Pyodide), JavaScript (Web Worker) si C/C++ (JSCPP) in sandbox; erorile de runtime merg la ghost (`docs/desk-code-runner.md`)
+- apply fix: ghost propune patch-uri cu preview, confirm si rollback
+- session replay in SQLite + raport HTML exportabil, self-contained, RO/EN (`GET /api/session/report/html`)
+- chei API din UI (BYOK): Claude + WHOOP direct din dashboard, salvate doar in SQLite local, mascate in API
+- demo offline: fara backend, biometricele sunt simulate client-side; starile 1-5, HUD-ul, ghost-ul si ECG-ul merg complet
+- sleep mode, personalitati de ghost (antrenor strict / prieten cald / sarcastic, din Settings), i18n RO/EN cu 549 chei
 
-| alegere | alternativa respinsa | motivul |
-|---------|---------------------|---------|
-| FastAPI | Flask / Django | WebSocket nativ + Pydantic integrat (validarea e parte din contractul Apply Fix); async fara plugin-uri |
-| PixiJS 7 | Three.js / Phaser | 2D WebGL pur, control complet pe randarea izometrica procedurala (zero sprite-uri externe); Three.js e overkill 3D, Phaser impune un game-loop opinionat |
-| vanilla JS | React / Vue | UI-ul de joc e canvas, nu DOM; un framework ar adauga un layer de reconciliere peste PixiJS fara castig |
-| SQLite (WAL) | Postgres | zero deployment overhead, ACID, reads concurente; volumul (o sesiune de cod) nu justifica un server de DB |
-| Claude API | GPT / local LLM | JSON structurat stabil pentru contractul de analiza + calitate pe cod; Haiku tine completarile inline sub ~1s |
-| WHOOP + Web Bluetooth | doar API polling | API-ul da sumarul zilnic; BLE da pulsul + intervalele RR in timp real, din care calculam noi insine HRV-ul live |
-| Pyodide + Web Worker | executie pe server | codul utilizatorului ruleaza sandboxed in browser, zero risc pe server; workerul se poate termina fortat la timeout |
-| pty (stdlib) | node-pty / xterm server | zero dependinte native; add_reader pe master fd = streaming fara thread busy |
+<p align="center">
+  <img src="evidence/screenshots/32.png" alt="interventie ghost in stare FATIGUED, cu personalitatea Sarcastic" width="410">
+  <img src="evidence/screenshots/12.png" alt="editorul Monaco in joc, cu o sugestie de fix de la ghost" width="410">
+</p>
 
 ## arhitectura
 
@@ -77,59 +67,20 @@ Browser (PixiJS)  <──ws://──>  FastAPI (Python)  <──>  Claude API
                               WHOOP API / BLE mock
 ```
 
-## structura proiectului
+frontend vanilla JS + PixiJS 7 (camera izometrica procedurala, zero sprite-uri), Monaco + xterm.js, backend FastAPI + WebSockets, persistenta SQLite (WAL), Claude API (Sonnet pentru ghost, Haiku pentru inline). fiecare layer, cu locatia exacta in cod: `docs/architecture.md`.
 
-```
-devlife/
-├── server.py             # FastAPI app: rute HTTP + endpoint-uri WebSocket (joc + privilegiate)
-├── runtime.py            # AppState partajat, singletons (engine/brain/analyzer), broadcast
-├── loops.py              # thread-urile daemon: biometric_loop (5s) + ghost_loop (1s)
-├── ws_game.py            # handler-ele mesajelor WS de joc (dispatch map, seam de extensie)
-├── biometric_engine.py   # WHOOP OAuth, clasificare stari, RMSSD/HRV live din RR
-├── keystroke_dynamics.py # stres/oboseala din ritmul tastarii (semnal zero-hardware)
-├── session_report.py     # raport HTML de sesiune, self-contained (CSS+SVG inline)
-├── ghost_brain.py        # decizia de interventie, prompturi per stare, personalitati
-├── content_analyzer.py   # analiza continutului din app-uri + detectie instant comenzi riscante
-├── terminal_pty.py       # sesiune PTY reala + KeystrokeFirewall (firewall server-side)
-├── security.py           # origin check, token per proces, jail pe WORKSPACE_ROOT
-├── file_api.py           # operatii pe fisiere, limitate la workspace
-├── lsp_bridge.py         # punte WebSocket <-> pyright / typescript-language-server
-├── inline_completer.py   # completari inline AI (Claude Haiku), adaptate starii
-├── code_server.py        # lansare code-server ("Open in full VS Code")
-├── fallback_responses.py # replici ghost pre-scrise (RO/EN) cand Claude nu raspunde
-├── apply_fix/            # contract Pydantic + validator + audit pentru patch-uri
-├── persistence/          # SQLite (WAL) + migratii: sesiuni, interventii, replay
-├── tests/                # 234 teste pytest
-├── frontend/
-│   └── src/
-│       ├── main.js       # bootstrap PIXI + lumea camerei + game loop
-│       ├── game/         # wiring: socketHandlers, keyboard, scenes, BLE, apply-fix flow
-│       ├── theme.js      # paleta per stare (sursa unica)
-│       ├── room/         # camera izometrica procedurala (Room, Furniture, Plant, Atmosphere)
-│       ├── character/    # Player + Ghost
-│       ├── town/         # scenele exterioare (Town, Cafe, Cowork)
-│       ├── apps/         # Monaco editor, terminal xterm, browser, notes, chat + runners
-│       ├── hud/          # HUD biometric, dashboard/ (ECG, sparkline, replay), toasts
-│       ├── network/      # WebSocket, BLE (RR intervals), KeystrokeCapture, Spotify
-│       ├── audio/        # sunete sintetizate procedural (Web Audio)
-│       ├── demo/         # secventa demo cinematica
-│       └── i18n/         # RO/EN (549 chei, paritate garantata)
-├── vscode-extension/     # DevLife Bridge: contextul real din VS Code -> acelasi backend
-├── docs/                 # arhitectura, securitate, demo playbook, pozitionare
-├── evidence/             # teste, licente, screenshots, team-process
-└── scripts/              # setup, dev, run-tests, healthcheck
-```
+## de ce aceste tehnologii
 
-## instalare
-
-```bash
-git clone <repo>
-cd devlife
-./scripts/setup.sh    # venv + deps
-./scripts/dev.sh      # porneste backend + frontend
-```
-
-vezi `docs/install-runbook.md` pentru setup complet cu .env.
+| alegere | alternativa respinsa | motivul |
+|---------|---------------------|---------|
+| FastAPI | Flask / Django | WebSocket nativ + Pydantic integrat (validarea e parte din contractul Apply Fix); async fara plugin-uri |
+| PixiJS 7 | Three.js / Phaser | 2D WebGL pur, control complet pe randarea izometrica procedurala; Three.js e overkill 3D, Phaser impune un game-loop opinionat |
+| vanilla JS | React / Vue | UI-ul de joc e canvas, nu DOM; un framework ar adauga un layer de reconciliere peste PixiJS fara castig |
+| SQLite (WAL) | Postgres | zero deployment overhead, ACID, reads concurente; volumul unei sesiuni de cod nu justifica un server de DB |
+| Claude API | GPT / local LLM | JSON structurat stabil pentru contractul de analiza + calitate pe cod; Haiku tine completarile inline sub ~1s |
+| WHOOP + Web Bluetooth | doar API polling | API-ul da sumarul zilnic; BLE da pulsul + intervalele RR in timp real, din care calculam noi insine HRV-ul live |
+| Pyodide + Web Worker | executie pe server | codul utilizatorului ruleaza sandboxed in browser, zero risc pe server; workerul se termina fortat la timeout |
+| pty (stdlib) | node-pty / xterm server | zero dependinte native; add_reader pe master fd = streaming fara thread busy |
 
 ## teste
 
@@ -137,61 +88,38 @@ vezi `docs/install-runbook.md` pentru setup complet cu .env.
 ./scripts/run-tests.sh    # 234 teste + junit.xml + coverage HTML in evidence/tests/
 ```
 
-unit + integration: clasificator biometric, RMSSD/HRV live, dinamica tastarii (features + fuziune in clasificator), contract Apply Fix, keystroke firewall (PTY), sincronizare pattern-uri firewall frontend/backend, session replay, flux WebSocket end-to-end, security jail. detalii in `evidence/tests/SUMMARY.md`.
+acoperirea pe module si arii (clasificator, HRV live, firewall PTY, apply fix, security jail, WS end-to-end): `evidence/tests/SUMMARY.md`.
 
-## conectare WHOOP (date reale)
+## securitate
 
-Ca să vezi datele tale reale (recovery, somn, strain) și heart rate live:
+backend-ul asculta doar pe `127.0.0.1`; fiecare endpoint privilegiat cere token de sesiune si verifica Origin, iar accesul la fisiere e blocat in afara `WORKSPACE_ROOT`. model complet si checklist: `docs/local-ide.md`, `docs/security-checklist.md`.
 
-1. **Înregistrează o aplicație** la [developer.whoop.com](https://developer.whoop.com) → obții `client_id` și `client_secret`.
-2. **Redirect URI** în dashboard-ul WHOOP trebuie să fie exact `http://localhost:8000/api/whoop/callback` (string-match: păstrează `localhost`, nu `127.0.0.1`).
-3. **Scopes**: bifează `offline` + `read:recovery` `read:cycles` `read:sleep` `read:profile`. `offline` e obligatoriu: fără el conexiunea moare după ~1h.
-4. Pune valorile în `.env`:
-   ```
-   WHOOP_CLIENT_ID=...
-   WHOOP_CLIENT_SECRET=...
-   WHOOP_REDIRECT_URI=http://localhost:8000/api/whoop/callback
-   ```
-5. Pornește appul, apasă **Connect WHOOP** → consimțământ → te întorci în joc, tokenul se salvează în `.whoop_tokens.json` și se reîncarcă automat la următoarea pornire.
+## ruleaza local
 
-**Heart rate live** (BLE): pe telefon, în WHOOP app → **Device Settings → Broadcast Heart Rate = ON**, apoi apasă **Pair** în joc. Necesită **Chrome sau Edge** (Web Bluetooth nu există în Safari/Firefox).
+terminalul real, editarea fisierelor, LSP, completarile inline si code-server functioneaza doar cu backend-ul pe masina ta (`./scripts/dev.sh`); pe orice deploy hostat raman OFF, fail-safe by default. flag-urile din `.env` si motivatia: `docs/local-ide.md`.
 
-**De reținut, ca să fim corecți:** doar HR-ul prin BLE e live (badge `● LIVE`). Recovery / HRV / strain / somn sunt **sumarul de dimineață** de la WHOOP (calculat o dată pe zi, badge `WHOOP`), nu în timp real. "Stress" e **derivat** din deviația HRV față de baseline-ul tău personal de HRV (o medie mobilă a valorilor zilnice); WHOOP nu expune un câmp de stress în API.
+pentru datele tale WHOOP reale (inregistrarea aplicatiei, OAuth, scopes, BLE broadcast din telefon), urmeaza ghidul de conectare din `docs/install-runbook.md`. onestitate: doar pulsul prin BLE e live (badge `● LIVE`, in romana `● ÎN DIRECT`); recovery / HRV / strain / somn sunt sumarul de dimineata de la WHOOP (badge `WHOOP`), iar "stress" e derivat din deviatia HRV fata de baseline-ul tau personal, pentru ca WHOOP nu expune un camp de stress in API.
 
-## IDE local, terminal & LSP
+## documentatie
 
-> **Rulează LOCAL pentru experiența completă.** Terminalul real, editarea fișierelor de pe
-> PC, LSP, completările AI și „Open in VS Code" funcționează **doar local**
-> (`./scripts/dev.sh`); un site public nu poate atinge fișierele de pe calculatorul unui
-> vizitator, deci pe deploy ele sunt dezactivate intenționat. Versiunea de pe Vercel e un
-> teaser (joc + biometrice + ghost + demo offline).
-
-Editorul si terminalul din joc lucreaza cu **fisiere reale** de pe masina ta, fiindca
-backend-ul ruleaza local. Totul e limitat la un singur director (`WORKSPACE_ROOT`).
-
-- **Workspace**: implicit `./workspace`. Pointeaza-l catre un proiect real cu
-  `WORKSPACE_ROOT=/cale/catre/proiect` in `.env`.
-- **Flag-uri locale** (in `.env`, default OFF, vezi `.env.example`): `TERMINAL_ENABLED`,
-  `FILES_ENABLED`, `LSP_ENABLED`, `INLINE_AI_ENABLED`, `CODE_SERVER_ENABLED`.
-- **Inteligenta de limbaj (optional)**: instaleaza serverele LSP local cu
-  `pip install pyright` (Python) si `npm i -g typescript-language-server typescript`
-  (JS/TS). Daca lipsesc, editorul merge fara diagnostice/autocomplete LSP.
-- **Open in full VS Code (optional)**: instaleaza code-server o singura data
-  (`curl -fsSL https://code-server.dev/install.sh | sh`), apoi `CODE_SERVER_ENABLED=true`
-  in `.env`. Butonul „Open in VS Code" lanseaza VS Code real (1:1) in iframe pe workspace.
-- **Browser**: Chrome/Edge (Web Bluetooth pentru WHOOP BLE; restul merge si in altele).
-- **Securitate**: backend-ul asculta doar pe `127.0.0.1`, fiecare endpoint privilegiat
-  cere un token de sesiune + verifica Origin, iar accesul la fisiere e blocat in afara
-  `WORKSPACE_ROOT`. Pe deploy hostat toate aceste functii raman OFF (fail-safe by default).
-
-Detalii de arhitectura: `docs/local-ide.md`.
+| doc | ce gasesti |
+|-----|-----------|
+| `docs/architecture.md` | layerele, diagramele, deciziile arhitecturale |
+| `docs/install-runbook.md` | setup complet: .env, Pyodide, WHOOP, troubleshooting |
+| `docs/local-ide.md` | IDE local, terminal, LSP si modelul lor de securitate |
+| `docs/desk-code-runner.md` | rularea codului in sandbox, in browser |
+| `docs/security-checklist.md` | checklist-ul de securitate, punct cu punct |
+| `docs/positioning.md` | problema, publicul tinta, competitorii |
+| `docs/demo-playbook.md` | scenariul demo pas cu pas |
+| `evidence/tests/SUMMARY.md` | acoperirea suitei de teste pe module |
+| `vscode-extension/README.md` | extensia DevLife Bridge |
 
 ## resurse externe
 
-- [Kenney.nl](https://kenney.nl): assets izometrice (CC0), folosite intr-o faza timpurie si eliminate; grafica actuala e 100% procedurala, vezi `docs/assets-compliance.md`
+- [Kenney.nl](https://kenney.nl): assets izometrice (CC0), folosite intr-o faza timpurie si eliminate; grafica actuala e 100% procedurala
 - [PixiJS](https://pixijs.com): rendering canvas (MIT)
 - [FastAPI](https://fastapi.tiangolo.com): web framework (MIT)
 - [Claude API](https://anthropic.com): Anthropic
 - [WHOOP API](https://developer.whoop.com): WHOOP
 
-declaratia completa (toate bibliotecile, versiunile si licentele) e in `docs/assets-compliance.md` si `evidence/assets-compliance/licenses-summary.md`.
+declaratia completa, cu toate bibliotecile, versiunile si licentele: `docs/assets-compliance.md` si `evidence/assets-compliance/licenses-summary.md`.

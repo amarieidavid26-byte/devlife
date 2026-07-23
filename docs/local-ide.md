@@ -27,6 +27,28 @@ DEEP_FOCUS. Asta e diferențiatorul față de Cursor: editorul îți cunoaște c
 scrii acolo (e iframe opac); magia biometric-Cursor stă în editorul Monaco implicit. Necesită
 `CODE_SERVER_ENABLED=true` + code-server instalat; degradează grațios (hint de instalare) altfel.
 
+**Demo offline:** fara backend, biometricele sunt simulate client-side
+(`network/offlineBiometrics.js`). Starile (1-5), HUD-ul, ghost-ul si ECG-ul functioneaza
+complet; doar replicile AI ale ghost-ului au nevoie de backend.
+
+## Setup local
+
+Toate functiile de aici sunt OFF by default. Le pornesti din `.env` (vezi `.env.example`):
+`TERMINAL_ENABLED`, `FILES_ENABLED`, `LSP_ENABLED`, `INLINE_AI_ENABLED`,
+`CODE_SERVER_ENABLED`.
+
+Workspace-ul e implicit `./workspace`. Pointeaza-l catre un proiect real cu
+`WORKSPACE_ROOT=/cale/catre/proiect` in `.env`; accesul la fisiere ramane limitat la acest
+director.
+
+LSP (optional): instaleaza serverele local cu `pip install pyright` (Python) si
+`npm i -g typescript-language-server typescript` (JS/TS). Daca lipsesc, editorul merge
+fara diagnostice si autocomplete LSP.
+
+code-server (optional): instalare o singura data cu
+`curl -fsSL https://code-server.dev/install.sh | sh`, apoi `CODE_SERVER_ENABLED=true` in
+`.env`.
+
 ## Flux de date
 
 ```
