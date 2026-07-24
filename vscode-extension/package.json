@@ -16,6 +16,7 @@
         "devlife.backendUrl": {
           "type": "string",
           "default": "ws://localhost:8000/ws",
+          "scope": "machine",
           "description": "WebSocket URL of the DevLife backend"
         }
       }
