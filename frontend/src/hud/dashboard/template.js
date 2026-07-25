@@ -57,6 +57,17 @@ export function buildDashboardDOM() {
             <div class="state-lbl"><span data-i18n="dashboard.cognitive_state">Cognitive State</span>${infoBtn('state')}</div>
         </div>
 
+        <div class="expl-section" id="dov-expl">
+            <div class="sec-hdr"><span data-i18n="expl.header">Why this state?</span></div>
+            <div class="expl-signal">
+                <span class="expl-signal-lbl" data-i18n="expl.signal_label">Dominant signal</span>
+                <span class="expl-signal-val" id="dov-expl-signal">—</span>
+            </div>
+            <div class="expl-reason" id="dov-expl-reason" data-i18n="expl.awaiting">Awaiting biometric data...</div>
+            <div class="expl-factors" id="dov-expl-factors"></div>
+            <div class="expl-note" data-i18n="expl.formula_note">Inverted-U model (Yerkes-Dodson): performance falls when stress is too low or too high.</div>
+        </div>
+
         <div class="stress-section">
             <div class="stress-header">
                 <span class="lbl"><span data-i18n="dashboard.stress_level">Stress Level</span>${infoBtn('stress')}</span>
@@ -200,6 +211,9 @@ export function buildDashboardDOM() {
         rec:          root.querySelector('#dov-rec'),
         strain:       root.querySelector('#dov-strain'),
         state:        root.querySelector('#dov-state'),
+        explSignal:   root.querySelector('#dov-expl-signal'),
+        explReason:   root.querySelector('#dov-expl-reason'),
+        explFactors:  root.querySelector('#dov-expl-factors'),
         stressVal:    root.querySelector('#dov-stress-val'),
         stressBar:    root.querySelector('#dov-stress-bar'),
         log:          root.querySelector('#dov-log'),

@@ -15,6 +15,15 @@ export default defineConfig({
             }
         }
     },
+    optimizeDeps: {
+        // Pre-bundle the heavy deps up front. Otherwise Vite can discover one lazily mid-session
+        // (e.g. the first time the code editor or terminal opens), re-optimize, and push a FULL
+        // page reload to EVERY open tab -- which silently kills the live Web Bluetooth (BLE) link,
+        // since a Web Bluetooth connection only lives as long as the page. This is the most likely
+        // cause of being "refreshed off the page" during a session. Dev-only: the production build
+        // bundles everything ahead of time and never does this.
+        include: ['pixi.js', 'monaco-editor', '@xterm/xterm', '@xterm/addon-fit', 'howler'],
+    },
     build: {
         outDir: 'dist',
         assetsDir: 'assets',

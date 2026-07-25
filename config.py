@@ -20,6 +20,14 @@ WHOOP_CLIENT_SECRET = os.getenv("WHOOP_CLIENT_SECRET", "")
 # WHOOP API resting HR as if it were a live heartbeat.
 WHOOP_OFF_GRACE_SECONDS = int(os.getenv("WHOOP_OFF_GRACE_SECONDS", "15"))
 
+# WHOOP daily metrics (recovery/strain/sleep) only change a few times a day, but the biometric
+# loop runs every 5s for live-BLE classification. Poll the REST API on its own slower cadence
+# instead of once per cycle, and back off exponentially on 5xx/timeout so a WHOOP outage isn't
+# hammered every few seconds. Between polls the loop reuses the last-good cached values, so the
+# live pulse and classification keep updating at 5s without extra API calls.
+WHOOP_POLL_INTERVAL_SECONDS = int(os.getenv("WHOOP_POLL_INTERVAL_SECONDS", "60"))
+WHOOP_POLL_MAX_BACKOFF_SECONDS = int(os.getenv("WHOOP_POLL_MAX_BACKOFF_SECONDS", "300"))
+
 # how long a manually-selected demo state (keyboard 1-5) is held before live WHOOP resumes.
 # Long enough to span a presentation; "Back to live" clears it instantly.
 DEMO_STATE_HOLD_SECONDS = int(os.getenv("DEMO_STATE_HOLD_SECONDS", "3600"))

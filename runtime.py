@@ -166,6 +166,14 @@ class AppState:
     # last daily WHOOP HRV seen -- a change means a new morning summary landed,
     # which is when the personal HRV baseline learns (EMA), not every 5s cycle
     last_whoop_hrv: object = None
+    # WHOOP REST polling is throttled off the 5s loop (see loops.biometric_loop): when to next
+    # hit the API, and the current exponential backoff after a transient failure.
+    next_whoop_poll: float = 0.0
+    whoop_backoff: float = 0.0
+    # True when we're serving the last-good WHOOP snapshot because a live fetch failed (API 5xx/
+    # timeout): the UI shows a "stale" marker instead of treating it as a fresh reading, and we
+    # never swap in the mock preset (which reads as a recovery/strain "spike").
+    metrics_stale: bool = False
 
 
 app_state = AppState()
@@ -196,6 +204,17 @@ def _degraded_banner(cause: str):
     broadcast_sync({"type": "degraded_mode", "cause": cause})
 
 
+def _state_explanation(state):
+    # classify() rebuilds bio.last_explanation for the state it decided. When a demo state is
+    # forced (loops.py sets forced_state and skips classify), the stored breakdown is for a
+    # different state, so emit an honest "manually set" stub instead of a stale one.
+    exp = bio.last_explanation
+    if not exp or exp.get("state") != state:
+        return {"state": state, "signal": "forced", "reason_key": "demo_forced",
+                "reason_vars": {}, "factors": []}
+    return exp
+
+
 def build_biometric_msg(data, state):
     ble_active = bio.live_heart_rate and (time.time() - bio.live_hr_timestamp < 5)
     source = "whoop" if bio.access_token and time.time() >= app_state.mock_override_until else "mock"
@@ -214,6 +233,9 @@ def build_biometric_msg(data, state):
         "source": "ble" if ble_active else source,
         # where recovery/HRV/strain come from -- lets the HUD be honest in BLE-only mode
         "metrics_source": source,
+        # last-good WHOOP snapshot served because the live fetch failed (API down): lets the HUD
+        # show a stale marker rather than presenting it as a fresh reading
+        "data_stale": app_state.metrics_stale,
         # sent every tick: a page reloaded after the OAuth redirect misses the one-shot
         # whoop_connected broadcast
         "whoop_connected": bio.access_token is not None,
@@ -226,6 +248,10 @@ def build_biometric_msg(data, state):
         "sleepPerformance": round(data.get("sleepPerformance") or 0, 2),
         "hrv": live_hrv if live_hrv is not None else round(data.get("hrv") or 0, 1),
         "hrv_live": live_hrv is not None,
+        # the stable WHOOP daily RMSSD, always -- kept separate from the overloaded `hrv` field
+        # above (which carries the jumpy live BLE RMSSD when a strap streams) so composites and
+        # trends can ride the steady value instead of spiking
+        "hrv_daily": round(data.get("hrv") or 0, 1),
         # what classify() decided, incl. typing/HRV fusion
         "estimated_stress": round(bio.estimated_stress, 2),
         "spo2": round(data["spo2"], 1) if data.get("spo2") is not None else None,
@@ -246,6 +272,9 @@ def build_biometric_msg(data, state):
         # typing rhythm signal (keystroke_dynamics.py) -- active means enough recent
         # keystrokes to estimate stress/fatigue from cadence alone
         "typing": bio.keystrokes.snapshot(),
+        # "why this state": the factors + decisive reason classify() used, so the HUD can
+        # show that the classification is our own deterministic logic (not the LLM ghost)
+        "state_explanation": _state_explanation(state),
     }
 
 

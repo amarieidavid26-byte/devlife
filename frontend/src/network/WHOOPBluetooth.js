@@ -170,6 +170,15 @@ export class WHOOPBluetooth {
                 rr.push(Math.round(value.getUint16(offset, true) * 1000 / 1024)); // -> ms
             }
         }
+        // one-shot diagnostic: does THIS strap actually broadcast RR intervals (flag bit 4)?
+        // Optical WHOOP straps often don't -> no live RMSSD-HRV. Log until we see an RR-bearing
+        // frame (or 10 frames), so this can be confirmed from the console instead of guessed.
+        if (!this._rrDiagLogged) {
+            const hasRR = !!(flags & 0x10);
+            console.log(`[whoop-ble] HR frame: flags=0x${flags.toString(16).padStart(2, '0')} `
+                + `rrPresent=${hasRR} rr=${JSON.stringify(rr)} bpm=${this.currentBPM}`);
+            if (hasRR || (this._rrDiagCount = (this._rrDiagCount || 0) + 1) >= 10) this._rrDiagLogged = true;
+        }
         this._notifyListeners(this.currentBPM, true, rr);
     }
 

@@ -36,6 +36,9 @@ class BiometricEngine:
         self._last_hrv_cycle = None    # WHOOP cycle of the last folded reading (daily dedup)
         self._hrv_calibrated = False   # True once a real baseline is loaded or first seen
         self.estimated_stress = 0.0
+        # structured "why this state" breakdown, rebuilt on every classify() so the HUD can
+        # explain the decision from the same source of truth (avoids drift vs on_state_change)
+        self.last_explanation = None
         self.rhr_baseline = 65.0
         # token refresh
         self.token_expiry = 0
@@ -63,6 +66,11 @@ class BiometricEngine:
     # publishes None.
     RR_ARTIFACT_TOLERANCE = 0.30
     HRV_MAX_PLAUSIBLE_MS = 200
+    # Live RMSSD is recomputed per BLE frame over a sliding window, so a single noisy window
+    # would spike it. EMA-smooth successive readings so the live HRV tracks the trend without
+    # the per-frame jitter. A fresh reading after a gap (live_hrv was cleared to None) snaps to
+    # raw; only a continuous stream is smoothed.
+    LIVE_HRV_ALPHA = 0.4
 
     def add_rr_intervals(self, rr_list):
         # called from the WS 'heart_rate' handler with RR intervals (ms) parsed
@@ -77,8 +85,14 @@ class BiometricEngine:
                 self.live_rr.append((now, float(rr)))
         # None must clear live_hrv, or a stale reading overrides the cloud HRV for up to 30s
         hrv = self.compute_live_hrv()
-        self.live_hrv = hrv
-        if hrv is not None:
+        if hrv is None:
+            self.live_hrv = None
+        else:
+            # smooth a continuous stream so one noisy window doesn't spike the live HRV; after a
+            # gap (live_hrv was cleared) snap to the raw reading rather than blending across it
+            if self.live_hrv is not None:
+                hrv = round(self.live_hrv + (hrv - self.live_hrv) * self.LIVE_HRV_ALPHA, 1)
+            self.live_hrv = hrv
             self.live_hrv_timestamp = now
 
     def compute_live_hrv(self):
@@ -337,6 +351,9 @@ class BiometricEngine:
         sleep = data.get("sleepPerformance", 0.75)
         hrv = data.get("hrv", 50)
         old_state = self.current_state
+        # "why this state" bookkeeping, filled at whichever branch decides new_state below.
+        # Purely observational: it never changes the classification, only records it.
+        expl_signal, expl_reason, expl_vars = "none", "nominal", {}
         hrv_ratio = hrv / self.hrv_baseline if self.hrv_baseline > 0 else 1.0
         if hrv_ratio < 0.6:
             estimated_stress = 2.5
@@ -363,18 +380,23 @@ class BiometricEngine:
         typing = self.keystrokes.snapshot()
 
         if live_hr > 0:
+            expl_signal = "live_pulse"
             if live_hr > 100:
                 new_state = "STRESSED"
                 estimated_stress = 2.5
+                expl_reason, expl_vars = "hr_very_high", {"hr": round(live_hr), "thr": 100}
             elif live_hr > 95:
                 new_state = "WIRED"
                 estimated_stress = 1.9
+                expl_reason, expl_vars = "hr_high", {"hr": round(live_hr)}
             elif live_hr > 75:
                 new_state = "DEEP_FOCUS"
                 estimated_stress = 1.2
+                expl_reason, expl_vars = "hr_focus", {"hr": round(live_hr)}
             elif live_hr >= 60:
                 new_state = "RELAXED"
                 estimated_stress = 0.5
+                expl_reason, expl_vars = "hr_calm", {"hr": round(live_hr)}
             else:
                 live_hr = 0
             # real WHOOP recovery/sleep can veto the HR-only bands: fatigue barely
@@ -383,6 +405,11 @@ class BiometricEngine:
                 if recovery < 40 or sleep < 0.7:
                     new_state = "FATIGUED"
                     estimated_stress = max(estimated_stress, 1.8)
+                    expl_signal = "whoop_summary"
+                    if recovery < 40:
+                        expl_reason, expl_vars = "whoop_veto_recovery", {"recovery": round(recovery)}
+                    else:
+                        expl_reason, expl_vars = "whoop_veto_sleep", {"sleep": round(sleep * 100)}
             # typing rhythm refines the stress estimate but never outranks a real pulse
             if live_hr > 0 and typing["active"]:
                 estimated_stress = round(0.7 * estimated_stress + 0.3 * typing["stress"], 2)
@@ -391,34 +418,102 @@ class BiometricEngine:
                 # no pulse and no WHOOP: the typing rhythm is the only real signal,
                 # so it outranks the mock generator entirely
                 estimated_stress = typing["stress"]
+                expl_signal = "typing"
                 if typing["fatigue"] >= 0.65:
                     new_state = "FATIGUED"
+                    expl_reason, expl_vars = "typing_fatigue", {"fatigue": round(typing["fatigue"] * 100)}
                 elif estimated_stress >= 2.0:
                     new_state = "STRESSED"
+                    expl_reason, expl_vars = "typing_stress", {"stress": round(estimated_stress, 2)}
                 elif estimated_stress >= 1.5:
                     new_state = "WIRED"
+                    expl_reason, expl_vars = "typing_wired", {"stress": round(estimated_stress, 2)}
                 elif typing["flow"]:
                     new_state = "DEEP_FOCUS"
+                    expl_reason, expl_vars = "typing_flow", {}
                 else:
                     new_state = "RELAXED"
+                    expl_reason, expl_vars = "typing_calm", {}
             else:
                 if typing["active"]:
                     estimated_stress = round(0.6 * estimated_stress + 0.4 * typing["stress"], 2)
+                expl_signal = "whoop_summary" if self.access_token else "mock"
                 if recovery < 40 or sleep < 0.7:
                     new_state = "FATIGUED"
+                    if recovery < 40:
+                        expl_reason, expl_vars = "whoop_low_recovery", {"recovery": round(recovery)}
+                    else:
+                        expl_reason, expl_vars = "poor_sleep", {"sleep": round(sleep * 100)}
                 elif estimated_stress >= 2.0 or strain > 16:
                     new_state = "STRESSED"
+                    if strain > 16:
+                        expl_reason, expl_vars = "high_strain", {"strain": round(strain, 1)}
+                    else:
+                        expl_reason, expl_vars = "high_stress", {"stress": round(estimated_stress, 2)}
                 elif strain > 12 and recovery < 60:
                     new_state = "WIRED"
+                    expl_reason, expl_vars = "strain_recovery", {"strain": round(strain, 1), "recovery": round(recovery)}
                 elif 0.9 <= estimated_stress <= 1.5 and 8 <= strain <= 14 and recovery > 60:
                     new_state = "DEEP_FOCUS"
+                    expl_reason, expl_vars = "balanced", {}
                 else:
                     new_state = "RELAXED"
+                    expl_reason, expl_vars = "nominal", {}
         self.current_state = new_state
         self.estimated_stress = estimated_stress
+        self._build_explanation(
+            new_state, expl_signal, expl_reason, expl_vars,
+            live_hr=live_hr, hrv_val=(live_hrv if live_hrv is not None else hrv),
+            hrv_live=(live_hrv is not None), recovery=recovery, strain=strain,
+            sleep=sleep, typing=typing, stress=estimated_stress,
+        )
         if old_state != new_state and self.on_state_change_callback:
             self.on_state_change_callback(old_state, new_state)
         return new_state
+
+    def _build_explanation(self, state, signal, reason_key, reason_vars,
+                           live_hr, hrv_val, hrv_live, recovery, strain,
+                           sleep, typing, stress):
+        # Turn the branch that fired into a language-neutral breakdown: semantic keys +
+        # numeric values only, so the frontend renders the labels/sentence per locale.
+        factors = []
+        if live_hr and live_hr > 0:
+            factors.append({"key": "heart_rate", "value": round(live_hr), "unit": "bpm",
+                            "effect": "decisive" if signal == "live_pulse" else "context"})
+        factors.append({"key": "hrv", "value": round(hrv_val or 0, 1), "unit": "ms",
+                        "live": bool(hrv_live),
+                        "effect": "raise_stress" if stress >= 1.2 else "lower_stress"})
+        factors.append({"key": "recovery", "value": round(recovery), "unit": "%",
+                        "effect": "veto" if reason_key in ("whoop_veto_recovery", "whoop_low_recovery") else "context"})
+        factors.append({"key": "sleep", "value": round((sleep or 0) * 100), "unit": "%",
+                        "effect": "veto" if reason_key in ("whoop_veto_sleep", "poor_sleep") else "context"})
+        factors.append({"key": "strain", "value": round(strain or 0, 1), "unit": "",
+                        "effect": "decisive" if reason_key in ("high_strain", "strain_recovery") else "context"})
+        if typing and typing.get("active"):
+            factors.append({"key": "typing", "value": round((typing.get("fatigue") or 0) * 100), "unit": "%",
+                            "effect": "decisive" if signal == "typing" else "context"})
+        factors.append({"key": "estimated_stress", "value": round(stress, 2), "unit": "/3", "effect": "output"})
+        self.last_explanation = {
+            "state": state,
+            "signal": signal,
+            "reason_key": reason_key,
+            "reason_vars": reason_vars,
+            "factors": factors,
+        }
+        return self.last_explanation
+
+    def set_demo_explanation(self, state, data):
+        # A demo state is locked (keys 1-5): loops.py holds it verbatim and skips classify() to
+        # avoid state flicker. Still surface the underlying numbers so the "why" panel shows real
+        # data (labelled as a manually-set demo state) instead of an empty stub.
+        self._build_explanation(
+            state, "forced", "demo_forced", {},
+            live_hr=(data.get("heartRate") or 0),
+            hrv_val=(data.get("hrv") or 0), hrv_live=False,
+            recovery=data.get("recovery", 0), strain=data.get("strain", 0),
+            sleep=data.get("sleepPerformance", 0), typing=self.keystrokes.snapshot(),
+            stress=self.estimated_stress,
+        )
 
     def get_personality_modifiers(self, state=None):
         if state is None:

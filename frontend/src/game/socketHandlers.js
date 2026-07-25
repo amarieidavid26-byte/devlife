@@ -9,8 +9,29 @@ export function wireSocketHandlers(deps) {
             ghost, player, furniture, soundManager, toastSystem, apps, settingsMenu } = deps;
     let lastRecVel = null;
 
-    socket.on('connected', () => { hud.setConnected(true); dashboard.setConnected(true); offlineBio.stop(); });
-    socket.on('disconnected', () => { hud.setConnected(false); dashboard.setConnected(false); offlineBio.start(); });
+    // The offline simulator exists for the backend-less teaser deploy, NOT as a fallback for a
+    // transient socket blip. Once we've reached a real backend, a drop is a reconnect: freeze the
+    // last-good values behind the offline badge and let WebSocket.js reconnect -- do NOT repaint
+    // real WHOOP recovery/HRV/strain with the RELAXED demo preset. Only simulate if the WS has
+    // NEVER connected, and even then after a short grace so a blip during the first connect (or a
+    // page reload while the backend is up) doesn't flash presets.
+    let everConnected = false;
+    let simArmTimer = null;
+
+    socket.on('connected', () => {
+        everConnected = true;
+        if (simArmTimer) { clearTimeout(simArmTimer); simArmTimer = null; }
+        hud.setConnected(true); dashboard.setConnected(true);
+        offlineBio.stop();
+    });
+    socket.on('disconnected', () => {
+        hud.setConnected(false); dashboard.setConnected(false);
+        if (everConnected || simArmTimer) return;   // reconnect: keep last-good, never simulate
+        simArmTimer = setTimeout(() => {
+            simArmTimer = null;
+            if (!everConnected) offlineBio.start();
+        }, 2000);
+    });
 
     const syncWhoopRow = (v) => {
         setWhoopConnected(v);
@@ -64,9 +85,11 @@ export function wireSocketHandlers(deps) {
             });
         }
 
-        // CQI - weighted composite of recovery, HRV, and inverse stress
+        // CQI - weighted composite of recovery, HRV, and inverse stress. Use the stable WHOOP
+        // daily HRV (hrv_daily) rather than the overloaded `hrv` field, which carries the jumpy
+        // live BLE RMSSD when a strap is streaming and would otherwise make CQI spike.
         const recovery = data.recovery || 50;
-        const hrv = data.hrv || 40;
+        const hrv = (data.hrv_daily != null ? data.hrv_daily : data.hrv) || 40;
         const stress = data.estimated_stress || 0;
         const cqi = Math.round((Math.min(recovery / 100, 1) * 0.4 + Math.min(hrv / 80, 1) * 0.35 + Math.max(0, 1 - stress / 3) * 0.25) * 100);
         hud.updateCQI(cqi);

@@ -18,3 +18,7 @@ htmlcov/
 .claude/
 frontend/public/lib/pyodide/
 workspace/
+
+# VS Code build artifacts & auto-generated editor config
+*.vsix
+.vscode/

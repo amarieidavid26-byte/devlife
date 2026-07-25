@@ -13,7 +13,10 @@ import logging
 import time
 
 import persistence.db as db
-from config import GAME_MODE, DEMO_OFFLINE, CONTENT_MIN_LENGTH, WHOOP_OFF_GRACE_SECONDS
+from config import (
+    GAME_MODE, DEMO_OFFLINE, CONTENT_MIN_LENGTH, WHOOP_OFF_GRACE_SECONDS,
+    WHOOP_POLL_INTERVAL_SECONDS, WHOOP_POLL_MAX_BACKOFF_SECONDS,
+)
 from fallback_responses import get_fallback_intervention
 from runtime import (
     app_state, bio, mock, brain, tracker, content_analyzer, capture, vision,
@@ -86,6 +89,42 @@ def _check_sleep_mode(data):
         _set_sleep_mode(False, "HR=%s" % hr)
 
 
+def _get_whoop_data():
+    """Fetch WHOOP REST data on a slow cadence (not every 5s cycle) with exponential backoff on
+    transient failures. Between polls -- and throughout an outage -- serve the last-good cached
+    values marked stale, instead of snapping to the mock preset (which would read on-screen as a
+    recovery/strain "spike"). Returns (data, is_whoop)."""
+    now = time.time()
+    if now < app_state.next_whoop_poll:
+        # between polls: reuse the last-good WHOOP snapshot so the 5s classification/BLE loop
+        # keeps running without hitting the API on every cycle
+        if bio.current_data:
+            return dict(bio.current_data), True
+        return mock.get_data(), False
+
+    fresh = bio.fetch_data()
+    if fresh is not None:
+        app_state.metrics_stale = False
+        app_state.whoop_backoff = 0.0
+        app_state.next_whoop_poll = now + WHOOP_POLL_INTERVAL_SECONDS
+        return fresh, True
+
+    # transient failure (5xx / timeout / expired token): back off, and hold the last-good real
+    # values rather than fabricating a fresh-looking mock reading
+    app_state.whoop_backoff = min(
+        max(app_state.whoop_backoff * 2, WHOOP_POLL_INTERVAL_SECONDS),
+        WHOOP_POLL_MAX_BACKOFF_SECONDS,
+    )
+    app_state.next_whoop_poll = now + app_state.whoop_backoff
+    if bio.current_data:
+        app_state.metrics_stale = True
+        return dict(bio.current_data), True   # provenance is still whoop, just not fresh
+    # true cold start: nothing good to hold, fall back to mock and flag degraded
+    app_state.metrics_stale = False
+    _degraded_banner("WHOOP API unavailable")
+    return mock.get_data(), False
+
+
 def biometric_loop():
     cycles = 0
     while app_state.ghost_running:
@@ -94,15 +133,12 @@ def biometric_loop():
             is_whoop = False
             demo_locked = DEMO_OFFLINE or time.time() < app_state.mock_override_until
             if demo_locked:
+                app_state.metrics_stale = False
                 data = mock.get_data()
             elif bio.access_token:
-                data = bio.fetch_data()
-                if data is None:
-                    data = mock.get_data()
-                    _degraded_banner("WHOOP API unavailable")
-                else:
-                    is_whoop = True
+                data, is_whoop = _get_whoop_data()
             else:
+                app_state.metrics_stale = False
                 data = mock.get_data()
 
             if data:
@@ -119,6 +155,8 @@ def biometric_loop():
                     state = app_state.forced_state
                     bio.current_state = state
                     bio.estimated_stress = data.get("estimated_stress", bio.estimated_stress)
+                    # populate the "why" panel from the demo numbers (no re-classify, so no flicker)
+                    bio.set_demo_explanation(state, data)
                 else:
                     state = bio.classify(data, demo_locked=demo_locked)
 
@@ -140,7 +178,14 @@ def biometric_loop():
 
                 if is_whoop:
                     src = "ble" if ble_fresh else "whoop"
-                    logger.info("WHOOP state=%s rec=%s strain=%s hrv=%s hr=%s src=%s", state, data.get("recovery"), data.get("strain"), data.get("hrv"), data.get("heartRate"), src)
+                    # hrv_live = RMSSD computed live from streamed BLE RR intervals (None if the
+                    # strap sends no RR / it aged out). Logging it settles whether the "HRV spikes"
+                    # come from the live BLE path vs the steady daily value; STALE = held last-good.
+                    _live_hrv = bio.live_hrv if (time.time() - bio.live_hrv_timestamp < 30) else None
+                    logger.info("WHOOP state=%s rec=%s strain=%s hrv=%s hrv_live=%s hr=%s src=%s%s",
+                                state, data.get("recovery"), data.get("strain"), data.get("hrv"),
+                                _live_hrv, data.get("heartRate"), src,
+                                " STALE" if app_state.metrics_stale else "")
                     # personal HRV baseline learns once per NEW morning summary, not per cycle
                     daily_hrv = data.get("hrv")
                     if daily_hrv and daily_hrv != app_state.last_whoop_hrv:

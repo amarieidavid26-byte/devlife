@@ -51,6 +51,7 @@ export class DashboardOverlay {
             this._applyState(this._curState);
             this.setConnected(this._isConnected);
             this._setExportLink();
+            if (this._lastExpl) this._renderExplanation(this._lastExpl);
         });
     }
 
@@ -222,6 +223,31 @@ export class DashboardOverlay {
         }
     }
 
+    // render the "why this state" breakdown from the backend's language-neutral payload:
+    // semantic keys -> localized labels, numeric values as-is, effect -> colored chip
+    _renderExplanation(exp) {
+        this._lastExpl = exp;
+        const $ = this._$;
+        if (!$ || !$.explSignal) return;
+        $.explSignal.textContent = i18n.t('expl.signal_' + (exp.signal || 'none'));
+        $.explReason.textContent = i18n.t('expl.reason_' + (exp.reason_key || 'nominal'), exp.reason_vars || {});
+        $.explFactors.innerHTML = '';
+        (exp.factors || []).forEach(f => {
+            const row = document.createElement('div');
+            row.className = 'expl-factor'
+                + (f.effect === 'decisive' ? ' is-decisive' : '')
+                + (f.effect === 'veto' ? ' is-veto' : '');
+            // f.value is numeric and f.key/f.effect come from a fixed backend enum -> safe to inject
+            const unit = f.unit ? `<span class="u">${f.unit}</span>` : '';
+            const live = f.live ? '<span class="live-dot">● LIVE</span>' : '';
+            row.innerHTML =
+                `<span class="expl-f-name">${i18n.t('expl.factor_' + f.key)}</span>` +
+                `<span class="expl-f-val">${f.value}${unit}${live}</span>` +
+                `<span class="expl-chip ${f.effect}">${i18n.t('expl.effect_' + f.effect)}</span>`;
+            $.explFactors.appendChild(row);
+        });
+    }
+
     _updateThreat() {
         let level = 'nominal';
         if (this._curState === 'STRESSED' || this._displayStress > 2)                       level = 'critical';
@@ -244,6 +270,7 @@ export class DashboardOverlay {
         if (data.strain) this._targetStrain = data.strain;
         if (data.estimated_stress !== undefined) this._targetStress = data.estimated_stress;
         if (data.state) this._applyState(data.state);
+        if (data.state_explanation) this._renderExplanation(data.state_explanation);
 
         // Code Quality Index
         const rec = data.recovery || this._targetRec || 50;

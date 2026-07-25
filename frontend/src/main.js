@@ -122,10 +122,11 @@ async function startGame(enableDemo = false) {
     const keystrokeCapture = new KeystrokeCapture(socket);
     keystrokeCapture.start();
 
-    // client-side biometric demo when there's no backend; the real backend takes over
-    // the moment the WS connects (see game/socketHandlers.js).
+    // client-side biometric demo for the backend-less teaser deploy only. It is deliberately NOT
+    // started here: game/socketHandlers.js arms it after a short grace and ONLY if the WS never
+    // reaches a backend, so a real session -- or a transient reconnect/page-reload while the
+    // backend is up -- is never overpainted with RELAXED preset numbers.
     const offlineBio = new OfflineBiometrics(socket);
-    offlineBio.start();
     const applyMockState = (key) => {
         if (offlineBio.isActive()) offlineBio.setState(key);
         else socket.sendMockState(key);

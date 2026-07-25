@@ -25,7 +25,14 @@ trap cleanup EXIT
 echo "[dev] pornesc backend pe http://localhost:8000"
 # --reload-include "*.py": altfel watchfiles vede SQLite update-uind devlife.db si
 # intra in bucla infinita de reload (sesiune noua -> modifica db -> reload -> ...)
+# --reload-exclude: reloader-ul urmareste tot repo-ul, deci un .py scris de IDE-ul din joc
+# (WORKSPACE_ROOT=./workspace), un save intr-un test sau o atingere in venv/node_modules ar
+# reporni backendul si ar rupe WS-ul + conexiunea BLE live la mijlocul sesiunii. Il limitam la
+# sursa de backend. (Pentru bulletproof: muta WORKSPACE_ROOT/devlife.db in afara repo-ului.)
 # --host: loopback, ca in config.HOST. Cu 0.0.0.0 terminalul, scrierile pe disc si LSP-ul
 # erau expuse in tot LAN-ul: /api/session da tokenul oricui il cere direct (CORS opreste
 # doar browserele, nu curl), iar verificarea de Origin lasa sa treaca clientii fara Origin
-"$PY" -m uvicorn server:app --reload --reload-include "*.py" --host 127.0.0.1 --port 8000
+"$PY" -m uvicorn server:app --reload --reload-include "*.py" \
+    --reload-exclude "workspace/*" --reload-exclude "venv/*" \
+    --reload-exclude "tests/*" --reload-exclude "node_modules/*" \
+    --reload-exclude "frontend/*" --host 127.0.0.1 --port 8000

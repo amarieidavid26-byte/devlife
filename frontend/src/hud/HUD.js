@@ -321,9 +321,14 @@ export class HUD {
             : src === 'whoop'
             ? `<span style="color:#7FB0FF;font-size:10px;letter-spacing:0.05em" title="${i18n.t('hud.tip_whoop')}">${i18n.t('hud.badge_whoop')}</span>`
             : `<span style="color:#C9A227;font-size:10px;letter-spacing:0.05em" title="${i18n.t('hud.tip_demo')}">${i18n.t('hud.badge_demo')}</span>`;
+        // WHOOP API unreachable but backend still up: the shown recovery/HRV/strain are the last
+        // real values, held (not re-simulated) -- flag them stale instead of implying they're live
+        const staleMark = (this._connected && d.data_stale)
+            ? ` <span style="color:#C9A227;font-size:9px" title="${i18n.t('hud.tip_stale')}">${i18n.t('hud.badge_stale')}</span>`
+            : '';
         const statusBadge = !this._connected
             ? `<span style="color:#444;font-size:10px;letter-spacing:0.05em">${i18n.t('hud.badge_offline')}</span>`
-            : srcBadge;
+            : srcBadge + staleMark;
         // when not live over BLE, the heart rate shown is the resting HR from the summary
         const hrSuffix = src === 'whoop' ? ` <span style="font-size:9px;color:#8a7a5c">${i18n.t('hud.resting')}</span>` : '';
         const summaryNote = src === 'whoop'
