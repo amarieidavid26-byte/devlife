@@ -21,4 +21,4 @@ workspace/
 
 # VS Code build artifacts & auto-generated editor config
 *.vsix
-.vscode/
+.vscode/*.vsix
