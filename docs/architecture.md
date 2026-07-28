@@ -337,10 +337,15 @@ sequenceDiagram
     Frontend->>User: HUD "⌨ semnal tastare activ"
 ```
 
-Fundament: literatura de keystroke dynamics. Stresul apare ca tastare mai rapida si cu mai
-multe corecturi fata de propriul baseline (Epp 2011); oboseala, ca ritm mai lent si erratic,
-cu pauze lungi (Vizer 2009). Totul e relativ la baseline-ul personal invatat (EMA lent), nu
-la praguri absolute. Reguli de fuziune in `classify()`: un puls real pe BLE nu e niciodata
+Fundament: literatura de keystroke dynamics arata ca ritmul de tastare **poarta informatie
+despre stare** — Vizer, Zhou & Sears (2009, *Int. J. Human-Computer Studies*) au separat
+tastarea sub stres cognitiv/fizic de cea neutra la 75%/62.5% folosind intervale intre taste
+si rata tastelor de corectie; Epp, Lippold & Mandryk (CHI 2011) au clasificat stari precum
+oboseala si nervozitatea la 77-88% din duratele digraph. **Precizare de onestitate:** niciunul
+dintre studii nu stabileste *directia* efectului, deci maparile pe care le folosim noi (stres
+= tastare mai rapida, cu mai multe corecturi; oboseala = ritm mai lent, erratic, cu pauze
+lungi) sunt o **euristica de design proprie**, calibrata empiric, nu o concluzie preluata din
+literatura. Totul e relativ la baseline-ul personal invatat (EMA lent), nu la praguri absolute. Reguli de fuziune in `classify()`: un puls real pe BLE nu e niciodata
 depasit de tastare (doar rafineaza stresul estimat); fara puls si fara WHOOP, tastarea devine
 singurul semnal real si **depaseste generatorul mock**; in modurile demo (`demo_locked`)
 tastarea prezentatorului nu poate fura starea scriptata. Confidentialitate: frontend-ul trimite

@@ -65,8 +65,9 @@ cognitiveLoad % = (stress ÷ 3) × 100
 Autonomic arousal (the stress index) is used as a proxy for mental workload.
 
 **The science.** Mental workload measurably suppresses HRV: as a task gets harder, time-domain
-HRV drops in a **graded, dose-dependent** way (Hörberg/“Task difficulty influences HRV”, 2026;
-graded task-difficulty effects, 2025). This is explained by **neurovisceral integration**:
+HRV drops in a **graded, dose-dependent** way (Jian et al., 2026; Jian et al., 2025 — note both
+are from the same research group, so treat this as one line of evidence, not two independent
+replications). This is explained by **neurovisceral integration**:
 the prefrontal circuits that sustain focus also regulate the heart, so cardiac autonomic
 signals track executive demand (integrative review, 2021). HRV is used operationally to gauge
 workload in demanding professions, e.g. surgeons (meta-analysis, 2026).

@@ -1,10 +1,15 @@
 # keystroke dynamics - stress/fatigue estimation from typing rhythm alone
 # the frontend never sends key contents, only (inter-key interval ms, category) pairs
 # categories: char / backspace / enter / nav
-# idea from the keystroke dynamics literature: stress shows up as faster, burstier typing
-# with more corrections (Epp 2011), fatigue as slower, more variable rhythm with long
-# pauses (Vizer 2009). works with zero hardware, which makes it the fallback signal
-# when no heart rate band is paired
+# grounding: the keystroke dynamics literature establishes that typing timing carries
+# state information - Vizer, Zhou & Sears (2009) separated cognitively/physically stressed
+# typing from neutral at 75%/62.5% using inter-key timing and correction-key rate, and Epp,
+# Lippold & Mandryk (CHI 2011) classified states like tiredness/nervousness at 77-88% from
+# digraph timings. what neither paper gives us is a *signed* rule, so the specific directions
+# we use below (stress -> faster + burstier + more corrections, fatigue -> slower + more
+# variable + long pauses) are OUR design heuristic, not a published finding. treat as a
+# hypothesis to validate, not settled science. works with zero hardware, which makes it the
+# fallback signal when no heart rate band is paired
 
 import time
 

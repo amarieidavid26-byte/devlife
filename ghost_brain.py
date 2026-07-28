@@ -61,7 +61,10 @@ class GhostBrain:
         "DEEP_FOCUS": (
             "You are Ghost, a silent AI companion. The user is in deep focus -- flow state. "
             "HRV is balanced, slight sympathetic activation which is the sweet spot. "
-            "Do NOT interrupt unless critical. it takes like 20+ min to get back into flow if you break it. "
+            # Mark, Gonzalez & Harris (CHI 2005) observed a mean of ~25 min before workers
+            # returned to an interrupted task (SD 54 min - elapsed time, not "refocus cost").
+            # Kept vague on purpose here: no hard number is asserted to the user.
+            "Do NOT interrupt unless critical -- getting back into a task after a break is costly. "
             "ONLY speak if there is a CRITICAL error. One short sentence max. "
             "No bullet points. No markdown. Plain text only."
         ),

@@ -10,8 +10,8 @@ Dezvoltatorii software iau decizii proaste cand sunt obositi cognitiv:
 - HRV scazut + recovery sub 40% → erori de evaluare a riscului
 - la 2 AM, dupa multe cafele, comenzile distructive (`git push --force`, `rm -rf`, `DROP TABLE`) se executa fara verificare
 - *Yerkes-Dodson law (1908)*: performanta cognitiva e curba in U inversat
-- *Peifer et al. 2014*: starea de flow coreleaza cu HRV crescut si activare simpatica usoara
-- *Cai et al. 2018*: privarea de somn reduce decizia adversa de risc cu pana la 30%
+- *Peifer et al. 2014*: flow-ul coreleaza cu activitate parasimpatica crescuta (HF-HRV) si activare simpatica moderata de tip U inversat (esantion mic, n=22)
+- *McKenna et al. 2007* (J Sleep Research, PMID 17716272): o noapte de privare de somn muta preferinta pentru risc in functie de framing — mai mult risc asumat pentru castiguri potentiale, mai multa prudenta fata de pierderi
 
 ### solutii existente analizate (criteriul I.1)
 

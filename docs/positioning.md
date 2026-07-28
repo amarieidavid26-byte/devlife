@@ -7,8 +7,8 @@ document detaliat pentru criteriul I.1 (Analiza pietei, 10 puncte).
 Performanta cognitiva a dezvoltatorilor este influentata direct de starea fiziologica. Nu e o intuitie de-a noastra, exista literatura clinica in spate:
 
 - **Yerkes-Dodson law (1908)**: performanta cognitiva este o curba in U inversat. Prea putin arousal (oboseala, plictiseala) duce la decizii proaste; prea mult arousal (stres, frica) la fel. Optimum-ul este la mijloc.
-- **Peifer et al. 2014**: starea de "flow" coreleaza cu HRV crescut si activare simpatica usoara, un profil biometric distinct.
-- **Cai et al. 2018**: privarea de somn reduce capacitatea de evaluare a riscului advers cu pana la 30%, mai ales pentru decizii ireversibile.
+- **Peifer et al. 2014**: starea de "flow" coreleaza cu activitate parasimpatica crescuta (componenta HF a HRV) si o activare simpatica moderata, de tip U inversat. Limite pe care le asumam explicit: esantion mic (22 subiecti, doar barbati), masurat sub stresor de laborator — deci o directie utila, nu un "profil biometric" universal.
+- **McKenna, Dickinson, Orff & Drummond, 2007** ([J Sleep Research, PMID 17716272](https://pubmed.ncbi.nlm.nih.gov/17716272/)): dupa o singura noapte de privare de somn, preferinta pentru risc se muta in functie de framing — subiectii devin **mai dispusi sa riste pentru un castig potential** si mai prudenti in fata unei pierderi potentiale. (Preferinta pentru ambiguitate ramane in mare parte neafectata — nu extindem concluzia dincolo de ce arata studiul.) Relevanta pentru noi: la 2 AM, "mai fac un fix si merge" este exact un frame de castig, iar comenzile ireversibile (`git push --force`, `rm -rf`, `DROP TABLE`) se executa tocmai in acest registru.
 - **Pragul HRV 0.75** din `biometric_engine.py::classify()`: sub 0.75 din baseline-ul personal, motorul estimeaza stres 1.8/3.0. Pragul e o calibrare aleasa de noi empiric, in linie cu directia literaturii de mai sus, nu o valoare preluata dintr-un studiu publicat.
 
 Manifestari concrete la dezvoltatori:
