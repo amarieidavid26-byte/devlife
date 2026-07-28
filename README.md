@@ -47,9 +47,10 @@ cinci stari: RELAXED · DEEP_FOCUS · STRESSED · FATIGUED · WIRED. ghost-ul re
 - desk code runner: Python (Pyodide), JavaScript (Web Worker) si C/C++ (JSCPP) in sandbox; erorile de runtime merg la ghost (`docs/desk-code-runner.md`)
 - apply fix: ghost propune patch-uri cu preview, confirm si rollback
 - session replay in SQLite + raport HTML exportabil, self-contained, RO/EN (`GET /api/session/report/html`)
+- panou "De ce aceasta stare?" in dashboard: semnalul dominant si factorii care au decis clasificarea; starea o decide clasificatorul local, nu ghost-ul AI
 - chei API din UI (BYOK): Claude + WHOOP direct din dashboard, salvate doar in SQLite local, mascate in API
 - demo offline: fara backend, biometricele sunt simulate client-side; starile 1-5, HUD-ul, ghost-ul si ECG-ul merg complet
-- sleep mode, personalitati de ghost (antrenor strict / prieten cald / sarcastic, din Settings), i18n RO/EN cu 559 chei
+- sleep mode, personalitati de ghost (antrenor strict / prieten cald / sarcastic, din Settings), i18n RO/EN cu 603 chei
 
 <p align="center">
   <img src="evidence/screenshots/32.png" alt="interventie ghost in stare FATIGUED, cu personalitatea Sarcastic" width="410">
@@ -85,7 +86,7 @@ frontend vanilla JS + PixiJS 7 (camera izometrica procedurala, zero sprite-uri),
 ## teste
 
 ```bash
-./scripts/run-tests.sh    # 234 teste + junit.xml + coverage HTML in evidence/tests/
+./scripts/run-tests.sh    # 242 teste + junit.xml + coverage HTML in evidence/tests/
 ```
 
 acoperirea pe module si arii (clasificator, HRV live, firewall PTY, apply fix, security jail, WS end-to-end): `evidence/tests/SUMMARY.md`.

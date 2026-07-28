@@ -4,12 +4,12 @@
 
 | metric | valoare |
 |--------|---------|
-| total teste | 234 (233 pass + 1 skip condiționat) |
-| pass | 233 |
+| total teste | 242 (241 pass + 1 skip condiționat) |
+| pass | 241 |
 | fail | 0 |
 | skip | 1 (test dependent de mediu) |
-| durata totală | ~6s |
-| ultima rulare | 2026-07-20 |
+| durata totală | ~6.5s |
+| ultima rulare | 2026-07-28 |
 
 ## acoperire pe modul
 
@@ -24,14 +24,14 @@
 | `content_analyzer.py` | 94% | analyze() cu client Claude stub-uit: JSON valid/fenced/invalid, erori API, stuck detection, RO |
 | `persistence/db.py` | 93% | sessions, interventions, biometric samples, session replay, calibration, conexiuni per fir |
 | `ghost_brain.py` | 92% | should_intervene complet, firewall templates (EN+RO), personality/lang în prompt, fallback la eroare API, totul cu client stub-uit |
-| `runtime.py` | 88% | AppState, build_biometric_msg (incl. câmpuri null de senzor), load/save_calibration |
+| `runtime.py` | 89% | AppState, build_biometric_msg (incl. câmpuri null de senzor și state_explanation), load/save_calibration |
 | `terminal_pty.py` | 83% | KeystrokeFirewall: oglinda liniei, escape-uri, bracketed paste, fail-closed; PTY real prin test_terminal_ws + test_pty_reaping |
 | `ws_game.py` | 74% | handler-ele WS exercitate prin test_ws_flow + test_run_error_routing + test_ws_malformed |
 | `server.py` | 71% | endpoints HTTP + WS handler de bază |
 | `context_history.py` | 58% | rezumatul de context trimis ghost-ului |
-| `biometric_engine.py` | 60% | `classify()` (incl. fuziune tastare) + RMSSD/filtrare artefacte 100% + disconnect WHOOP; OAuth/HTTP WHOOP nu se testează fără credențiale reale |
-| `loops.py` | 40% | bucle daemon infinite; corpul lor e exercitat indirect prin testele de integrare WS |
-| **total** | **74%** | integrările externe rămase (OAuth WHOOP, PTY spawn) se validează prin demo live |
+| `biometric_engine.py` | 64% | `classify()` (incl. fuziune tastare + breakdown-ul de explicabilitate) + RMSSD/filtrare artefacte 100% + disconnect WHOOP; OAuth/HTTP WHOOP nu se testează fără credențiale reale |
+| `loops.py` | 38% | bucle daemon infinite; corpul lor e exercitat indirect prin testele de integrare WS |
+| **total** | **75%** | integrările externe rămase (OAuth WHOOP, PTY spawn) se validează prin demo live |
 
 ## structura tehnică a testelor
 
@@ -67,6 +67,7 @@
 | `tests/test_pty_reaping.py` | 10 | ciclul de viață al procesului copil din PTY: fără zombie după închidere, copil care ignoră SIGHUP tot e reaped, sesiuni repetate nu acumulează procese, resize cu valori arbitrare de la client nu aruncă |
 | `tests/test_ws_malformed.py` | 8 | mesaje WS malformate (tipuri greșite, valori nehashable) nu doboară socketul, iar clientul e scos din starea partajată pe orice ieșire |
 | `tests/test_sleep_mode.py` | 5 | trezirea din sleep: control manual (1-5) și mișcare (WASD) câștigă peste deducția de bandă scoasă, expirarea override-ului lasă sleep-ul să revină, pulsul live trezește normal |
+| `tests/test_state_explainability.py` | 8 | panoul "de ce această stare?": breakdown-ul se construiește în `classify()` (sursă unică de adevăr) și pleacă prin `build_biometric_msg`; semnalul dominant și motivul pe fiecare caz (puls live ridicat decisiv, veto pe recovery WHOOP, strain peste prag, stub onest cu factorii demo la stare forțată, niciodată o explicație veche nepotrivită), factorii JSON-safe și bine formați |
 
 ## cum se rulează
 

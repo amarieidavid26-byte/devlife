@@ -49,7 +49,7 @@ Locatie: `frontend/src/`
 
 **HUD si overlay-uri**:
 - `hud/HUD.js`: biometrice live (HR, HRV, recovery, strain, CQI)
-- `hud/DashboardOverlay.js`: dashboard extins (ECG procedural, autonomic balance)
+- `hud/DashboardOverlay.js`: dashboard extins (ECG procedural, autonomic balance, panoul "De ce aceasta stare?")
 - `hud/DemoHotbar.js`: switcher 1-5 pentru stari mock
 - `hud/ToastSystem.js`: notificari non-intrusive (cu butoane de actiune, ex. Revert)
 - `hud/ShortcutsOverlay.js`: panoul de scurtaturi de tastatura (`?`)
@@ -88,7 +88,7 @@ Locatie: `frontend/src/`
 WebSocket bidirectional pentru latenta mica:
 
 **Server → client**:
-- `biometric_update`: date biometrice + stare clasificata (la fiecare 5s)
+- `biometric_update`: date biometrice + stare clasificata + `state_explanation` (de ce a decis clasificatorul starea curenta), la fiecare 5s
 - `state_change`: tranzitie de stare cu motiv
 - `intervention`: interventie Ghost cu mesaj + butoane
 - `plant_update`: delta crestere plant
@@ -149,6 +149,7 @@ Locatie: root `*.py` + `apply_fix/` + `persistence/`
 - OAuth 2.0 client pentru WHOOP API (auth, exchange, refresh, _save_tokens, _load_tokens)
 - `fetch_data()`: pull recovery + strain + sleep + HRV
 - `classify(data)`: algoritm Yerkes-Dodson cu reguli explicite (vezi mai jos)
+- `_build_explanation()`: la fiecare `classify()`, ramura care a decis starea inregistreaza semnalul dominant si motivul (chei semantice + valorile declansatoare), plus lista de factori cu efectul lor; frontend-ul traduce cheile per locale si randeaza totul in panoul "De ce aceasta stare?" din dashboard
 - `get_personality_modifiers(state)`: parametri per stare (verbosity, threshold, capture_interval, max_tokens)
 - `live_heart_rate` injectat din BLE, cu prioritate fata de WHOOP "lent"
 
@@ -246,6 +247,8 @@ unde `estimated_stress` este derivat din raportul HRV/baseline:
 - altfel → stress 0.5
 
 Live heart rate (BLE) are prioritate fata de WHOOP "lent" (refresh ~5 min). Cand BLE este conectat si transmite, `bio.current_state` recalibreaza din BPM in timp real.
+
+**Explicabilitate.** Fiecare `classify()` isi inregistreaza si decizia, nu doar rezultatul: semnalul dominant (`live_pulse` / `typing` / `whoop_summary` / `mock`), motivul care a declansat starea (cheie semantica + valorile exacte, ex. `hr_very_high {hr: 112, thr: 100}`) si fiecare factor cu efectul lui (`decisive`, `veto`, `context`, `output`). Payload-ul e neutru lingvistic (chei + numere), ajunge la client ca `state_explanation` pe `biometric_update`, iar dashboard-ul il traduce per locale in panoul "De ce aceasta stare?". Cand o stare demo e fortata din hotbar (clasificarea e sarita ca sa nu apara flicker), `runtime.py::_state_explanation` emite un stub onest "setata manual" in loc sa reambaleze explicatia unei stari vechi. Cod: `biometric_engine.py::_build_explanation`, teste in `test_state_explainability.py`.
 
 ## flow tipic: request lifecycle
 

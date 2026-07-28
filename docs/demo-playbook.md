@@ -152,7 +152,7 @@ puncte de mentionat:
 sau arata rapid: `pytest tests/ -v`
 
 puncte:
-- 234 teste, coverage ~74% (unit + integration + WS flow + HRV live/RMSSD + dinamica tastarii + calibrare + setari/chei API + interventie firewall + override one-shot + ghost brain/analyzer cu client Claude stub-uit + session replay + keystroke firewall + firewall anti-drift)
+- 242 teste, coverage ~75% (unit + integration + WS flow + HRV live/RMSSD + dinamica tastarii + calibrare + setari/chei API + interventie firewall + override one-shot + ghost brain/analyzer cu client Claude stub-uit + session replay + keystroke firewall + firewall anti-drift + explicabilitate stare)
 - test_biometric_classifier: clasele de stare cognitive
 - test_apply_fix: contract, validator, lifecycle complet
 - test_ws_flow: conexiune WebSocket end-to-end + handler heart_rate
@@ -205,3 +205,4 @@ puncte:
 3. **Personalitate**: Settings → Personalitatea Ghost-ului → Sarcastic → declanseaza firewall-ul → replica sarcastica. 10 secunde, memorabil.
 4. **Firewall server-side**, la intrebarea juriului "si daca ocolesti UI-ul?": conecteaza-te direct la WS-ul de terminal (sau arata `test_keystroke_firewall.py`). Serverul inghite Enter-ul si trimite Ctrl-U; comanda nu ajunge NICIODATA la shell. Defense in depth.
 5. **Ghost invata**: dashboard → panoul "Ghost invata": rata de acceptare + cooldown-ul adaptiv ("3+ ignorate → Ghost s-a retras la 60s").
+6. **Explicabilitate**: dashboard (TAB) → panoul "De ce aceasta stare?": semnalul dominant si motivul cu praguri concrete, plus factorii cu efectul lor (decisiv, veto). Punctul de spus juriului: starea e calculata local de clasificator, ghost-ul AI doar formuleaza mesajul, nu decide niciodata starea.
