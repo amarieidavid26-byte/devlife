@@ -93,7 +93,7 @@ acoperirea pe module si arii (clasificator, HRV live, firewall PTY, apply fix, s
 
 ## securitate
 
-backend-ul asculta doar pe `127.0.0.1`; fiecare endpoint privilegiat cere token de sesiune si verifica Origin, iar accesul la fisiere e blocat in afara `WORKSPACE_ROOT`. model complet si checklist: `docs/local-ide.md`, `docs/security-checklist.md`.
+backend-ul asculta doar pe `127.0.0.1`; fiecare endpoint privilegiat cere token de sesiune si verifica Origin, iar operatiile de fisiere ale editorului sunt blocate in afara `WORKSPACE_ROOT`. terminalul e altceva: un shell real, deliberat nerestrictionat (asta e valoarea lui), pazit de flag opt-in, token si firewall-ul de comenzi. model complet si checklist: `docs/local-ide.md`, `docs/security-checklist.md`.
 
 ## ruleaza local
 
