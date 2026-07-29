@@ -128,3 +128,13 @@ v1.0-rc ──> T14 (hardening) ──> v1.1-hardening (submission)
 Toate ariile sunt livrate la `v1.1-hardening` (241 pass + 1 skip din 242 teste,
 `documentatie.docx` generat, 23 capturi in `evidence/screenshots/`); stadiul
 detaliat, inclusiv situatia deploy-ului Railway, e in `docs/rubric-matrix.md`.
+
+Dupa `v1.1-hardening` au mai intrat pe `main`, in ordine: panoul de explicabilitate a
+starii cognitive ("De ce aceasta stare?"), extensia VS Code (DevLife Bridge) cu Apply Fix
+real pe fisierele din editor, IDE-ul local complet (Monaco pe fisiere de pe disc, terminal
+PTY, LSP, code-server), dinamica tastarii ca semnal biometric fara wearable, HRV live
+calculat din intervalele RR cu filtrare de artefacte, session replay cu raport HTML
+exportabil, CSRF semnat HMAC si deconectare WHOOP, auditul de citari stiintifice, si
+corectarea CQI-ului la modelul U-inversat partajat intre HUD si dashboard.
+
+Starea predata la etapa nationala e marcata `v1.2-open`.
