@@ -105,7 +105,7 @@ v1.0-rc ──> T14 (hardening) ──> v1.1-hardening (submission)
 
 | criteriu | masura |
 |----------|--------|
-| toate testele verzi | `./scripts/run-tests.sh` → `233 passed, 1 skipped` (234 teste) |
+| toate testele verzi | `./scripts/run-tests.sh` → `241 passed, 1 skipped` (242 teste) |
 | `/ready` returneaza 200 in DEMO_OFFLINE | `curl localhost:8000/ready` → `{"ready":true}` |
 | Apply Fix functional end-to-end | preview validat → confirm → audit row in SQLite |
 | Fatigue Firewall trigger-it instant | scrie `git push --force` cu stare FATIGUED → ghost intervine fara apel Claude (regex local) |
@@ -125,6 +125,6 @@ v1.0-rc ──> T14 (hardening) ──> v1.1-hardening (submission)
 
 ## faza 6: stadiul curent
 
-Toate ariile sunt livrate la `v1.1-hardening` (233 pass + 1 skip din 234 teste,
-`documentatie-finala.docx` generat, 23 capturi in `evidence/screenshots/`); stadiul
+Toate ariile sunt livrate la `v1.1-hardening` (241 pass + 1 skip din 242 teste,
+`documentatie.docx` generat, 23 capturi in `evidence/screenshots/`); stadiul
 detaliat, inclusiv situatia deploy-ului Railway, e in `docs/rubric-matrix.md`.

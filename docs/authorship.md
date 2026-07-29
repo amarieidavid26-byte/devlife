@@ -22,7 +22,7 @@
 - SQLite persistence layer: sessions, interventions, apply_fix_audit (T05)
 - offline fallback: DEMO_OFFLINE mode, seeded mock, degraded banner (T06)
 - Apply Fix safety: contract Pydantic, validator, preview UI, rollback, audit (T07)
-- suite de teste: 234 teste (biometric classifier, WS flow, apply fix, fallback, heart_rate handler, run_error routing, HRV live, session replay, keystroke firewall) (T08)
+- suite de teste: 242 teste (biometric classifier, WS flow, apply fix, fallback, heart_rate handler, run_error routing, HRV live, session replay, keystroke firewall) (T08)
 - i18n RO/EN cu toggle in Settings (T09)
 - deploy readiness: /ready endpoint, runtime.txt, healthcheck (T10)
 - docs: rubric matrix, demo playbook, install runbook, deploy runbook, assets compliance (T01, T11, T12)

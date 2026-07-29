@@ -16,7 +16,7 @@ total: 100 puncte. matricea de mai jos mapeaza fiecare sub-criteriu la artefacte
 | **III.1 Interfata** | 5 | camera izometrica 2.5D, HUD biometric (CQI, ECG, autonomic balance), layout responsive, paleta Animal Crossing, ghost personality vizuala | `docs/ui-ux-decisions.md`, `evidence/screenshots/*.png` |
 | **III.2 Experienta utilizatorului** | 10 | tranzitii fluente intre scene (Room, Town, Cafe, Cowork), raspuns rapid (< 10ms fallback), flow intuitiv (WASD + E + 1-5 + ESC), i18n RO/EN, accesibilitate keyboard-first; demo set-piece: buggy code → Run → eroare → Ghost suggest fix → Apply Fix → diff preview → swap → Run reusit (~60s) | `docs/ui-ux-decisions.md`, `docs/desk-code-runner.md`, `frontend/src/i18n/`, `evidence/screenshots/` |
 | **IV.1 Prezentare** | 5 | walkthrough 7-10 min cu scenariu pre-rehearsed, failure recovery table, Q&A pregatite, demo online + offline | `docs/demo-playbook.md` |
-| **IV.2 Documentatia proiectului** | 5 | problema, solutia, public tinta, functionalitati, arhitectura, ghid instalare, justificari tehnologii, testimoniale, roadmap | `documentatie-finala.docx` + toate docs/*.md |
+| **IV.2 Documentatia proiectului** | 5 | problema, solutia, public tinta, functionalitati, arhitectura, ghid instalare, justificari tehnologii, testimoniale, roadmap | `documentatie.docx` + toate docs/*.md |
 | **V.1 Distributia rolurilor** | 5 | David: frontend visual + cinematic + WHOOP BLE + scene + code runner; Matei: backend + persistence + security + tests + docs | `docs/authorship.md`, `evidence/team-process/contributor-stats.md` |
 | **V.2 Modul de lucru in echipa** | 5 | git workflow cu branch-uri (`infoeducatie-hardening`, `feature/real-ide-whoop-terminal`), pair-programming pe zonele comune, merge-uri vizibile in graph | `evidence/team-process/branch-strategy.md`, `evidence/team-process/git-graph.txt` |
 | **VI.1 Codul sursa** *(obligatoriu)* | - | cod structurat in module dedicate (apply_fix/, persistence/, frontend/src/{apps,apps/runners,room,town,hud,...}), docstrings unde necesar, type hints, Pydantic models | tot repo-ul, vezi `docs/architecture.md` pentru tour ghidat |
@@ -30,9 +30,9 @@ total: 100 puncte. matricea de mai jos mapeaza fiecare sub-criteriu la artefacte
 |------|-----------|---------|
 | backend + persistence | ✅ 100% | - |
 | security + hardening | ✅ 100% | - |
-| testing (233 pass + 1 skip din 234) | ✅ 100% | - |
+| testing (241 pass + 1 skip din 242) | ✅ 100% | - |
 | desk code runner (Pyodide + Web Worker + JSCPP) | ✅ 100% | - |
-| documentatie (docs/ + `documentatie-finala.docx`) | ✅ 100% | - |
+| documentatie (docs/ + `documentatie.docx`) | ✅ 100% | - |
 | evidence pack (23 capturi in `evidence/screenshots/`) | ✅ 100% | - |
 | git workflow + tags | ✅ 100% | - |
 | deploy (Railway) | ⚠️ gazda publica oprita (`/health` intoarce 404) | re-deploy dupa `docs/deploy-runbook.md`; modul sustinut e cel local (`./scripts/dev.sh`) |
