@@ -1,6 +1,7 @@
 // Cursor-style inline (ghost-text) completions for Monaco, streamed from the backend
 // /inline endpoint (Claude Haiku). Debounced, with stale requests cancelled. Tab accepts.
 import { privilegedWsUrl, getFeatures } from '../../network/session.js';
+import { isSensitivePath } from '../../utils/sensitiveFiles.js';
 
 const DEBOUNCE_MS = 180;
 const LANGS = ['python', 'javascript', 'typescript', 'go', 'cpp', 'c', 'rust', 'java', 'json', 'html', 'css', 'shell', 'ruby', 'php'];
@@ -51,6 +52,8 @@ export function registerInlineCompletions(monaco) {
 
     const provider = {
         async provideInlineCompletions(model, position, context, token) {
+            // don't send a secret file's contents (.env, keys, credentials) to the completer
+            if (isSensitivePath(model.uri.path)) return { items: [] };
             const lastLine = model.getLineCount();
             const prefix = model.getValueInRange(new monaco.Range(1, 1, position.lineNumber, position.column));
             const suffix = model.getValueInRange(new monaco.Range(position.lineNumber, position.column, lastLine, model.getLineMaxColumn(lastLine)));

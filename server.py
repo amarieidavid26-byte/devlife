@@ -531,6 +531,11 @@ async def _gate_privileged_ws(ws: WebSocket, enabled: bool) -> bool:
 
 
 async def _run_inline(ws: WebSocket, req_id, prefix, suffix, language, path, state, stress):
+    # backstop: a direct WS client could bypass the frontend guard, so never complete a
+    # secret file's contents here either. Resolve the request so the client isn't left waiting.
+    if security.is_sensitive_path(path):
+        await ws.send_json({"id": req_id, "done": True})
+        return
     try:
         async for delta in inline_completer.stream(prefix, suffix, language, path,
                                                    state=state, estimated_stress=stress):

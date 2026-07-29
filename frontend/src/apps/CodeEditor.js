@@ -8,6 +8,7 @@ import { registerInlineCompletions } from './ide/inlineCompletions.js';
 import { LspManager } from './ide/languageClient.js';
 import { readFile, writeFile, createPath, listDir } from '../network/files.js';
 import { getWorkspaceRoot, getFeatures, privilegedWsUrl, authHeaders } from '../network/session.js';
+import { isSensitivePath } from '../utils/sensitiveFiles.js';
 import { CONFIG } from '../config.js';
 
 // Seeded into an empty workspace so the editor (and the ghost bug-detection demo) has
@@ -253,11 +254,15 @@ export class CodeEditorApp {
             if (!this.isOpen || !this.activePath) return;
             this.dirty.add(this.activePath);
             this._renderTabs();
-            const position = this.editor.getPosition();
-            this.socket.sendContentUpdate(this.appType, this.editor.getValue(), {
-                language: this.currentLang,
-                cursor_line: position ? position.lineNumber : 1,
-            });
+            // never ship a secret file's contents to the ghost analyzer/Claude; local
+            // dirty-tracking and the (local) LSP keep working, only the off-device send is skipped
+            if (!isSensitivePath(this.activePath)) {
+                const position = this.editor.getPosition();
+                this.socket.sendContentUpdate(this.appType, this.editor.getValue(), {
+                    language: this.currentLang,
+                    cursor_line: position ? position.lineNumber : 1,
+                });
+            }
             if (this.lsp) this.lsp.onModelChange(this.editor.getModel());
         });
 

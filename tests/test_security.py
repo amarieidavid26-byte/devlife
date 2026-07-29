@@ -81,3 +81,17 @@ def test_csrf_state_rejects_expired_and_future():
     assert security.consume_state(signed(int(time.time()) - security._CSRF_TTL_SECONDS - 1)) is False
     assert security.consume_state(signed(int(time.time()) + 120)) is False
     assert security.consume_state(signed("not-a-timestamp")) is False
+
+
+def test_is_sensitive_path_blocks_secrets():
+    for p in (".env", "config/.env.local", "certs/server.pem", "id_rsa",
+              "id_rsa.pub", "aws_credentials", ".git/COMMIT_EDITMSG", "SRC/.ENV"):
+        assert security.is_sensitive_path(p) is True, p
+
+
+def test_is_sensitive_path_allows_normal_files():
+    # note: anything starting with ".env" (incl. .env.example) is intentionally blocked,
+    # matching the client guard -- over-blocking a template beats leaking a real dotenv
+    for p in ("main.py", "src/app.js", "environment.py", "my_pem_notes.txt",
+              "readme.md", "", None):
+        assert security.is_sensitive_path(p) is False, p

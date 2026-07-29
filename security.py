@@ -8,6 +8,7 @@ bounds file access to WORKSPACE_ROOT; the CSRF store covers the WHOOP OAuth roun
 import hashlib
 import hmac
 import logging
+import re
 import secrets
 import time
 from pathlib import Path
@@ -15,6 +16,18 @@ from pathlib import Path
 from config import ALLOWED_ORIGINS, WORKSPACE_ROOT
 
 logger = logging.getLogger(__name__)
+
+# Files whose contents must never be sent to Claude (secrets/keys/credentials). Server-side
+# backstop for the inline completer; the primary guards are client-side. Kept in sync with two
+# other copies: frontend/src/utils/sensitiveFiles.js and vscode-extension/extension.js.
+_SENSITIVE_FILE_RE = re.compile(
+    r"(^|/)(\.env[^/]*|[^/]*\.pem|id_rsa[^/]*|[^/]*credentials[^/]*|COMMIT_EDITMSG)$",
+    re.IGNORECASE,
+)
+
+
+def is_sensitive_path(path: str | None) -> bool:
+    return bool(path) and bool(_SENSITIVE_FILE_RE.search(path))
 
 # regenerated every process start; never persisted
 SESSION_TOKEN = secrets.token_urlsafe(32)
