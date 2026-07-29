@@ -111,7 +111,6 @@ pentru datele tale WHOOP reale (inregistrarea aplicatiei, OAuth, scopes, BLE bro
 | `docs/desk-code-runner.md` | rularea codului in sandbox, in browser |
 | `docs/security-checklist.md` | checklist-ul de securitate, punct cu punct |
 | `docs/positioning.md` | problema, publicul tinta, competitorii |
-| `docs/demo-playbook.md` | scenariul demo pas cu pas |
 | `evidence/tests/SUMMARY.md` | acoperirea suitei de teste pe module |
 | `vscode-extension/README.md` | extensia DevLife Bridge |
 

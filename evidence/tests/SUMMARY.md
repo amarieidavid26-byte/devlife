@@ -92,4 +92,4 @@ răspunde cu text controlat (sau aruncă excepții controlate). Asta ne lasă s�
 - că template-urile instant de firewall NU consumă apeluri API
 
 Nu testăm cu credențiale Claude/WHOOP reale în CI; calitatea răspunsurilor live se
-validează manual prin demo (vezi `docs/demo-playbook.md`).
+validează manual prin demo.

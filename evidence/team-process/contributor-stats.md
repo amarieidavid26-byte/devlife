@@ -67,7 +67,7 @@ Fisiere atinse predominant:
 - `persistence/` (db.py, migrations/)
 - `tests/` (toate cele 37 de teste)
 - `frontend/src/i18n/` (module + ro.json, en.json)
-- `docs/` (security-checklist.md, demo-playbook.md, deploy-runbook.md, install-runbook.md, rubric-matrix.md, assets-compliance.md, authorship.md)
+- `docs/` (security-checklist.md, deploy-runbook.md, install-runbook.md, rubric-matrix.md, assets-compliance.md, authorship.md)
 - `scripts/` (setup.sh, dev.sh, run-tests.sh, healthcheck.sh)
 - `evidence/` (structura initiala)
 
