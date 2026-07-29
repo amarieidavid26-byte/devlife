@@ -1,0 +1,209 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 860" width="1280" height="860" role="img" aria-label="Biologia din spatele DevLife: lantul cauzal de la inima la performanta cognitiva">
+<title>Biologia din spatele DevLife</title>
+
+<defs>
+  <style>
+    .ser  { font-family: Georgia, "Iowan Old Style", "Times New Roman", serif; }
+    .sans { font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif; }
+    .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+    .fact { font-size: 13.5px; fill: #4A5468; }
+    .did  { font-size: 13.5px; fill: #26303F; }
+    .name { font-size: 18px; font-weight: 700; fill: #26303F; letter-spacing: .04em; }
+    .pmid { font-size: 10px; fill: #7A8394; letter-spacing: .03em; }
+    .stnum{ font-size: 11px; font-weight: 700; fill: #B9AF9E; letter-spacing: .12em; }
+    .lbl  { font-size: 10.5px; fill: #7A8394; letter-spacing: .16em; font-weight: 600; }
+  </style>
+  <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0 1 L9 5 L0 9" fill="none" stroke="#B9AF9E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<rect width="1280" height="860" fill="#F5F0E8"/>
+
+<!-- ============ ANTET ============ -->
+<text class="ser" x="40" y="56" font-size="31" font-weight="700" fill="#26303F">Biologia din spatele DevLife</text>
+<text class="sans" x="40" y="80" font-size="14" fill="#7A8394">De la o bătaie de inimă la o comandă blocată în terminal — lanțul, verigă cu verigă.</text>
+<line x1="40" y1="98" x2="1240" y2="98" stroke="#DDD3C4" stroke-width="1"/>
+
+<!-- ============ CELE 5 STATII ============ -->
+<!-- centre: 152 · 396 · 640 · 884 · 1128 -->
+
+<!-- sageti de legatura -->
+<line x1="272" y1="188" x2="296" y2="188" stroke="#B9AF9E" stroke-width="1.6" marker-end="url(#ar)"/>
+<line x1="516" y1="188" x2="540" y2="188" stroke="#B9AF9E" stroke-width="1.6" marker-end="url(#ar)"/>
+<line x1="760" y1="188" x2="784" y2="188" stroke="#B9AF9E" stroke-width="1.6" marker-end="url(#ar)"/>
+<line x1="1004" y1="188" x2="1028" y2="188" stroke="#B9AF9E" stroke-width="1.6" marker-end="url(#ar)"/>
+
+<!--  1. INIMA  -->
+<g>
+  <text class="mono stnum" x="40" y="128">01</text>
+  <!-- glif: inima + intervale RR inegale -->
+  <g transform="translate(152,188)">
+    <path d="M0 16 C -22 -4 -30 -20 -16 -28 C -7 -33 -1 -27 0 -22 C 1 -27 7 -33 16 -28 C 30 -20 22 -4 0 16 Z"
+          fill="none" stroke="#D9563F" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M-34 34 L-24 34 L-20 24 L-14 44 L-9 34 L2 34 L6 24 L12 44 L17 34 L34 34"
+          fill="none" stroke="#26303F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text class="sans name" x="152" y="252" text-anchor="middle">INIMA</text>
+  <text class="sans fact" x="152" y="278" text-anchor="middle">Bătăile nu vin la interval</text>
+  <text class="sans fact" x="152" y="296" text-anchor="middle">fix. Distanța dintre ele</text>
+  <text class="sans fact" x="152" y="314" text-anchor="middle">variază la fiecare bătaie.</text>
+  <line x1="92" y1="336" x2="212" y2="336" stroke="#DDD3C4" stroke-width="1"/>
+  <text class="sans lbl" x="152" y="358" text-anchor="middle">DEVLIFE</text>
+  <text class="sans did" x="152" y="380" text-anchor="middle">citește intervalele RR</text>
+  <text class="sans did" x="152" y="398" text-anchor="middle">brute, prin Bluetooth</text>
+</g>
+
+<!--  2. NERVUL VAG  -->
+<g>
+  <text class="mono stnum" x="284" y="128">02</text>
+  <g transform="translate(396,188)">
+    <!-- cele doua ramuri autonome trag in sensuri opuse de variatia bataii -->
+    <path d="M-24 -4 L-24 -34" fill="none" stroke="#2F8F5B" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M-30 -28 L-24 -38 L-18 -28 Z" fill="#2F8F5B"/>
+    <path d="M24 -38 L24 -8" fill="none" stroke="#D9563F" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M18 -12 L24 -2 L30 -12 Z" fill="#D9563F"/>
+    <path d="M-34 22 C -26 11 -18 33 -10 22 C -2 11 6 33 14 22 C 20 15 27 28 34 22"
+          fill="none" stroke="#26303F" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+  <text class="sans name" x="396" y="252" text-anchor="middle">NERVUL VAG</text>
+  <text class="sans fact" x="396" y="278" text-anchor="middle">Variația e comandată de</text>
+  <text class="sans fact" x="396" y="296" text-anchor="middle">sistemul nervos autonom:</text>
+  <text class="sans fact" x="396" y="314" text-anchor="middle">vagul o crește, simpaticul</text>
+  <text class="sans fact" x="396" y="332" text-anchor="middle">o scade.</text>
+  <line x1="336" y1="354" x2="456" y2="354" stroke="#DDD3C4" stroke-width="1"/>
+  <text class="sans lbl" x="396" y="376" text-anchor="middle">DEVLIFE</text>
+  <text class="sans did" x="396" y="398" text-anchor="middle">calculează RMSSD pe</text>
+  <text class="sans did" x="396" y="416" text-anchor="middle">fereastră de 60 s</text>
+</g>
+
+<!--  3. HRV / RMSSD  -->
+<g>
+  <text class="mono stnum" x="528" y="128">03</text>
+  <g transform="translate(640,188)">
+    <!-- intervale inegale masurate -->
+    <line x1="-36" y1="-26" x2="-36" y2="18" stroke="#26303F" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-12" y1="-26" x2="-12" y2="18" stroke="#26303F" stroke-width="2" stroke-linecap="round"/>
+    <line x1="16"  y1="-26" x2="16"  y2="18" stroke="#26303F" stroke-width="2" stroke-linecap="round"/>
+    <line x1="36"  y1="-26" x2="36"  y2="18" stroke="#26303F" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-36" y1="26" x2="-12" y2="26" stroke="#2F8F5B" stroke-width="2.4" stroke-linecap="round"/>
+    <line x1="-12" y1="34" x2="16"  y2="34" stroke="#2F8F5B" stroke-width="2.4" stroke-linecap="round"/>
+    <line x1="16"  y1="26" x2="36"  y2="26" stroke="#2F8F5B" stroke-width="2.4" stroke-linecap="round"/>
+    <text class="mono" x="0" y="-36" font-size="11" fill="#7A8394" text-anchor="middle">RR</text>
+  </g>
+  <text class="sans name" x="640" y="252" text-anchor="middle">HRV · RMSSD</text>
+  <text class="sans fact" x="640" y="278" text-anchor="middle">RMSSD e marker recunoscut</text>
+  <text class="sans fact" x="640" y="296" text-anchor="middle">de tonus vagal. Stresul</text>
+  <text class="sans fact" x="640" y="314" text-anchor="middle">îl scade măsurabil.</text>
+  <line x1="580" y1="336" x2="700" y2="336" stroke="#DDD3C4" stroke-width="1"/>
+  <text class="sans lbl" x="640" y="358" text-anchor="middle">DEVLIFE</text>
+  <text class="sans did" x="640" y="380" text-anchor="middle">compară HRV curent ÷</text>
+  <text class="sans did" x="640" y="398" text-anchor="middle">baseline-ul TĂU personal</text>
+  <text class="mono pmid" x="640" y="424" text-anchor="middle">PMID 29486547 · 29034226</text>
+</g>
+
+<!--  4. CORTEX PREFRONTAL  -->
+<g>
+  <text class="mono stnum" x="772" y="128">04</text>
+  <g transform="translate(884,188)">
+    <!-- profil de creier, lobul frontal accentuat -->
+    <path d="M-30 12 C -36 -6 -26 -26 -6 -30 C 12 -34 30 -22 32 -4 C 34 12 24 24 8 26 L -14 26 C -24 26 -28 20 -30 12 Z"
+          fill="none" stroke="#26303F" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M-30 12 C -36 -6 -26 -26 -6 -30 C -4 -18 -8 -6 -12 2 C -16 10 -22 14 -30 12 Z" fill="#C98A22" opacity=".22"/>
+    <path d="M-6 -30 C -4 -18 -8 -6 -12 2 C -16 10 -22 14 -30 12" fill="none" stroke="#C98A22" stroke-width="2"/>
+    <path d="M2 -22 C 8 -14 6 -4 12 4" fill="none" stroke="#26303F" stroke-width="1.4" opacity=".5"/>
+    <path d="M16 -18 C 22 -10 20 0 26 6" fill="none" stroke="#26303F" stroke-width="1.4" opacity=".5"/>
+  </g>
+  <text class="sans name" x="884" y="252" text-anchor="middle">CORTEX PREFRONTAL</text>
+  <text class="sans fact" x="884" y="278" text-anchor="middle">Integrare neuro-viscerală:</text>
+  <text class="sans fact" x="884" y="296" text-anchor="middle">circuitele care susțin</text>
+  <text class="sans fact" x="884" y="314" text-anchor="middle">concentrarea reglează</text>
+  <text class="sans fact" x="884" y="332" text-anchor="middle">și inima.</text>
+  <line x1="824" y1="354" x2="944" y2="354" stroke="#DDD3C4" stroke-width="1"/>
+  <text class="sans lbl" x="884" y="376" text-anchor="middle">DEVLIFE</text>
+  <text class="sans did" x="884" y="398" text-anchor="middle">clasifică 5 stări</text>
+  <text class="sans did" x="884" y="416" text-anchor="middle">cognitive, local</text>
+  <text class="mono pmid" x="884" y="442" text-anchor="middle">PMID 34575648</text>
+</g>
+
+<!--  5. PERFORMANTA  -->
+<g>
+  <text class="mono stnum" x="1016" y="128">05</text>
+  <g transform="translate(1128,188)">
+    <path d="M-34 26 C -18 26 -14 -26 0 -26 C 14 -26 18 26 34 26" fill="none" stroke="#26303F" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="0" cy="-26" r="5" fill="#2F8F5B"/>
+    <line x1="-40" y1="34" x2="40" y2="34" stroke="#B9AF9E" stroke-width="1.4"/>
+  </g>
+  <text class="sans name" x="1128" y="252" text-anchor="middle">PERFORMANȚA</text>
+  <text class="sans fact" x="1128" y="278" text-anchor="middle">U inversat: vârful e la</text>
+  <text class="sans fact" x="1128" y="296" text-anchor="middle">activare medie — nu la</text>
+  <text class="sans fact" x="1128" y="314" text-anchor="middle">minim, nu la maxim.</text>
+  <line x1="1068" y1="336" x2="1188" y2="336" stroke="#DDD3C4" stroke-width="1"/>
+  <text class="sans lbl" x="1128" y="358" text-anchor="middle">DEVLIFE</text>
+  <text class="sans did" x="1128" y="380" text-anchor="middle">intervine cu atât mai</text>
+  <text class="sans did" x="1128" y="398" text-anchor="middle">mult cu cât ești mai</text>
+  <text class="sans did" x="1128" y="416" text-anchor="middle">departe de vârf</text>
+  <text class="mono pmid" x="1128" y="442" text-anchor="middle">PMID 38277436</text>
+</g>
+
+<!-- ============ CURBA U INVERSAT ============ -->
+<line x1="40" y1="478" x2="1240" y2="478" stroke="#DDD3C4" stroke-width="1"/>
+<text class="ser" x="40" y="512" font-size="19" font-weight="700" fill="#26303F">Unde cad cele cinci stări pe curbă</text>
+<text class="sans" x="40" y="534" font-size="12.5" fill="#7A8394">Cifrele sunt valorile reale de stres pe care le atribuie clasificatorul din <tspan class="mono" font-size="11.5" fill="#4A5468">biometric_engine.py</tspan>.</text>
+
+<!-- axa + curba: x 0..3.0 mapat pe 150..1130, baza y=730, varf y=590 -->
+<g>
+  <line x1="150" y1="730" x2="1150" y2="730" stroke="#B9AF9E" stroke-width="1.6"/>
+  <line x1="150" y1="730" x2="150" y2="576" stroke="#B9AF9E" stroke-width="1.6"/>
+  <text class="sans lbl" x="150" y="756" text-anchor="middle">0</text>
+  <text class="sans lbl" x="1150" y="756" text-anchor="middle">3.0</text>
+  <text class="sans lbl" x="650" y="778" text-anchor="middle">ACTIVARE AUTONOMĂ — INDICELE DE STRES</text>
+  <text class="sans lbl" x="136" y="653" text-anchor="middle" transform="rotate(-90 136 653)">PERFORMANȚĂ</text>
+
+  <!-- curba U inversat, varf la stres 1.2 -> x = 150 + (1.2/3)*1000 = 550 -->
+  <path d="M150 728 C 300 722 430 620 550 596 C 670 620 800 700 920 718 C 1010 728 1080 730 1150 730"
+        fill="none" stroke="#26303F" stroke-width="2.6" stroke-linecap="round"/>
+
+  <!-- linie punctata la varf -->
+  <line x1="550" y1="596" x2="550" y2="730" stroke="#2F8F5B" stroke-width="1.4" stroke-dasharray="4 4"/>
+
+  <!-- RELAXAT 0.5 -> x=316.7 ; pe curba ~y=706 -->
+  <circle cx="321" cy="686" r="6.5" fill="#F5F0E8" stroke="#7A8394" stroke-width="2.4"/>
+  <text class="sans" x="321" y="666" font-size="13" font-weight="700" fill="#4A5468" text-anchor="middle">RELAXAT</text>
+  <text class="mono" x="321" y="650" font-size="12" fill="#7A8394" text-anchor="middle">0.5</text>
+
+  <!-- CONCENTRAT 1.2 -> x=550, varf -->
+  <circle cx="550" cy="596" r="8.5" fill="#2F8F5B" stroke="#F5F0E8" stroke-width="2.5"/>
+  <text class="sans" x="550" y="572" font-size="15" font-weight="700" fill="#2F8F5B" text-anchor="middle">CONCENTRAT</text>
+  <text class="mono" x="550" y="556" font-size="12.5" fill="#2F8F5B" text-anchor="middle">1.2 — vârful</text>
+
+  <!-- OBOSIT 1.8 -> x=750 ; pe curba ~y=684 -->
+  <circle cx="753" cy="667" r="6.5" fill="#F5F0E8" stroke="#C98A22" stroke-width="2.4"/>
+  <text class="sans" x="716" y="628" font-size="13" font-weight="700" fill="#C98A22" text-anchor="middle">OBOSIT</text>
+  <text class="mono" x="716" y="612" font-size="12" fill="#C98A22" text-anchor="middle">1.8</text>
+  <line x1="746" y1="660" x2="722" y2="638" stroke="#C98A22" stroke-width="1.2"/>
+
+  <!-- ENERGIZAT 1.9 -> x=783 ; pe curba ~y=690 -->
+  <circle cx="780" cy="677" r="6.5" fill="#F5F0E8" stroke="#C98A22" stroke-width="2.4"/>
+  <text class="sans" x="852" y="662" font-size="13" font-weight="700" fill="#C98A22" text-anchor="middle">ENERGIZAT</text>
+  <text class="mono" x="852" y="646" font-size="12" fill="#C98A22" text-anchor="middle">1.9</text>
+  <line x1="788" y1="674" x2="828" y2="662" stroke="#C98A22" stroke-width="1.2"/>
+
+  <!-- STRESAT 2.5 -> x=983 ; pe curba ~y=723 -->
+  <circle cx="983" cy="723" r="6.5" fill="#F5F0E8" stroke="#D9563F" stroke-width="2.4"/>
+  <text class="sans" x="1010" y="700" font-size="13" font-weight="700" fill="#D9563F" text-anchor="middle">STRESAT</text>
+  <text class="mono" x="1010" y="684" font-size="12" fill="#D9563F" text-anchor="middle">2.5</text>
+  <line x1="989" y1="716" x2="1004" y2="708" stroke="#D9563F" stroke-width="1.2"/>
+</g>
+
+<!-- ============ NOTA DE ONESTITATE + SUBSOL ============ -->
+<line x1="40" y1="796" x2="1240" y2="796" stroke="#DDD3C4" stroke-width="1"/>
+<text class="sans" x="40" y="820" font-size="12" fill="#4A5468">
+  <tspan font-weight="700">De ce stau OBOSIT și ENERGIZAT aproape în același loc:</tspan>
+  <tspan> axa e activare autonomă, nu oboseală subiectivă — pentru inimă, un corp epuizat și unul supra-activat arată similar.</tspan>
+</text>
+<text class="sans" x="40" y="838" font-size="12" fill="#4A5468">Le separăm cu recovery-ul și somnul din WHOOP, nu cu HRV-ul singur.</text>
+<text class="sans" x="1240" y="820" font-size="12" fill="#7A8394" text-anchor="end">Nu e dispozitiv medical.</text>
+<text class="sans" x="1240" y="838" font-size="12" fill="#7A8394" text-anchor="end">Estimăm activare, nu diagnostic.</text>
+
+</svg>

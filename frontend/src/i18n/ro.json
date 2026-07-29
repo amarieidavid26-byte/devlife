@@ -601,5 +601,12 @@
   "expl.effect_raise_stress": "↑ stres",
   "expl.effect_lower_stress": "↓ stres",
   "expl.effect_context": "context",
-  "expl.effect_output": "rezultat"
+  "expl.effect_output": "rezultat",
+  "dashboard.biology_header": "Biologia din spate",
+  "dashboard.biology_hint": "inimă → nerv vag → HRV → cortex prefrontal → performanță",
+  "info.biology.title": "Biologia din spate",
+  "info.biology.subtitle": "De la o bătaie de inimă la o comandă blocată",
+  "info.biology.what": "<p class=\"dl-plate-cap\"><a href=\"/biologie.svg\" target=\"_blank\">click pentru mărire ↗</a></p><img class=\"dl-plate\" src=\"/biologie.svg\" alt=\"Lantul cauzal: inima, nervul vag, HRV, cortex prefrontal, performanta\">Inima nu bate la interval fix. Distanța dintre bătăi e comandată de sistemul nervos autonom — nervul vag o crește, ramura simpatică o scade. Măsurând acea variație (RMSSD), citim indirect starea sistemului care reglează și concentrarea.",
+  "info.biology.how": "RR brut (BLE)\n  → RMSSD pe fereastră de 60 s\n  → raport față de baseline-ul tău\n  → una din 5 stări cognitive\n  → intervenția ghost-ului",
+  "info.biology.science": "Legătura se numește <b>integrare neuro-viscerală</b>: circuitele prefrontale care susțin controlul executiv reglează și ritmul cardiac, deci HRV-ul urmărește efortul cognitiv. Performanța urmează un <b>U inversat</b> — vârful e la activare medie, nu la minim și nu la maxim."
 }

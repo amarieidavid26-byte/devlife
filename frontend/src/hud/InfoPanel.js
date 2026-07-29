@@ -13,6 +13,12 @@ const PUBMED = id => `https://pubmed.ncbi.nlm.nih.gov/${id}/`;
 // Per-metric citations (paper titles stay in English on purpose). The plain-language text is
 // resolved from i18n at open time via the metric key.
 export const INFO = {
+    biology: { cites: [
+        { text: 'Kim et al. (2018). Stress and Heart Rate Variability: A Meta-Analysis and Review. Psychiatry Investig.', pmid: '29486547' },
+        { text: 'Shaffer & Ginsberg (2017). An Overview of Heart Rate Variability Metrics and Norms. Front Public Health.', pmid: '29034226' },
+        { text: 'Low HRV, emotional dysregulation & prefrontal function -- an integrative view (2021). J Personalized Medicine.', pmid: '34575648' },
+        { text: 'A disinhibitory circuit mechanism for peak performance at mid-level arousal (2024). PNAS.', pmid: '38277436' },
+    ] },
     stress: { cites: [
         { text: 'Kim et al. (2018). Stress and Heart Rate Variability: A Meta-Analysis and Review. Psychiatry Investig.', pmid: '29486547' },
         { text: 'Shaffer & Ginsberg (2017). An Overview of Heart Rate Variability Metrics and Norms. Front Public Health.', pmid: '29034226' },
@@ -162,6 +168,9 @@ function injectStyles() {
 #dl-info-card ol.dl-cites a { color:#7FB0FF;text-decoration:none;font-weight:700;white-space:nowrap; }
 #dl-info-card ol.dl-cites a:hover { text-decoration:underline; }
 #dl-info-card .dl-info-disc { margin-top:20px;padding-top:13px;border-top:1px solid rgba(255,228,181,0.1);font-size:11.5px;color:#8A7E6A;font-style:italic;line-height:1.5; }
+#dl-info-card .dl-plate { display:block;width:100%;height:auto;margin:4px 0 8px;border:1px solid rgba(255,228,181,0.14);border-radius:8px;background:#F5F0E8; }
+#dl-info-card .dl-plate-cap { font-size:11.5px;color:#8A7E6A;text-align:right;margin:0 0 4px; }
+#dl-info-card .dl-plate-cap a { color:#7FB0FF;text-decoration:none;font-weight:700; }
 `;
     document.head.appendChild(s);
 }

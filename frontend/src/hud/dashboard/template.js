@@ -68,6 +68,11 @@ export function buildDashboardDOM() {
             <div class="expl-note" data-i18n="expl.formula_note">Inverted-U model (Yerkes-Dodson): performance falls when stress is too low or too high.</div>
         </div>
 
+        <div class="bio-section">
+            <div class="sec-hdr"><span data-i18n="dashboard.biology_header">The biology behind it</span>${infoBtn('biology')}</div>
+            <div style="font-family:'Nunito',sans-serif;font-size:10.5px;color:#8A7E6A;line-height:1.55;margin-top:4px" data-i18n="dashboard.biology_hint">heart -> vagus nerve -> HRV -> prefrontal cortex -> performance</div>
+        </div>
+
         <div class="stress-section">
             <div class="stress-header">
                 <span class="lbl"><span data-i18n="dashboard.stress_level">Stress Level</span>${infoBtn('stress')}</span>

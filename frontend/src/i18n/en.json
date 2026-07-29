@@ -601,5 +601,12 @@
   "expl.effect_raise_stress": "↑ stress",
   "expl.effect_lower_stress": "↓ stress",
   "expl.effect_context": "context",
-  "expl.effect_output": "result"
+  "expl.effect_output": "result",
+  "dashboard.biology_header": "The biology behind it",
+  "dashboard.biology_hint": "heart → vagus nerve → HRV → prefrontal cortex → performance",
+  "info.biology.title": "The biology behind it",
+  "info.biology.subtitle": "From one heartbeat to a blocked command",
+  "info.biology.what": "<p class=\"dl-plate-cap\"><a href=\"/biologie.svg\" target=\"_blank\">click to enlarge ↗</a></p><img class=\"dl-plate\" src=\"/biologie.svg\" alt=\"Causal chain: heart, vagus nerve, HRV, prefrontal cortex, performance\">The heart does not beat at a fixed interval. The gap between beats is set by the autonomic nervous system — the vagus nerve widens the variation, the sympathetic branch narrows it. By measuring that variation (RMSSD) we read, indirectly, the state of the system that also regulates focus.",
+  "info.biology.how": "raw RR (BLE)\n  → RMSSD over a 60 s window\n  → ratio against your own baseline\n  → one of 5 cognitive states\n  → the ghost's intervention",
+  "info.biology.science": "The link is called <b>neurovisceral integration</b>: the prefrontal circuits that sustain executive control also regulate the heart, so HRV tracks cognitive effort. Performance follows an <b>inverted U</b> — the peak is at moderate arousal, not at the minimum and not at the maximum."
 }
