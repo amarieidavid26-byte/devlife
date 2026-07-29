@@ -137,14 +137,17 @@ intervenes most in STRESSED/WIRED/FATIGUED.
 
 ## 5. Code Quality Index: CQI (index 0-100%)
 
-**What it means.** A single "fitness to ship" readout. It blends three inputs into one number:
-how recovered the developer is, how calm, and how well their autonomic system is regulated.
+**What it means.** A single "fitness to ship" readout. Two **capacity** terms set the ceiling —
+how recovered the developer is and how well-regulated their autonomic system is — and one
+**arousal fit** term decides where inside that ceiling they land right now.
 
-**How DevLife computes it** (`DashboardOverlay.update()` / `main.js`):
+**How DevLife computes it** (`utils/cqi.js`, shared by the dashboard and the in-game HUD):
 ```
-CQI % = ( recovery/100     × 0.40
-        + min(HRV/80, 1)   × 0.35
-        + (1 − stress/3)   × 0.25 ) × 100
+arousalFit = max(0, 1 − |stress − 1.2| ÷ 1.8)
+
+CQI % = ( recovery/100          × 0.30
+        + min(dailyHRV/80, 1)   × 0.25
+        + arousalFit            × 0.45 ) × 100
 ```
 
 **The science.** CQI is DevLife's **own composite** (not a clinical measure), but each
@@ -152,6 +155,23 @@ ingredient is independently validated: recovery/sleep readiness, vagally-mediate
 marker of self-regulation capacity (Shaffer & Ginsberg, 2017), and the HRV-based stress index
 (Kim et al., 2018). The rationale is the neurovisceral link: better autonomic regulation
 supports the prefrontal control careful programming depends on.
+
+The arousal term follows the **same inverted-U as the state classifier** (§4): performance
+peaks at moderate arousal, so full rest scores lower than productive engagement. `1.2` is the
+midpoint of the DEEP_FOCUS stress band (0.9–1.5) and the exact value `classify()` assigns to
+the live-HR focus band; `1.8` normalises the distance so the fit only reaches 0 at the top of
+the 0–3 scale.
+
+> **Why this replaced the earlier formula.** CQI previously used a monotonic `1 − stress/3`
+> penalty, i.e. "less arousal is always better". That contradicted the inverted-U this project
+> is built on, and produced the visible symptom that RELAXED outscored DEEP_FOCUS. The HRV term
+> also used the *live* RMSSD, which falls while you concentrate — penalising focus twice, since
+> that same effort is already counted in the stress term. It now uses the stable overnight HRV.
+
+**Honest note on the weights.** The three weights are our own calibration, not taken from any
+published study — the same status as the 0.75 stress threshold documented in `positioning.md`.
+The momentary term carries the most weight so CQI behaves as a live readout rather than a
+slow-moving daily capacity number.
 
 - Shaffer & Ginsberg (2017), *Front Public Health*, PMID **29034226**
 - Kim et al. (2018), *Psychiatry Investig.*, PMID **29486547**

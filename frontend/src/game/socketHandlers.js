@@ -3,6 +3,7 @@
 
 import { i18n } from '../i18n/index.js';
 import { setWhoopConnected } from '../network/session.js';
+import { computeCQI } from '../utils/cqi.js';
 
 export function wireSocketHandlers(deps) {
     const { socket, offlineBio, hud, dashboard, demoHotbar, atmosphere,
@@ -85,14 +86,9 @@ export function wireSocketHandlers(deps) {
             });
         }
 
-        // CQI - weighted composite of recovery, HRV, and inverse stress. Use the stable WHOOP
-        // daily HRV (hrv_daily) rather than the overloaded `hrv` field, which carries the jumpy
-        // live BLE RMSSD when a strap is streaming and would otherwise make CQI spike.
-        const recovery = data.recovery || 50;
-        const hrv = (data.hrv_daily != null ? data.hrv_daily : data.hrv) || 40;
-        const stress = data.estimated_stress || 0;
-        const cqi = Math.round((Math.min(recovery / 100, 1) * 0.4 + Math.min(hrv / 80, 1) * 0.35 + Math.max(0, 1 - stress / 3) * 0.25) * 100);
-        hud.updateCQI(cqi);
+        // CQI - shared with DashboardOverlay via utils/cqi.js so the HUD and the dashboard can
+        // never drift apart again (they previously disagreed on which HRV field to use).
+        hud.updateCQI(computeCQI(data));
 
         // dont spam this
         if (data.recovery_velocity && data.recovery_velocity > 0) {

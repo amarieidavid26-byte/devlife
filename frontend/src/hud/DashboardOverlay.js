@@ -10,6 +10,7 @@ import { ensureInfoPanel } from './InfoPanel.js';
 import { i18n } from '../i18n/index.js';
 import { STATE_COLORS_CSS as STATE_COLORS } from '../theme.js';
 import { CONFIG } from '../config.js';
+import { computeCQI } from '../utils/cqi.js';
 import { openApiKeysModal } from './ApiKeysModal.js';
 import { injectStyles } from './dashboard/styles.js';
 import { buildDashboardDOM } from './dashboard/template.js';
@@ -272,16 +273,17 @@ export class DashboardOverlay {
         if (data.state) this._applyState(data.state);
         if (data.state_explanation) this._renderExplanation(data.state_explanation);
 
-        // Code Quality Index
-        const rec = data.recovery || this._targetRec || 50;
-        const hrv = data.hrv || this._targetHRV || 40;
+        // Code Quality Index -- shared with the in-game HUD via utils/cqi.js
         const stress = data.estimated_stress !== undefined ? data.estimated_stress : this._targetStress;
-        const recFactor     = Math.min(rec / 100, 1);
-        const hrvFactor     = Math.min(hrv / 80, 1);
-        const stressPenalty = Math.max(0, 1 - stress / 3);
-        this._targetCQI = Math.round((recFactor * 0.4 + hrvFactor * 0.35 + stressPenalty * 0.25) * 100);
+        this._targetCQI = computeCQI(data, {
+            recovery: this._targetRec,
+            hrv: this._targetHRV,
+            stress: this._targetStress,
+        });
 
-        // ANS Balance -- SNS driven by stress, PNS driven by HRV
+        // ANS Balance -- SNS driven by stress, PNS driven by HRV. Unlike CQI these are
+        // "right now" readings, so the live BLE RMSSD is the correct input here.
+        const hrv = data.hrv || this._targetHRV || 40;
         this._targetSNS = Math.min(stress / 3, 1);
         this._targetPNS = Math.min(hrv / 80, 1);
     }
