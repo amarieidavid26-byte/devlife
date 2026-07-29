@@ -81,7 +81,7 @@ In paralel, contributiile lui David (frontend, vizual, scene, BLE):
 - Camera izometrica procedurala, palette Animal Crossing
 - Town scenes: Cafe (sistem brewing), Cowork (NPCs animate), Park (meditatie)
 - WHOOP BLE live: heartbeat real-time via Chrome Web Bluetooth
-- Dashboard CQI (Cognitive Quality Index), autonomic balance, ECG live, sleep data
+- Dashboard CQI (Code Quality Index), autonomic balance, ECG live, sleep data
 - risky command patterns: 11 regex in backend, oglindite in client pentru firewall-ul din terminal
 - Visual polish: ghost trail + aura, vignette, theme branding
 
